@@ -1,14 +1,29 @@
-import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { cn } from '@/utils/cn';
 
 interface DropdownMenuProps {
   trigger: ReactNode;
+  triggerLabel?: string;
   children: ReactNode;
   align?: 'left' | 'right';
   className?: string;
 }
 
-export function DropdownMenu({ trigger, children, align = 'right', className }: DropdownMenuProps) {
+export function DropdownMenu({
+  trigger,
+  triggerLabel,
+  children,
+  align = 'right',
+  className,
+}: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -17,7 +32,10 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
   const initialFocus = useRef<'first' | 'last' | null>(null);
 
   const menuItems = () =>
-    Array.from(panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? []);
+    Array.from(
+      panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ??
+        [],
+    );
 
   const closeMenu = (restoreFocus = false) => {
     setOpen(false);
@@ -84,6 +102,7 @@ export function DropdownMenu({ trigger, children, align = 'right', className }: 
       <button
         ref={triggerRef}
         type="button"
+        aria-label={triggerLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -155,7 +174,13 @@ export function DropdownItem({
 }
 
 export function DropdownSeparator() {
-  return <div role="separator" className="my-1 h-px bg-[var(--color-border)]" data-ui="dropdown-separator" />;
+  return (
+    <div
+      role="separator"
+      className="my-1 h-px bg-[var(--color-border)]"
+      data-ui="dropdown-separator"
+    />
+  );
 }
 
 export function DropdownLabel({ children }: { children: ReactNode }) {

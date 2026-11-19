@@ -120,7 +120,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
     const student = page.getByTestId('guardian-home-student-card');
     await expect(student).toHaveCount(1);
     await expect(student).toContainText('Avery Johnson');
-    await expect(student).toContainText('Bus 42');
+    await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Bus 42');
     await expect(page.getByText('51.0447')).toHaveCount(0);
     await page.getByRole('link', { name: /View (?:bus )?details for Bus 42/ }).click();
     await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();

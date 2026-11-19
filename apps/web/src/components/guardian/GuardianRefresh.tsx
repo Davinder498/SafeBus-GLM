@@ -11,10 +11,11 @@ export function GuardianRefreshMenu({
 }) {
   return (
     <DropdownMenu
+      triggerLabel="Page options"
+      className="guardian-refresh-menu"
       trigger={
-        <span className="inline-flex h-12 w-12 items-center justify-center text-[var(--color-text)]">
+        <span className="inline-flex h-12 w-12 rounded-full items-center justify-center text-[var(--color-text)]">
           <MoreVertical aria-hidden className="h-6 w-6" />
-          <span className="sr-only">Page options</span>
         </span>
       }
     >

@@ -1014,8 +1014,8 @@
     [data-testid='guardian-home-bus-card']
     h2 {
     color: var(--guardian-navy);
-    font-size: 2.25rem;
-    letter-spacing: -0.045em;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
   }
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-live-bus-map'] {
@@ -2316,4 +2316,18 @@ html[data-app-surface='native-mobile'] .guardian-assignment-details dd { overflo
 html[data-app-surface='native-mobile']:has([data-ui='guardian-refresh-surface']) { overscroll-behavior-y: contain; }
 html[data-app-surface='native-mobile'] li[data-testid='guardian-home-student-card'] + li[data-testid='guardian-home-student-card'] {
   border-top: 1px solid var(--color-border) !important;
+}
+
+html[data-app-surface='native-mobile'] [data-ui='dropdown-panel'].guardian-refresh-menu {
+  min-width: 10rem;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
+}
+html[data-app-surface='native-mobile'] [data-ui='button'].guardian-map-unavailable:disabled {
+  background: var(--color-raised) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+  box-shadow: none;
 }

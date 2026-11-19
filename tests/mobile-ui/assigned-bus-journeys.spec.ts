@@ -149,7 +149,8 @@ test('guardian sees the linked student seat per direction on mobile', async ({ p
     .getByRole('link', { name: 'Buses', exact: true })
     .click();
   const card = page.getByTestId('guardian-assigned-student');
-  await expect(card).toContainText('Seat 12');
+  await expect(card.locator('dl').first().locator('dt').last()).toHaveText('Seat');
+  await expect(card.locator('dl').first().locator('dd').last()).toHaveText('12');
   await expect(card).toContainText('Not assigned');
 });
 

@@ -75,7 +75,7 @@ for (const theme of ['light', 'dark']) {
     await expectUsableMobileLayout(page);
     await expectNoWcagAaViolations(page, `refined home ${theme}`);
     await page.screenshot({ path: info.outputPath(`home-${theme}.png`), fullPage: true });
-    await page.getByRole('link', { name: 'Morgan Johnson: pickup and drop-off status' }).click();
+    await page.getByRole('link', { name: /Pickup and drop-off status for Morgan Johnson/ }).click();
     await expect(page.getByTestId('guardian-events-student-card')).toHaveCount(1);
     await expect(page.getByTestId('guardian-events-student-card')).toContainText('Morgan Johnson');
     await expect(page.getByTestId('guardian-events-list')).not.toContainText('Avery Johnson');
@@ -122,8 +122,12 @@ test('stale location disables map; menu and downward gesture refresh', async ({ 
   await expect(page.getByText('Refreshing…', { exact: true })).toHaveCount(0);
   const surface = page.locator('[data-ui="guardian-refresh-surface"]');
   const afterMenu = fixture.getCallCount();
-  await surface.dispatchEvent('touchstart', { touches: [{ clientX: 100, clientY: 100 }] });
-  await surface.dispatchEvent('touchmove', { touches: [{ clientX: 100, clientY: 200 }] });
+  await surface.dispatchEvent('touchstart', {
+    touches: [{ identifier: 0, clientX: 100, clientY: 100 }],
+  });
+  await surface.dispatchEvent('touchmove', {
+    touches: [{ identifier: 0, clientX: 100, clientY: 200 }],
+  });
   await expect(page.getByText('Release to refresh', { exact: true })).toBeVisible();
   await surface.dispatchEvent('touchend', { touches: [] });
   await expect.poll(() => fixture.getCallCount()).toBeGreaterThan(afterMenu);

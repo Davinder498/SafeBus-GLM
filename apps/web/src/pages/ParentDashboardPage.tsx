@@ -146,9 +146,9 @@ export function ParentDashboardPage() {
                   return group.busNumber ? (
                     <Link
                       to={guardianBusDetailsPath(group.busNumber)}
-                      aria-label={`View bus details for Bus ${group.busNumber}`}
                       className="guardian-bus-summary"
                     >
+                      <span className="sr-only">View bus details for </span>
                       {heading}
                     </Link>
                   ) : (
@@ -166,7 +166,7 @@ export function ParentDashboardPage() {
                       </Link>
                     ) : (
                       <>
-                        <Button disabled className="w-full">
+                        <Button disabled className="guardian-map-unavailable w-full">
                           Location unavailable
                         </Button>
                         <p className="mt-3 text-sm text-[var(--color-text-muted)]">
@@ -186,8 +186,8 @@ export function ParentDashboardPage() {
                         <Link
                           className="guardian-child-status"
                           to={`/guardian/events?student=${encodeURIComponent(student.studentId)}`}
-                          aria-label={`${student.studentName}: pickup and drop-off status`}
                         >
+                          <span className="sr-only">Pickup and drop-off status for </span>
                           <UserRound aria-hidden className="h-6 w-6 shrink-0" />
                           <span className="min-w-0 flex-1">
                             <span className="block font-semibold">{student.studentName}</span>

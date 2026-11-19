@@ -122,8 +122,8 @@ export function GuardianRoutesPage() {
                     to={guardianBusDetailsPath(group.busNumber)}
                     className="guardian-bus-summary"
                     data-testid="guardian-bus-details-link"
-                    aria-label={`View details for Bus ${group.busNumber}`}
                   >
+                    <span className="sr-only">View details for </span>
                     <BusFront aria-hidden className="h-8 w-8 shrink-0" />
                     <h2 className="min-w-0 flex-1 text-2xl font-bold">Bus {group.busNumber}</h2>
                     <StatusPill tone="success">Assigned</StatusPill>

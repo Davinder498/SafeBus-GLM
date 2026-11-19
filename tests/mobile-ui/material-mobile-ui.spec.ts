@@ -189,7 +189,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(activeStatus).toHaveCSS('color', 'rgb(22, 101, 52)');
   const studentCard = page.getByTestId('guardian-home-student-card');
   await expect(studentCard).toContainText('Avery Johnson');
-  await expect(studentCard).toContainText('Bus 42');
+  await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Bus 42');
   await expect(studentCard).not.toContainText('Cedar Avenue');
   await expect(studentCard).not.toContainText('Riverside School');
 
