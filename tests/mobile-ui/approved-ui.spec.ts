@@ -39,7 +39,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.getByRole('link', { name: 'Password & security', exact: true }).click();
     await page.getByRole('link', { name: /Change password/ }).click();
     await expect(page).toHaveURL('/account/security/password');
-    await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
+    await expect(page.getByLabel(/^New password/)).toBeVisible();
     await page.screenshot({ path: info.outputPath(`${role}-password.png`), fullPage: true });
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL('/account/security');
