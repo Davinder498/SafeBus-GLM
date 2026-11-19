@@ -8,10 +8,12 @@ export function NotificationUpdateCard({
   item,
   onRead,
   onArchive,
+  onOpen,
 }: {
   item: UserNotification;
   onRead: () => void;
   onArchive: () => void;
+  onOpen?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -31,11 +33,15 @@ export function NotificationUpdateCard({
         type="button"
         className="min-h-11 min-w-0 flex-1 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy-600"
         onClick={() => {
+          if (onOpen) {
+            onOpen();
+            return;
+          }
           if (!item.readAt) onRead();
           if (hasMore) setExpanded((value) => !value);
         }}
         aria-label={`Update: ${item.body}`}
-        aria-expanded={hasMore ? expanded : undefined}
+        aria-expanded={!onOpen && hasMore ? expanded : undefined}
       >
         <span className="mb-1 block text-sm font-bold text-navy-900">{item.title}</span>
         <span className="flex items-start gap-2">

@@ -1,3 +1,6 @@
+import { UNSAFE_LocationContext } from 'react-router';
+import { useContext } from 'react';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import type { ReactNode } from 'react';
 import { cn } from '@/utils/cn';
 
@@ -13,6 +16,22 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ eyebrow, title, description, icon, badge, action }: PageHeaderProps) {
+  const surface = useAppSurface();
+  const pathname = useContext(UNSAFE_LocationContext)?.location.pathname ?? '';
+  const nativeTitles: Record<string, string> = {
+    '/account/security': 'Password & security',
+    '/notifications/settings': 'Notification settings',
+    '/driver/settings': 'Notification settings',
+    '/support': 'Help & support',
+    '/parent': 'Home',
+    '/guardian/routes': 'Buses',
+    '/guardian/live': 'Live trips',
+    '/guardian/events': 'Pickup & drop-off',
+    '/driver': 'Trip',
+    '/driver/pickup-drop-off': 'Riders',
+    '/driver/history': 'History',
+  };
+  const displayTitle = surface === 'native-mobile' ? (nativeTitles[pathname] ?? title) : title;
   return (
     <div
       className="min-w-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -41,7 +60,7 @@ export function PageHeader({ eyebrow, title, description, icon, badge, action }:
             className="break-words text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl"
             data-ui="page-title"
           >
-            {title}
+            {displayTitle}
           </h1>
           {description && (
             <p

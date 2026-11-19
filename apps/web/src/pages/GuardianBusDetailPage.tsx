@@ -104,6 +104,7 @@ export function GuardianBusDetailPage() {
     >
       <div className="mx-auto max-w-3xl space-y-5" data-ui="guardian-bus-detail-page">
         <Link
+          data-native-duplicate-back
           to="/guardian/routes"
           className="inline-flex min-h-12 items-center gap-2 rounded-xl px-2 text-sm font-bold text-navy-700 hover:bg-navy-50"
         >
@@ -244,7 +245,7 @@ function BusDetails({
         to={liveMapPath}
         className="sb-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
       >
-        <MapPin className="h-5 w-5" aria-hidden /> See live map
+        <MapPin className="h-5 w-5" aria-hidden /> View live map
       </Link>
     </>
   );

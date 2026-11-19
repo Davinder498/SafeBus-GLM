@@ -130,6 +130,7 @@ export function DriverManifestPage() {
           description="Record pickup and drop-off for students assigned to the active trip."
         />
         <Link
+          data-native-duplicate-back
           to="/driver"
           className="inline-flex min-h-11 items-center text-sm font-semibold text-navy-700 hover:text-navy-900"
         >

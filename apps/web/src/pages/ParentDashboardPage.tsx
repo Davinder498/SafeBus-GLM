@@ -1,5 +1,4 @@
 import { seatLabel } from '@/utils/studentSeat';
-import { BusFront, MapPin, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
@@ -7,7 +6,6 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
 import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
 import { Button } from '@/components/ui/Button';
 import {
@@ -78,134 +76,81 @@ export function ParentDashboardPage() {
           appSurface === 'native-mobile' &&
           busGroups.map((group) => {
             const status = guardianBusStatus(group);
-            const content = (
+            return (
               <Card
-                className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
+                key={group.key}
+                className="p-5"
                 data-testid="guardian-home-bus-card"
                 data-ui="guardian-bus-card"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <GuardianIconTile>
-                      <BusFront className="h-6 w-6" aria-hidden />
-                    </GuardianIconTile>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-navy-700">
-                        Assigned bus
-                      </p>
-                      <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
-                        {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
-                      </h2>
-                    </div>
-                  </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-2xl font-bold">
+                    {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
+                  </h2>
                   <StatusPill tone={status.tone} dot pulse={status.pulse}>
                     {status.label}
                   </StatusPill>
                 </div>
-
-                <div className="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
-                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-navy-700">
-                    <Users className="h-4 w-4" aria-hidden /> Assigned students
-                  </p>
-                  <p className="mt-1 font-semibold text-navy-900">
-                    {group.students.map((student) => student.studentName).join(', ')}
-                  </p>
-                </div>
-
-                {!group.busNumber && (
-                  <p className="mt-4 border-t border-amber-200/80 pt-4 text-sm text-gray-600">
-                    Bus information is not available yet.
+                {group.visibility.locationRecordedAt && (
+                  <p className="mt-3 text-sm text-[var(--color-text-muted)]">
+                    Last location update{' '}
+                    {new Date(group.visibility.locationRecordedAt).toLocaleTimeString()}
                   </p>
                 )}
+                {group.busNumber && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    {group.hasActiveTrip && (
+                      <Link
+                        className={actionLinkClass}
+                        to={`/guardian/live-map?bus=${encodeURIComponent(group.busNumber)}`}
+                      >
+                        View live map
+                      </Link>
+                    )}
+                    <Link
+                      className="inline-flex min-h-12 items-center font-semibold underline"
+                      aria-label={`View details for Bus ${group.busNumber}`}
+                      to={guardianBusDetailsPath(group.busNumber)}
+                    >
+                      View bus details
+                    </Link>
+                  </div>
+                )}
+                <ul className="mt-4 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
+                  {group.students.map((student) => (
+                    <li
+                      key={student.studentId}
+                      data-testid="guardian-home-student-card"
+                      className="flex flex-wrap items-center justify-between gap-2 py-3"
+                    >
+                      <span className="font-semibold">
+                        {student.studentName}
+                        <span className="sr-only">
+                          {group.busNumber ? ` Bus ${group.busNumber}` : 'No bus assigned'}
+                        </span>
+                      </span>
+                      <span className="text-sm">
+                        {
+                          {
+                            no_active_trip: 'No active trip',
+                            not_picked_up: 'Not picked up',
+                            picked_up: 'Picked up',
+                            dropped_off: 'Dropped off',
+                          }[student.studentTripStatus]
+                        }
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  className="inline-flex min-h-12 items-center font-semibold underline"
+                  to="/guardian/events"
+                >
+                  Pickup &amp; drop-off status
+                </Link>
               </Card>
             );
-
-            return group.busNumber ? (
-              <Link
-                key={group.key}
-                to={guardianBusDetailsPath(group.busNumber)}
-                className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
-                data-testid="guardian-home-bus-link"
-              >
-                <span className="sr-only">View details for Bus {group.busNumber}</span>
-                {content}
-              </Link>
-            ) : (
-              <div key={group.key}>{content}</div>
-            );
           })}
-
-        {state.kind === 'ready' && appSurface === 'native-mobile' && state.buses.length > 0 && (
-          <section
-            aria-labelledby="my-kids-heading"
-            data-testid="guardian-home-my-kids"
-            className="space-y-3"
-          >
-            <h2 id="my-kids-heading" className="text-xl font-bold text-[var(--color-text)]">
-              Linked students
-            </h2>
-            {state.buses.map((student) => {
-              const assignments =
-                state.stops?.filter(
-                  (stop) =>
-                    stop.studentId === student.studentId && stop.busNumber === student.busNumber,
-                ) ?? [];
-              return (
-                <Card
-                  key={student.studentId}
-                  className="rounded-2xl border-[var(--color-border)] p-5 shadow-sm sm:p-6"
-                  data-testid="guardian-home-student-card"
-                  data-ui="guardian-student-card"
-                >
-                  <div className="flex items-start gap-3">
-                    <GuardianIconTile size="sm">
-                      <Users className="h-5 w-5" aria-hidden />
-                    </GuardianIconTile>
-                    <div className="min-w-0">
-                      <h3 className="text-lg font-bold text-navy-900">{student.studentName}</h3>
-                      {student.studentGrade && (
-                        <p className="text-sm text-gray-600">{student.studentGrade}</p>
-                      )}
-                      <p className="mt-1 font-semibold text-navy-700">
-                        {student.busNumber ? `Bus ${student.busNumber}` : 'No bus assigned yet'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-                      <MapPin className="h-4 w-4" aria-hidden /> Stop information
-                    </p>
-                    {state.stops === null ? (
-                      <p className="mt-2 text-sm text-gray-600">
-                        Stop information is unavailable right now.
-                      </p>
-                    ) : assignments.length === 0 ? (
-                      <p className="mt-2 text-sm text-gray-600">No stops assigned yet.</p>
-                    ) : (
-                      <ul className="mt-3 space-y-3">
-                        {assignments.map((assignment, index) => (
-                          <li
-                            key={`${assignment.direction}:${assignment.tripName}:${index}`}
-                            className="rounded-xl bg-[var(--color-surface-subtle)] p-4 text-sm"
-                          >
-                            <p className="font-bold text-navy-900">{assignment.tripName}</p>
-                            <p className="mt-1 text-gray-600">{seatLabel(assignment.seatNumber)}</p>
-                            <p className="mt-1 text-gray-600">
-                              Pickup: {assignment.pickupStopName ?? 'Not assigned'}
-                            </p>
-                            <p className="text-gray-600">
-                              Drop-off: {assignment.dropoffStopName ?? 'Not assigned'}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
-          </section>
-        )}
 
         {state.kind === 'ready' &&
           appSurface === 'web' &&

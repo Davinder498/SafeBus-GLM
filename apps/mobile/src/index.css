@@ -1956,8 +1956,7 @@
   html[data-app-surface='native-mobile'] :is(h1, h2, h3, [data-ui='page-title']) {
     color: var(--color-heading) !important;
   }
-  html[data-app-surface='native-mobile']
-    [data-ui='button'][data-variant='primary'],
+  html[data-app-surface='native-mobile'] [data-ui='button'][data-variant='primary'],
   html[data-app-surface='native-mobile']
     [data-ui='notification-filter-controls']
     button[aria-pressed='true'] {
@@ -1965,31 +1964,30 @@
     border-color: var(--color-action) !important;
     color: var(--color-on-action) !important;
   }
-  html[data-app-surface='native-mobile']
-    [data-ui='button'][data-variant='primary']:hover {
+  html[data-app-surface='native-mobile'] [data-ui='button'][data-variant='primary']:hover {
     background: var(--color-action-hover) !important;
   }
   html[data-app-surface='native-mobile'] :is(input, select, textarea) {
     color: var(--color-text);
   }
-  html[data-app-surface='native-mobile'] :is(input, select, textarea):not([data-invalid]):not([aria-invalid='true']) { border-color: var(--color-control-outline); }
-  html[data-app-surface='native-mobile'] :is(input, select, textarea):is([data-invalid], [aria-invalid='true']) { border-color: var(--color-danger-text); }
   html[data-app-surface='native-mobile']
-    .sb-bottom-tab-active
-    .sb-bottom-tab-indicator {
+    :is(input, select, textarea):not([data-invalid]):not([aria-invalid='true']) {
+    border-color: var(--color-control-outline);
+  }
+  html[data-app-surface='native-mobile']
+    :is(input, select, textarea):is([data-invalid], [aria-invalid='true']) {
+    border-color: var(--color-danger-text);
+  }
+  html[data-app-surface='native-mobile'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
     background: var(--color-action) !important;
     color: var(--color-on-action) !important;
   }
   html[data-app-surface='native-mobile'] input[role='switch']:checked,
-  html[data-app-surface='native-mobile']
-    [data-ui='notification-switch-row']
-    input:checked {
+  html[data-app-surface='native-mobile'] [data-ui='notification-switch-row'] input:checked {
     background: var(--color-action) !important;
   }
   html[data-app-surface='native-mobile'] input[role='switch']:checked::before,
-  html[data-app-surface='native-mobile']
-    [data-ui='notification-switch-row']
-    input:checked::before {
+  html[data-app-surface='native-mobile'] [data-ui='notification-switch-row'] input:checked::before {
     background: var(--color-on-action) !important;
   }
 }
@@ -2014,22 +2012,36 @@
   }
 
   /* Legacy native components resolve to the shared palette in both modes. */
-  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell']
+    [data-testid='native-bottom-navigation']
+    .sb-bottom-tab {
     color: var(--color-nav-muted);
   }
-  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab > .truncate {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell']
+    [data-testid='native-bottom-navigation']
+    .sb-bottom-tab
+    > .truncate {
     color: inherit;
   }
-  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-testid='native-bottom-navigation'] .sb-bottom-tab-active {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell']
+    [data-testid='native-bottom-navigation']
+    .sb-bottom-tab-active {
     color: var(--color-nav-focus);
   }
-  html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] .sb-bottom-tab:focus-visible {
+  html[data-app-surface='native-mobile']
+    [data-testid='native-bottom-navigation']
+    .sb-bottom-tab:focus-visible {
     --tw-ring-color: var(--color-nav-focus);
     outline: 2px solid var(--color-nav-focus);
     outline-offset: -2px;
   }
   html[data-app-surface='native-mobile'] [data-ui='avatar'],
-  html[data-app-surface='native-mobile'] [data-portal][data-ui='dashboard-shell'] [data-ui='avatar'][data-tone='native-nav'] {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell']
+    [data-ui='avatar'][data-tone='native-nav'] {
     background: var(--color-nav) !important;
     color: var(--color-on-nav) !important;
   }
@@ -2066,7 +2078,10 @@
     letter-spacing: 0.06em;
   }
   html[data-app-surface='native-mobile'] [data-ui='dialog-panel'] {
-    max-height: calc(100dvh - 2rem - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+    max-height: calc(
+      100dvh - 2rem - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) -
+        var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    );
   }
 }
 @media (min-width: 840px) {
@@ -2096,4 +2111,124 @@ html[data-app-surface='native-mobile'] [data-ui='app-bar'][data-account-root='tr
   border-color: var(--color-border) !important;
   color: var(--color-text);
   --color-wordmark: var(--color-text);
+}
+
+/* Owner-approved November 19 Android screen family. Keep semantic dark colors. */
+html[data-app-surface='native-mobile'] [data-native-duplicate-back] {
+  display: none !important;
+}
+html[data-app-surface='native-mobile'] [data-ui='dashboard-shell'],
+html[data-app-surface='native-mobile'] [data-ui='public-shell'],
+html[data-app-surface='native-mobile'] [data-ui='login-shell'] {
+  background: var(--color-canvas);
+  background-image: none;
+  color: var(--color-text);
+}
+html[data-app-surface='native-mobile'] [data-ui='app-bar'] {
+  background: var(--color-surface) !important;
+  color: var(--color-text);
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+html[data-app-surface='native-mobile'] [data-ui='app-bar-inner'] {
+  min-height: 4rem;
+  height: auto;
+  padding-block: 0.5rem;
+}
+html[data-app-surface='native-mobile'] [data-ui='top-notifications'] {
+  color: var(--color-text);
+}
+html[data-app-surface='native-mobile'] [data-ui='card'],
+html[data-app-surface='native-mobile'] [data-ui='login-card'] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html[data-app-surface='native-mobile'] [data-ui='page-eyebrow'] {
+  display: none;
+}
+html[data-app-surface='native-mobile'] [data-ui='page-title'] {
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+html[data-app-surface='native-mobile'] button,
+html[data-app-surface='native-mobile'] a,
+html[data-app-surface='native-mobile'] input:not([type='checkbox']):not([type='radio']),
+html[data-app-surface='native-mobile'] select {
+  min-height: 3rem;
+}
+html[data-app-surface='native-mobile'] button {
+  min-width: 3rem;
+}
+html[data-app-surface='native-mobile'] a:not(.sb-bottom-tab) {
+  align-content: center;
+}
+html[data-app-surface='native-mobile'] [data-ui='notification-filter-controls'] {
+  flex-wrap: wrap;
+  width: 100%;
+}
+html[data-app-surface='native-mobile'] [data-ui='notification-filter-controls'] button {
+  font-size: 0.875rem;
+}
+html[data-app-surface='native-mobile'] [data-testid='native-bottom-navigation'] {
+  background: var(--color-surface) !important;
+  color: var(--color-text);
+  border-color: var(--color-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html[data-app-surface='native-mobile'] .sb-bottom-tab {
+  color: var(--color-text-muted) !important;
+  font-size: 0.75rem;
+}
+html[data-app-surface='native-mobile'] .sb-bottom-tab-active {
+  color: var(--color-text) !important;
+}
+html[data-app-surface='native-mobile'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
+  background: var(--color-selection) !important;
+  color: var(--color-text) !important;
+}
+html[data-app-surface='native-mobile']
+  [data-ui='notification-inbox-page'][data-detail='true']
+  [data-ui='notification-filters'],
+html[data-app-surface='native-mobile']
+  [data-ui='notification-inbox-page'][data-detail='true']
+  [data-ui='notification-filter-controls'],
+html[data-app-surface='native-mobile']
+  [data-ui='notification-inbox-page'][data-detail='true']
+  [data-ui='notification-list'],
+html[data-app-surface='native-mobile']
+  [data-ui='notification-inbox-page'][data-detail='true']
+  [data-ui='inbox-actions'],
+html[data-app-surface='native-mobile']
+  [data-ui='notification-inbox-page'][data-detail='true']
+  [data-ui='detail-eyebrow'] {
+  display: none;
+}
+html[data-app-surface='native-mobile'] [data-ui='public-shell'] > main {
+  padding: 1.5rem 1rem;
+  align-items: flex-start;
+  min-height: auto;
+}
+html[data-app-surface='native-mobile'] [data-ui='login-panel'] {
+  padding-top: 1.5rem;
+}
+html[data-app-surface='native-mobile'] [data-ui='login-card'] {
+  padding: 1.5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-app-surface='native-mobile'] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+html[data-app-surface='native-mobile'] [data-ui='notification-settings-page'] > section > h2,
+html[data-app-surface='native-mobile']
+  [data-ui='driver-settings-page']
+  section
+  > div
+  > #driver-notification-settings {
+  display: none;
 }

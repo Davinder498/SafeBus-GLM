@@ -37,12 +37,23 @@ function MfaLayout({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const location = useLocation();
   if (location.pathname === '/account/security/mfa' && profile) {
-    const portal = profile.role === 'driver' ? 'driver' : profile.role === 'guardian' ? 'parent' : 'admin';
-    const groups = profile.role === 'driver' ? driverNavGroups
-      : profile.role === 'guardian' ? guardianNavGroups
-      : profile.role === 'platform_super_admin' ? platformNavGroups : adminNavGroups;
+    const portal =
+      profile.role === 'driver' ? 'driver' : profile.role === 'guardian' ? 'parent' : 'admin';
+    const groups =
+      profile.role === 'driver'
+        ? driverNavGroups
+        : profile.role === 'guardian'
+          ? guardianNavGroups
+          : profile.role === 'platform_super_admin'
+            ? platformNavGroups
+            : adminNavGroups;
     return (
-      <DashboardLayout title="Multi-factor authentication" portal={portal} navItems={[]} navGroups={groups}>
+      <DashboardLayout
+        title="Multi-factor authentication"
+        portal={portal}
+        navItems={[]}
+        navGroups={groups}
+      >
         {children}
       </DashboardLayout>
     );
@@ -64,6 +75,7 @@ function MfaLayout({ children }: { children: ReactNode }) {
 }
 
 export function MfaPage() {
+  const surface = useAppSurface();
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, mfaStatus, mfaLoading, refreshMfa, signOut } = useAuth();
@@ -183,7 +195,11 @@ export function MfaPage() {
         });
         setRemoving(false);
         setCode('');
-        if (!isAdmin) navigate('/account/security', { replace: true });
+        if (!isAdmin) {
+          if (surface === 'native-mobile' && managing && window.history.state?.idx > 0)
+            navigate(-1);
+          else navigate('/account/security', { replace: true });
+        }
         return;
       }
       await refreshMfa();
@@ -192,7 +208,8 @@ export function MfaPage() {
         p_outcome: 'success',
         p_detail: { mfa: true },
       });
-      navigate(destination, { replace: true });
+      if (surface === 'native-mobile' && managing && window.history.state?.idx > 0) navigate(-1);
+      else navigate(destination, { replace: true });
     } catch (verifyError) {
       setError(
         verifyError instanceof Error ? verifyError.message : 'Unable to verify the MFA code.',
@@ -223,8 +240,23 @@ export function MfaPage() {
             id="mfa-heading"
             className="mt-4 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl"
           >
-            {heading}
+            {surface === 'native-mobile'
+              ? managing
+                ? 'Two-step verification'
+                : 'Verify sign-in'
+              : heading}
           </h1>
+          {surface === 'native-mobile' && (
+            <p className="mt-3 text-[var(--color-text-muted)]">
+              {removing
+                ? 'Enter a code from your authenticator to confirm removal. Your password will still be required.'
+                : verifiedFactor && isVerifiedSession
+                  ? 'Your authenticator is connected.'
+                  : verifiedFactor
+                    ? 'Enter the six-digit code from your authenticator app.'
+                    : 'Use an authenticator app to add extra sign-in protection. This is optional for drivers and guardians.'}
+            </p>
+          )}
           {isAdmin && !removing && (
             <p className="mt-3 text-gray-600">MFA is required for administrator accounts.</p>
           )}
@@ -241,7 +273,11 @@ export function MfaPage() {
           {isVerifiedSession && verifiedFactor && !removing ? (
             <div className="mt-6 space-y-4">
               <div className="flex flex-wrap gap-3">
-                <Button type="button" onClick={() => navigate(destination)}>
+                <Button
+                  data-native-duplicate-back={managing ? true : undefined}
+                  type="button"
+                  onClick={() => navigate(destination)}
+                >
                   {managing ? 'Back to settings' : 'Continue'}
                 </Button>
                 {verifiedFactor && (
@@ -311,6 +347,7 @@ export function MfaPage() {
 
           {!isAdmin && managing && !verifiedFactor && (
             <Link
+              data-native-duplicate-back
               to="/account/security"
               className="mt-5 inline-flex min-h-11 items-center font-semibold text-navy-700"
             >

@@ -144,7 +144,11 @@ test('guardian sees the linked student seat per direction on mobile', async ({ p
     ],
   });
   await page.goto('/parent');
-  const card = page.getByTestId('guardian-home-student-card');
+  await page
+    .getByTestId('native-bottom-navigation')
+    .getByRole('link', { name: 'Buses', exact: true })
+    .click();
+  const card = page.getByTestId('guardian-assigned-student');
   await expect(card).toContainText('Seat 12');
   await expect(card).toContainText('Not assigned');
 });
@@ -159,7 +163,7 @@ test('guardian navigation opens assigned buses in the mobile app', async ({ page
   await expect(buses).toHaveAttribute('href', '/guardian/routes');
   await buses.click();
   await expect(page).toHaveURL('/guardian/routes');
-  await expect(page.getByRole('heading', { name: 'My Buses', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Buses', level: 1 })).toBeVisible();
   await expect(page.getByTestId('guardian-student-bus-card')).toHaveCount(1);
   await expect(buses).toHaveAttribute('aria-current', 'page');
 });
@@ -238,9 +242,7 @@ test('NULL-school buses and routes retain the scan-only driver start surface', a
     if (new URL(request.url()).pathname === '/rest/v1/schools') schoolRequests += 1;
   });
   await page.goto('/driver');
-  await expect(
-    page.getByRole('heading', { name: 'Scan the bus to start', level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Trip', level: 1 })).toBeVisible();
   await expect(page.getByTestId('driver-planned-assignments')).toContainText(
     'North Ridge Outbound',
   );

@@ -36,10 +36,9 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.screenshot({ path: info.outputPath(`${role}-large-text.png`), fullPage: true });
     await page.getByRole('link', { name: 'Password & security' }).click();
     await expect(page).toHaveURL('/account/security');
-    await expect(nav.getByRole('link', { name: 'Account', exact: true })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    await expect(nav).toHaveCount(0);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page).toHaveURL('/account');
   });
 
   test(`${role} adapts navigation to a rail and preserves the current page when resized`, async ({

@@ -1,3 +1,4 @@
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { DriverPendingTripAction } from '@/components/driver/DriverPendingTripAction';
 import { albertaToday } from '@/utils/adminTripDates';
 import { useCallback, useEffect, useState } from 'react';
@@ -69,7 +70,10 @@ function PlannedAssignmentsCard({
           {assignments.map((assignment) => {
             const upcoming = !!assignment.effective_from && assignment.effective_from > today;
             return (
-              <div key={assignment.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4">
+              <div
+                key={assignment.id}
+                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-navy-900">Bus {assignment.bus_number}</p>
@@ -101,6 +105,7 @@ function PlannedAssignmentsCard({
 }
 
 export function DriverDashboardPage() {
+  const surface = useAppSurface();
   const navigate = useNavigate();
   const location = useLocation();
   const tracking = useDriverTracking();
@@ -137,7 +142,9 @@ export function DriverDashboardPage() {
 
   useEffect(() => {
     void load();
-    const refresh = () => { void load(); };
+    const refresh = () => {
+      void load();
+    };
     window.addEventListener('safebus:trip-action-synced', refresh);
     return () => window.removeEventListener('safebus:trip-action-synced', refresh);
   }, [load]);
@@ -197,11 +204,13 @@ export function DriverDashboardPage() {
       navGroups={driverNavGroups}
     >
       <div className="mx-auto max-w-3xl space-y-5">
-        {!activeTrip && (
+        {(!activeTrip || surface === 'native-mobile') && (
           <PageHeader
             eyebrow="Driver workspace"
             title="Scan the bus to start"
-            description="Scan the QR inside the bus, choose its route direction, and use this phone as the bus GPS."
+            description={
+              activeTrip ? undefined : 'While parked, scan the QR inside your bus to start.'
+            }
           />
         )}
 
@@ -239,7 +248,9 @@ export function DriverDashboardPage() {
                 />
               </Card>
             )}
-            {!tracking.pendingTripAction && !tracking.pendingTripActionError && <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />}
+            {!tracking.pendingTripAction && !tracking.pendingTripActionError && (
+              <BusQrStartScanner hasActiveTrip={false} onStarted={handleStarted} />
+            )}
             <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
           </div>
         )}
@@ -252,12 +263,14 @@ export function DriverDashboardPage() {
             >
               <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">Current trip</p>
-                  <h1 className="mt-2 break-words text-3xl font-extrabold tracking-tight text-[var(--color-text)]">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                    Current trip
+                  </p>
+                  <h2 className="mt-2 break-words text-3xl font-extrabold tracking-tight text-[var(--color-text)]">
                     {activeTrip.bus_number_snapshot
                       ? `Bus ${activeTrip.bus_number_snapshot}`
                       : 'Active bus'}
-                  </h1>
+                  </h2>
                   <p className="mt-1 text-sm font-semibold text-gray-700">
                     {activeTrip.trip_name_snapshot ?? 'Prepared run'}
                   </p>
@@ -302,7 +315,11 @@ export function DriverDashboardPage() {
                   data-testid="driver-active-bus-actions"
                 >
                   <DriverActionCard
-                    label="Pickup & drop-off"
+                    label={
+                      surface === 'native-mobile'
+                        ? 'Riders — pickup & drop-off'
+                        : 'Pickup & drop-off'
+                    }
                     icon={<ClipboardCheck className="h-6 w-6" />}
                     to="/driver/pickup-drop-off"
                   />
@@ -342,11 +359,13 @@ export function DriverDashboardPage() {
 
             <PlannedAssignmentsCard assignments={plannedAssignments} today={today} />
 
-            {!tracking.pendingTripAction && !tracking.pendingTripActionError && (!tracking.trackingToken ||
-              tracking.location.state.kind === 'denied' ||
-              tracking.location.state.kind === 'error') && (
-              <BusQrStartScanner hasActiveTrip onStarted={handleStarted} />
-            )}
+            {!tracking.pendingTripAction &&
+              !tracking.pendingTripActionError &&
+              (!tracking.trackingToken ||
+                tracking.location.state.kind === 'denied' ||
+                tracking.location.state.kind === 'error') && (
+                <BusQrStartScanner hasActiveTrip onStarted={handleStarted} />
+              )}
           </div>
         )}
       </div>

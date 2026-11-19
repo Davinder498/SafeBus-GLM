@@ -8,7 +8,8 @@ import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
-import { useGuardianLiveBusLocations } from '@/hooks/useGuardianLiveBusLocations';
+import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
+import { seatLabel } from '@/utils/studentSeat';
 import {
   groupGuardianBuses,
   guardianBusDetailsPath,
@@ -27,7 +28,11 @@ function formatGrade(grade: string): string {
 
 export function GuardianRoutesPage() {
   const appSurface = useAppSurface();
-  const { state, refreshing, lastRefreshedAt, refresh: load } = useGuardianLiveBusLocations();
+  const { state: verified, refreshing, lastRefreshedAt, refresh: load } = useGuardianHomeData();
+  const state =
+    verified.kind === 'ready'
+      ? { kind: 'ready' as const, locations: verified.data.buses, stops: verified.data.stops }
+      : verified;
 
   const busGroups = state.kind === 'ready' ? groupGuardianBuses(state.locations) : [];
 
@@ -125,7 +130,11 @@ export function GuardianRoutesPage() {
                     </p>
                     <ul className="mt-2 space-y-1" aria-label="Assigned students">
                       {group.students.map((student) => (
-                        <li key={student.studentId} className="font-semibold text-navy-900">
+                        <li
+                          key={student.studentId}
+                          data-testid="guardian-assigned-student"
+                          className="font-semibold text-navy-900"
+                        >
                           {student.studentName}
                           {student.studentGrade ? (
                             <span className="font-normal text-gray-500">
@@ -133,11 +142,36 @@ export function GuardianRoutesPage() {
                               · {formatGrade(student.studentGrade)}
                             </span>
                           ) : null}
+                          {state.stops === null ? (
+                            <p className="text-sm font-normal">
+                              Stop information is unavailable right now.
+                            </p>
+                          ) : (
+                            state.stops
+                              .filter(
+                                (stop) =>
+                                  stop.studentId === student.studentId &&
+                                  stop.busNumber === student.busNumber,
+                              )
+                              .map((stop, index) => (
+                                <div
+                                  key={index}
+                                  className="mt-2 text-sm font-normal text-[var(--color-text-muted)]"
+                                >
+                                  <p>
+                                    {stop.tripName} · {seatLabel(stop.seatNumber)}
+                                  </p>
+                                  <p>Pickup: {stop.pickupStopName ?? 'Not assigned'}</p>
+                                  <p>Drop-off: {stop.dropoffStopName ?? 'Not assigned'}</p>
+                                </div>
+                              ))
+                          )}
                         </li>
                       ))}
                     </ul>
                   </div>
 
+                  {group.busNumber && <p className="mt-4 font-bold underline">View bus details</p>}
                   {!group.busNumber ? (
                     <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
                       Bus information is not available yet.

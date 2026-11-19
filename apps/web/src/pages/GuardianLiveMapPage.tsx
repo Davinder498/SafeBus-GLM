@@ -1,6 +1,7 @@
+import { NativeBackButton } from '@/components/navigation/NativeBackButton';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useCallback } from 'react';
-import { ArrowLeft, BusFront } from 'lucide-react';
+import { BusFront } from 'lucide-react';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
 import { GuardianLiveBusMap } from '@/components/guardian/GuardianLiveBusMap';
 import { BrandMark } from '@/components/ui/BrandMark';
@@ -116,13 +117,7 @@ export function GuardianLiveMapPage() {
           data-ui="guardian-map-app-bar"
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
-          <Link
-            to="/parent"
-            className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-navy-700"
-            aria-label="Back to home"
-          >
-            <ArrowLeft className="h-6 w-6" aria-hidden />
-          </Link>
+          <NativeBackButton fallback="/parent" />
           <div className="min-w-0 flex-1">
             <BrandMark className="text-base" />
             <h1 className="break-words text-sm font-semibold text-navy-900">

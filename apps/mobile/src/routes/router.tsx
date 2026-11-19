@@ -23,7 +23,9 @@ const AcceptInvitationPage = lazy(() =>
   import('@/pages/AcceptInvitationPage').then((page) => ({ default: page.AcceptInvitationPage })),
 );
 const ParticipantAgreementsPage = lazy(() =>
-  import('@/pages/ParticipantAgreementsPage').then((page) => ({ default: page.ParticipantAgreementsPage })),
+  import('@/pages/ParticipantAgreementsPage').then((page) => ({
+    default: page.ParticipantAgreementsPage,
+  })),
 );
 const DriverDashboardPage = lazy(() =>
   import('@/pages/DriverDashboardPage').then((page) => ({ default: page.DriverDashboardPage })),
@@ -38,9 +40,6 @@ const DriverTripExceptionPage = lazy(() =>
 );
 const DriverManifestPage = lazy(() =>
   import('@/pages/DriverManifestPage').then((page) => ({ default: page.DriverManifestPage })),
-);
-const DriverProfilePage = lazy(() =>
-  import('@/pages/DriverProfilePage').then((page) => ({ default: page.DriverProfilePage })),
 );
 const DriverSettingsPage = lazy(() =>
   import('@/pages/DriverSettingsPage').then((page) => ({ default: page.DriverSettingsPage })),
@@ -259,7 +258,7 @@ export const appRoutes: RouteObject[] = [
     path: '/driver/profile',
     element: (
       <ProtectedRoute allowedRoles={['driver']}>
-        <DriverProfilePage />
+        <Navigate to="/account" replace />
       </ProtectedRoute>
     ),
   },

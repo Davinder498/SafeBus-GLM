@@ -189,9 +189,7 @@ for (const route of ['/driver/trip-actions', '/driver/record-exception']) {
     expect(writes).toEqual([]);
     await expect(dialog.locator('button[type=submit]')).toBeDisabled();
     await dialog.getByRole('link', { name: 'Back to active bus' }).click();
-    await expect(
-      page.getByRole('heading', { name: 'Scan the bus to start', exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Trip', exact: true })).toBeVisible();
     await page.goto(route);
     await expect(page.getByText('No active bus trip', { exact: true })).toBeVisible();
     await expect(page.locator('[data-ui=driver-action-card]')).toHaveCount(0);

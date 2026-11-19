@@ -39,10 +39,7 @@ async function expectMaterialBrand(page: import('@playwright/test').Page) {
   const mark = page.getByTestId('safebus-wordmark').last();
   await expect(mark).toBeVisible();
   await expect(mark).toHaveText('SafeBus');
-  const inAppBar = await mark.evaluate((element) =>
-    Boolean(element.closest('[data-ui="app-bar"], [data-ui="public-app-bar"]')),
-  );
-  await expect(mark).toHaveCSS('color', inAppBar ? 'rgb(255, 255, 255)' : 'rgb(23, 43, 58)');
+  await expect(mark).toHaveCSS('color', 'rgb(23, 43, 58)');
   await expect(mark.locator('img')).toHaveCount(0);
   await expect(mark.locator('svg')).toHaveCount(0);
   await expect(mark).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -170,29 +167,19 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusLink).toHaveAttribute('href', '/guardian/buses/42');
   await expect(homeBusCard).not.toContainText('License plate');
   await expect(homeBusCard).not.toContainText('TEST-42');
-  await expect(homeBusCard).not.toContainText('live');
-  await expect(homeBusCard).not.toContainText('View bus details');
+  await expect(homeBusCard).toContainText('View live map');
+  await expect(homeBusCard).toContainText('View bus details');
   await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(homeBusCard).toHaveCSS('border-color', 'rgb(215, 222, 232)');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
     'background-color',
     'rgb(245, 247, 250)',
   );
-  await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
-    'background-color',
-    'rgb(255, 255, 255)',
-  );
-  await expect(page.getByTestId('guardian-home-student-card')).toHaveCSS(
-    'border-color',
-    'rgb(215, 222, 232)',
-  );
-  await expect(
-    page.getByTestId('guardian-home-student-card').locator(':scope > div:last-child'),
-  ).toHaveCSS('border-top-color', 'rgb(215, 222, 232)');
+  await expect(page.getByTestId('guardian-home-student-card')).toContainText('Not picked up');
   await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
-    'rgb(23, 43, 58)',
+    'rgb(255, 255, 255)',
   );
   const activeStatus = homeBusCard.locator('[data-ui="status-pill"][data-tone="success"]');
   await expect(activeStatus).toHaveAttribute('data-pulse', 'true');
@@ -200,8 +187,8 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   const studentCard = page.getByTestId('guardian-home-student-card');
   await expect(studentCard).toContainText('Avery Johnson');
   await expect(studentCard).toContainText('Bus 42');
-  await expect(studentCard).toContainText('Cedar Avenue');
-  await expect(studentCard).toContainText('Riverside School');
+  await expect(studentCard).not.toContainText('Cedar Avenue');
+  await expect(studentCard).not.toContainText('Riverside School');
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
   await expect(tabs).toHaveCount(4);
@@ -237,33 +224,23 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByTestId('guardian-live-map-dropoff-stop-marker')).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath('guardian-live-map.png') });
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
 });
 
-test('update cards expand inline only for longer messages and keep archive separate', async ({
-  page,
-}) => {
+test('long updates open readable details and keep archive separate', async ({ page }) => {
   await installGuardianVisibilityMock(page, { rows: [guardianVisibilityRow()] });
   const message = 'A reported road closure is delaying the school bus. '.repeat(12);
   const fixture = await installNotificationInboxMock(page, { body: message });
   await page.goto('/notifications');
-  const card = page.locator('[data-ui="notification-card"]');
-  const update = card.getByRole('button', { name: `Update: ${message}` });
-  await expect(update).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
-  const collapsed = (await card.boundingBox())!.height;
-  await update.focus();
-  await page.keyboard.press('Enter');
-  await expect(update).toHaveAttribute('aria-expanded', 'true');
-  expect((await card.boundingBox())!.height).toBeGreaterThan(collapsed);
-  await expect(card.getByText('Read', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: `Update: ${message}` }).click();
+  await expect(page.getByRole('heading', { name: 'Alert details', exact: true })).toBeVisible();
+  await expect(page.locator('[data-ui="notification-detail-card"]')).toContainText(message.trim());
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL('/notifications');
-  await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
-  await update.click();
-  await expect(update).toHaveAttribute('aria-expanded', 'false');
-  expect(fixture.getReadCallCount()).toBe(1);
-  await card.getByRole('button', { name: 'Archive Trip cancelled', exact: true }).click();
-  await expect(card).toHaveCount(0);
+  await expect.poll(() => fixture.getReadCallCount()).toBe(1);
+  await page.getByRole('button', { name: 'Archive Trip cancelled', exact: true }).click();
+  await expect(page.locator('[data-ui="notification-card"]')).toHaveCount(0);
   expect(fixture.getArchiveCallCount()).toBe(1);
 });
 
@@ -338,7 +315,11 @@ test('guardian home keeps each linked student with their own bus and stops', asy
   });
   await page.goto('/parent');
 
-  const cards = page.getByTestId('guardian-home-student-card');
+  await page
+    .getByTestId('native-bottom-navigation')
+    .getByRole('link', { name: 'Buses', exact: true })
+    .click();
+  const cards = page.getByTestId('guardian-assigned-student');
   await expect(cards).toHaveCount(2);
   await expect(cards.nth(0)).toContainText('Avery Johnson');
   await expect(cards.nth(0)).toContainText('Cedar Avenue');
@@ -379,10 +360,18 @@ test('guardian home gives each current bus state a distinct accessible treatment
   });
   await page.goto('/parent');
 
-  const active = page.getByRole('link', { name: 'View details for Bus 42' });
-  const delayed = page.getByRole('link', { name: 'View details for Bus 27' });
-  const unavailable = page.getByRole('link', { name: 'View details for Bus 53' });
-  const inactive = page.getByRole('link', { name: 'View details for Bus 64' });
+  const active = page
+    .getByTestId('guardian-home-bus-card')
+    .filter({ has: page.getByRole('heading', { name: 'Bus 42', exact: true }) });
+  const delayed = page
+    .getByTestId('guardian-home-bus-card')
+    .filter({ has: page.getByRole('heading', { name: 'Bus 27', exact: true }) });
+  const unavailable = page
+    .getByTestId('guardian-home-bus-card')
+    .filter({ has: page.getByRole('heading', { name: 'Bus 53', exact: true }) });
+  const inactive = page
+    .getByTestId('guardian-home-bus-card')
+    .filter({ has: page.getByRole('heading', { name: 'Bus 64', exact: true }) });
 
   await expect(active.locator('[data-ui="status-pill"]')).toHaveAttribute('data-tone', 'success');
   await expect(active.locator('[data-ui="status-pill"]')).toContainText('Active');
@@ -438,7 +427,9 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('top', '0px');
   await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS('position', 'fixed');
-  const bus42Card = page.getByRole('link', { name: 'View details for Bus 42' });
+  const bus42Card = page
+    .getByTestId('guardian-home-bus-card')
+    .filter({ has: page.getByRole('heading', { name: 'Bus 42', exact: true }) });
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
   await expect(bus42Card.getByText('Morgan Johnson')).toBeVisible();
   await expect(bus42Card.getByText('License plate')).toHaveCount(0);
@@ -661,7 +652,10 @@ test('mobile notification settings autosave independent channel sections with sw
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
 
-  await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+  await page
+    .getByTestId('native-bottom-navigation')
+    .getByRole('link', { name: 'Account', exact: true })
+    .click();
   await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Guardian privacy notice', exact: true }),
@@ -748,7 +742,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   const inbox = await installNotificationInboxMock(page);
   await page.goto('/notifications');
 
-  await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Alerts', level: 1 })).toBeVisible();
   await expect(page.getByText('1 new', { exact: true })).toBeVisible();
   await expectRedUnreadBadge(page);
   await page.screenshot({ path: testInfo.outputPath('guardian-unread-badge.png') });
@@ -780,7 +774,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
-    'rgb(23, 43, 58)',
+    'rgb(255, 255, 255)',
   );
   await expect(
     notification.getByRole('button', {
@@ -815,9 +809,9 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await installNotificationInboxMock(page, { driver: true });
   await page.goto('/notifications');
 
-  await expect(page.getByRole('heading', { name: 'Notification', level: 1 })).toBeVisible();
-  const unreadBadge = page.locator('[data-ui="top-notifications"] > span');
-  await expectRedUnreadBadge(page, unreadBadge);
+  await expect(page.getByRole('heading', { name: 'Alerts', level: 1 })).toBeVisible();
+  const unreadBadge = page.getByText('1 new', { exact: true });
+  await expect(unreadBadge).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('driver-unread-badge.png') });
   const filters = page.locator('[data-ui="notification-filters"]');
   const notification = page.locator('[data-ui="notification-card"]');
@@ -848,16 +842,11 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   });
   await expect(shortUpdate).not.toHaveAttribute('aria-expanded');
   await shortUpdate.click();
-  await expect(notification.getByText('Read', { exact: true })).toBeVisible();
-  await expect(unreadBadge).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Alert details', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(page).toHaveURL('/notifications');
-  await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
-  await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
-  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
-  await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(notification.getByText('Read', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
 });
@@ -866,7 +855,7 @@ test('driver active-trip shell keeps daily actions touch friendly', async ({ pag
   await installSupabaseMock(page, { withActiveTrip: true, withCompletedTrips: true });
   await page.goto('/driver');
 
-  await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bus 12', level: 2 })).toBeVisible();
   await expectMaterialBrand(page);
 
   const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
@@ -959,7 +948,9 @@ test('driver settings keeps notification controls separate from Account', async 
   await installSupabaseMock(page);
   await page.goto('/driver/settings');
 
-  await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Notification settings', level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Push notifications' })).toBeVisible();
   await expect(page.getByRole('switch', { name: 'Email notifications' })).toBeVisible();
   await expect(page.getByText('Assignment alerts', { exact: true })).toHaveCount(3);
@@ -971,10 +962,8 @@ test('driver settings keeps notification controls separate from Account', async 
   await expect(page.getByRole('heading', { name: 'Driver safety' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'View notifications' })).toHaveCount(0);
 
-  const tabs = page.getByTestId('native-bottom-navigation').getByRole('link');
-  await expect(tabs).toHaveCount(4);
-  await expect(tabs.last()).toContainText('Account');
-  await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
   await expectNoHorizontalOverflow(page);
 });
@@ -985,7 +974,9 @@ test('driver notification settings route redirects to the combined settings page
   await installSupabaseMock(page);
   await page.goto('/notifications/settings');
   await expect(page).toHaveURL('/driver/settings');
-  await expect(page.getByRole('heading', { name: 'Driver settings', level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Notification settings', level: 1 }),
+  ).toBeVisible();
 });
 
 test('landscape layout retains navigation and horizontal containment', async ({ page }) => {
@@ -994,7 +985,7 @@ test('landscape layout retains navigation and horizontal containment', async ({ 
   await page.goto('/driver/history');
 
   await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Completed trips', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'History', level: 1 })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -1055,12 +1046,9 @@ for (const role of ['guardian', 'driver'] as const) {
       await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
       await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0);
       await expect(page.getByRole('link', { name: 'Contact', exact: true })).toHaveCount(0);
-      await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
-      await page
-        .getByTestId('native-bottom-navigation')
-        .getByRole('link', { name: role === 'guardian' ? 'Home' : 'Trip', exact: true })
-        .click();
-      await expect(page).toHaveURL(role === 'guardian' ? '/parent' : '/driver');
+      await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      await expect(page).toHaveURL(path === '/account-deletion' ? '/privacy' : '/account');
     });
   }
 }

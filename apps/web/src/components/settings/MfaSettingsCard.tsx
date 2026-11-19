@@ -1,3 +1,5 @@
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { ChevronRight, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { Card } from '@/components/ui/Card';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -7,9 +9,34 @@ import { useAuth } from '@/contexts/useAuth';
 export function MfaSettingsCard() {
   const { profile, mfaStatus, mfaLoading } = useAuth();
   const navigate = useNavigate();
+  const surface = useAppSurface();
   const enabled = mfaStatus.verifiedFactors.length > 0;
   const required = !!profile && adminRoles.some((role) => role === profile.role);
 
+  if (surface === 'native-mobile')
+    return (
+      <Card className="p-4" data-ui="account-security-card">
+        <Link
+          to="/account/security/mfa"
+          className="flex min-h-14 items-center gap-3"
+          aria-label={
+            enabled ? 'Manage multi-factor authentication' : 'Enable multi-factor authentication'
+          }
+        >
+          <ShieldCheck className="h-5 w-5 shrink-0" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold">Two-step verification (MFA)</h2>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              Adds a code from your authenticator app.
+            </p>
+            <p className="mt-2 text-sm font-semibold" role="status">
+              {mfaLoading ? 'Checking…' : enabled ? 'On' : 'Off'}
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+        </Link>
+      </Card>
+    );
   return (
     <Card className="relative p-5" data-ui="account-security-card">
       <div className="flex items-center justify-between gap-4">

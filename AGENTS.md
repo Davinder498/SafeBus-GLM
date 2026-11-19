@@ -327,3 +327,12 @@ Work on one page at a time. Present a complete mockup, including role difference
 and relevant loading/error states, and obtain owner approval before coding.
 Earlier push/merge authorization does not replace mockup approval. Distinguish
 source review, visual inspection, automated tests and physical-device evidence.
+
+### Coordinated Android UI implementation — owner approval, 2026-11-19
+
+The owner approved the Account mockups and all eight remaining Android mockup
+boards (corrected sign-in board), and explicitly requested implementation together.
+This supersedes the one-page-at-a-time delivery requirement for this approved UI
+update only. Preserve current role permissions, trip/GPS rules, notification
+choices, and legal text. Review source, browser screenshots and tests separately;
+do not claim physical-device verification or pixel-perfect mockup equivalence.

@@ -1,3 +1,6 @@
+import { NativeBackButton, nativeParent } from '@/components/navigation/NativeBackButton';
+import { useAppSurface } from '@/contexts/AppSurfaceContext';
+import { useLocation } from 'react-router';
 import { MobileAppLinks } from '@/components/ui/MobileAppLinks';
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
@@ -22,9 +25,30 @@ export function PublicLayout({
   overlayHeader = false,
   landingNavigation = false,
 }: PublicLayoutProps) {
+  const surface = useAppSurface();
+  const { pathname } = useLocation();
+  if (surface === 'native-mobile')
+    return (
+      <div data-ui="public-shell" className="min-h-dvh bg-[var(--color-canvas)]">
+        <header
+          data-ui="native-public-header"
+          className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4"
+        >
+          {pathname !== '/login' &&
+            pathname !== '/participant/agreements' &&
+            pathname !== '/mfa' && <NativeBackButton fallback={nativeParent(pathname, false)} />}
+          <BrandMark className="text-xl" />
+        </header>
+        {children}
+      </div>
+    );
   return (
     <div
-      className={overlayHeader ? 'min-h-screen bg-[var(--color-canvas)]' : 'min-h-screen bg-[var(--color-canvas)] pt-24'}
+      className={
+        overlayHeader
+          ? 'min-h-screen bg-[var(--color-canvas)]'
+          : 'min-h-screen bg-[var(--color-canvas)] pt-24'
+      }
       data-ui="public-shell"
     >
       {/* Match max-w-7xl body content after its responsive horizontal padding. */}
@@ -59,7 +83,11 @@ export function PublicLayout({
             {landingNavigation && (
               <details className="group relative hidden sm:block lg:hidden">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-lg px-2 text-sm font-semibold text-navy-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 [&::-webkit-details-marker]:hidden">
-                  Explore <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden />
+                  Explore{' '}
+                  <ChevronDown
+                    className="h-4 w-4 transition-transform group-open:rotate-180"
+                    aria-hidden
+                  />
                 </summary>
                 <nav
                   aria-label="Website sections"
@@ -91,7 +119,9 @@ export function PublicLayout({
         className="border-t border-[var(--color-border)] bg-[var(--color-surface)]"
         data-ui="public-footer"
       >
-        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"><MobileAppLinks /></div>
+        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+          <MobileAppLinks />
+        </div>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 text-xs text-slate-500 sm:px-6 lg:px-8">
           <p>© {new Date().getUTCFullYear()} SafeBus</p>
           <nav aria-label="Footer" className="flex shrink-0 items-center gap-4">

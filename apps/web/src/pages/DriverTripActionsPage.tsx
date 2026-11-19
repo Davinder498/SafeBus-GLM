@@ -123,7 +123,11 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     };
   }, [exceptions, loadVersion]);
   useEffect(() => {
-    const refresh = () => { setLoadVersion((version) => version + 1); setSelection(null); setError(null); };
+    const refresh = () => {
+      setLoadVersion((version) => version + 1);
+      setSelection(null);
+      setError(null);
+    };
     window.addEventListener('safebus:trip-action-synced', refresh);
     return () => window.removeEventListener('safebus:trip-action-synced', refresh);
   }, []);
@@ -261,7 +265,9 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
         setError(
           (stoppedForAction
             ? 'Location sharing stopped on this phone. The trip action has not been confirmed. ' +
-              (savedForRetry && !stale ? 'It is saved for automatic retry while you are signed in. ' : '')
+              (savedForRetry && !stale
+                ? 'It is saved for automatic retry while you are signed in. '
+                : '')
             : '') +
             (cause instanceof Error
               ? cause.message
@@ -286,6 +292,7 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
     <DashboardLayout title={title} portal="driver" navItems={[]} navGroups={driverNavGroups}>
       <div className="mx-auto max-w-3xl space-y-5">
         <Link
+          data-native-duplicate-back
           to="/driver"
           className="inline-flex min-h-11 items-center gap-2 font-semibold text-navy-700"
         >
@@ -429,6 +436,7 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
           )}
           {stale && (
             <Link
+              data-native-duplicate-back
               to="/driver"
               className="inline-flex min-h-11 items-center font-semibold text-navy-700 underline"
             >
