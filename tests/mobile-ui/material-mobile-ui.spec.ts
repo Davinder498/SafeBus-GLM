@@ -189,6 +189,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(
     page.getByTestId('guardian-home-student-card').locator(':scope > div:last-child'),
   ).toHaveCSS('border-top-color', 'rgb(215, 222, 232)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
@@ -435,6 +436,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(page.getByTestId('guardian-routes-refresh-button')).toBeHidden();
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('position', 'fixed');
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('top', '0px');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS('position', 'fixed');
   const bus42Card = page.getByRole('link', { name: 'View details for Bus 42' });
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
@@ -775,12 +777,11 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'background-color',
     'rgb(180, 35, 51)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expect(
     notification.getByRole('button', {
       name: 'Update: Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
@@ -852,12 +853,11 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(page).toHaveURL('/notifications');
   await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
   await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
 });
@@ -913,11 +913,10 @@ test('driver support page shows one resolved support contact', async ({ page }) 
     'background-color',
     'rgb(255, 255, 255)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
   await expect(page).toHaveURL('/account');
-  await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /Appearance/ })).toHaveCount(1);
   await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
@@ -976,8 +975,6 @@ test('driver settings keeps notification controls separate from Account', async 
   await expect(tabs).toHaveCount(4);
   await expect(tabs.last()).toContainText('Account');
   await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
   await expectNoHorizontalOverflow(page);
 });

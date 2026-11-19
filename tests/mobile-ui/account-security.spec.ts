@@ -226,7 +226,7 @@ for (const role of ['guardian', 'driver'] as const) {
       await page.goto('/account');
       const settingsPath = role === 'driver' ? '/driver/settings' : '/notifications/settings';
       const appBar = page.locator('[data-ui="app-bar"]');
-      const appearance = page.locator('[data-ui="appearance-settings"]');
+      const appearance = page.getByRole('button', { name: /Appearance/ });
       await expect(appearance).toHaveCount(1);
       await page.getByRole('button', { name: /Appearance/ }).click();
       await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();

@@ -29,3 +29,14 @@ separately. Browser journey tests could not launch: the downloadable Chromium
 was unavailable, and the installed browser was blocked by workspace socket
 permissions. Do not count this as a browser or device pass; visual comparison
 and full-app consistency review are still required before merge/publication.
+
+## CI follow-up
+
+Run 44414735717 passed web smoke/accessibility, Android native build/lint,
+unit tests, types, lint, builds, security and migrations. Native UI: 127 passed,
+6 failed because tests still expected the retired inline appearance card/header
+avatar. Replaced those expectations with the actual Appearance button/dialog
+and absence of the competing header menu. Also updated the subsequently skipped
+appearance suite to test radio selection, theme change and focus restoration.
+This is test maintenance for the approved design, not a new UI change. A fresh
+CI run must establish whether the updated journeys pass.

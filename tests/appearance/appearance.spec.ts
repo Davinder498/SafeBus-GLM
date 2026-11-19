@@ -308,23 +308,28 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
     }
     await expectNoWcagAaViolations(page, `${role} dark settings`);
     await page.screenshot({ path: info.outputPath(role + '-dark-settings.png'), fullPage: true });
-    await page.locator('[data-ui=dropdown] > button').click();
-    await expect(page.locator('[data-ui=dropdown-panel]')).toHaveCSS(
-      'background-color',
-      'rgb(24, 35, 47)',
-    );
-    await page.keyboard.press('Escape');
     if (mobile) {
+      await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
       await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
-      await expect(page.locator('[data-ui=appearance-settings]')).toBeVisible();
+      await page.getByRole('button', { name: /Appearance/ }).click();
+      const appearanceDialog = page.getByRole('dialog', { name: 'Appearance', exact: true });
+      await expect(appearanceDialog).toBeVisible();
+      await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
+      await expectNoWcagAaViolations(page, `${role} appearance dialog`);
+      await page.getByRole('radio', { name: 'Light', exact: true }).check();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      await expect(appearanceDialog).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await page.getByRole('button', { name: 'Done', exact: true }).click();
+      await expect(appearanceDialog).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Appearance/ })).toBeFocused();
+    } else {
+      await page.locator('[data-ui=dropdown] > button').click();
+      await expect(page.locator('[data-ui=dropdown-panel]')).toHaveCSS('background-color', 'rgb(24, 35, 47)');
+      await page.keyboard.press('Escape');
+      await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+      await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     }
-    if (mobile) await page.getByRole('radio', { name: 'Light', exact: true }).check();
-    else await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
-      'background-color',
-      'rgb(255, 255, 255)',
-    );
   });
 }
 
