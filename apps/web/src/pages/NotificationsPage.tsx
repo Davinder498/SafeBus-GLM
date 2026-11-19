@@ -118,6 +118,7 @@ export function NotificationsPage() {
     setDetail(null);
     setDetailError(null);
     if (!requestedId) {
+      markedFromLink.current.clear();
       setDetailLoading(false);
       return;
     }
