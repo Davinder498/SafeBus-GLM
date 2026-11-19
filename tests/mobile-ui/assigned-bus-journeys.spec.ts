@@ -181,9 +181,9 @@ test('assigned buses show the linked-student response without raw coordinates or
     'href',
     '/guardian/buses/42',
   );
-  await expect(
-    page.getByRole('list', { name: 'Assigned students' }).getByRole('listitem'),
-  ).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Your children' }).getByRole('listitem')).toHaveCount(
+    1,
+  );
   await expect(page.getByText('51.0447')).toHaveCount(0);
   await expect(page.getByText('-114.0719')).toHaveCount(0);
   await expect(card).not.toContainText('TEST-42');

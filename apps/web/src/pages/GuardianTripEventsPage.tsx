@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -27,6 +28,8 @@ function statusTone(status: GuardianStudentTripStatus): 'success' | 'warning' | 
 }
 
 export function GuardianTripEventsPage() {
+  const [searchParams] = useSearchParams();
+  const selectedStudent = searchParams.get('student');
   const { state, refreshing, lastRefreshedAt, refresh: load } = useGuardianLiveBusLocations();
 
   return (
@@ -82,66 +85,74 @@ export function GuardianTripEventsPage() {
             </Button>
           </div>
         )}
-        {state.kind === 'ready' && state.locations.length === 0 && (
-          <div data-testid="guardian-events-empty">
-            <DataState
-              title="No linked students are available yet."
-              message="Please contact your school transportation office."
-            />
-          </div>
-        )}
+        {state.kind === 'ready' &&
+          state.locations.filter((bus) => !selectedStudent || bus.studentId === selectedStudent)
+            .length === 0 && (
+            <div data-testid="guardian-events-empty">
+              <DataState
+                title="No linked students are available yet."
+                message="Please contact your school transportation office."
+              />
+            </div>
+          )}
         {state.kind === 'ready' && state.locations.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-events-list">
-            {state.locations.map((bus) => (
-              <Card key={bus.studentId} className="p-5" data-testid="guardian-events-student-card">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-navy-900">{bus.studentName}</h2>
-                    {bus.busNumber && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        Bus <span className="font-semibold text-navy-900">{bus.busNumber}</span> ·
-                        Plate {bus.licensePlate ?? 'not available'}
+            {state.locations
+              .filter((bus) => !selectedStudent || bus.studentId === selectedStudent)
+              .map((bus) => (
+                <Card
+                  key={bus.studentId}
+                  className="p-5"
+                  data-testid="guardian-events-student-card"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-navy-900">{bus.studentName}</h2>
+                      {bus.busNumber && (
+                        <p className="mt-1 text-sm text-gray-600">
+                          Bus <span className="font-semibold text-navy-900">{bus.busNumber}</span> ·
+                          Plate {bus.licensePlate ?? 'not available'}
+                        </p>
+                      )}
+                    </div>
+                    <StatusPill tone={statusTone(bus.studentTripStatus)}>
+                      {statusLabel(bus.studentTripStatus)}
+                    </StatusPill>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 border-t border-gray-200 pt-4 text-sm sm:grid-cols-2">
+                    {bus.studentTripStatus === 'no_active_trip' && (
+                      <p className="text-gray-600" data-testid="guardian-events-no-active-trip">
+                        No active school bus run right now.
+                      </p>
+                    )}
+                    {bus.pickupEventTime && (
+                      <p className="text-gray-600">
+                        Pickup time:{' '}
+                        <span className="font-semibold text-navy-900">
+                          {formatTimestamp(bus.pickupEventTime)}
+                        </span>
+                      </p>
+                    )}
+                    {bus.dropoffEventTime && (
+                      <p className="text-gray-600">
+                        Drop-off time:{' '}
+                        <span className="font-semibold text-navy-900">
+                          {formatTimestamp(bus.dropoffEventTime)}
+                        </span>
+                      </p>
+                    )}
+                    {bus.lastEventTime && (
+                      <p className="text-gray-600">
+                        Last updated:{' '}
+                        <span className="font-semibold text-navy-900">
+                          {formatTimestamp(bus.lastEventTime)}
+                        </span>
                       </p>
                     )}
                   </div>
-                  <StatusPill tone={statusTone(bus.studentTripStatus)}>
-                    {statusLabel(bus.studentTripStatus)}
-                  </StatusPill>
-                </div>
-
-                <div className="mt-4 grid gap-3 border-t border-gray-200 pt-4 text-sm sm:grid-cols-2">
-                  {bus.studentTripStatus === 'no_active_trip' && (
-                    <p className="text-gray-600" data-testid="guardian-events-no-active-trip">
-                      No active school bus run right now.
-                    </p>
-                  )}
-                  {bus.pickupEventTime && (
-                    <p className="text-gray-600">
-                      Pickup time:{' '}
-                      <span className="font-semibold text-navy-900">
-                        {formatTimestamp(bus.pickupEventTime)}
-                      </span>
-                    </p>
-                  )}
-                  {bus.dropoffEventTime && (
-                    <p className="text-gray-600">
-                      Drop-off time:{' '}
-                      <span className="font-semibold text-navy-900">
-                        {formatTimestamp(bus.dropoffEventTime)}
-                      </span>
-                    </p>
-                  )}
-                  {bus.lastEventTime && (
-                    <p className="text-gray-600">
-                      Last updated:{' '}
-                      <span className="font-semibold text-navy-900">
-                        {formatTimestamp(bus.lastEventTime)}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
           </section>
         )}
       </div>

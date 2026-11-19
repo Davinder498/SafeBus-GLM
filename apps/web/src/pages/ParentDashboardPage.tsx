@@ -1,3 +1,5 @@
+import { BusFront, ChevronRight, UserRound } from 'lucide-react';
+import { GuardianRefresh, GuardianRefreshMenu } from '@/components/guardian/GuardianRefresh';
 import { seatLabel } from '@/utils/studentSeat';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -17,6 +19,16 @@ import {
 const actionLinkClass =
   'inline-flex rounded-lg bg-navy-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-800';
 
+function formatLocationAge(recordedAt: string): string {
+  const time = new Date(recordedAt).getTime();
+  if (!Number.isFinite(time)) return 'time unavailable';
+  const seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
+  if (seconds < 60) return `${seconds} seconds ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+  return new Date(time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
 export function ParentDashboardPage() {
   const appSurface = useAppSurface();
   const { state: verified, refreshing, lastRefreshedAt, refresh } = useGuardianHomeData();
@@ -30,8 +42,13 @@ export function ParentDashboardPage() {
       portal="parent"
       navItems={[]}
       navGroups={guardianNavGroups}
+      nativeHeaderActions={<GuardianRefreshMenu refreshing={refreshing} refresh={refresh} />}
     >
-      <div className="mx-auto max-w-3xl space-y-5">
+      <GuardianRefresh
+        enabled={appSurface === 'native-mobile'}
+        refreshing={refreshing}
+        refresh={refresh}
+      >
         <PageHeader
           eyebrow="Guardian home"
           title={appSurface === 'native-mobile' ? 'Home' : 'My Buses'}
@@ -42,16 +59,18 @@ export function ParentDashboardPage() {
           }
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
-          <span role="status" data-testid="guardian-home-last-checked">
-            {lastRefreshedAt
-              ? `Last checked ${new Date(lastRefreshedAt).toLocaleTimeString()}`
-              : 'Not checked yet'}
-          </span>
-          <Button variant="secondary" size="sm" onClick={refresh} disabled={refreshing}>
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </div>
+        {appSurface === 'web' && (
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+            <span role="status" data-testid="guardian-home-last-checked">
+              {lastRefreshedAt
+                ? `Last checked ${new Date(lastRefreshedAt).toLocaleTimeString()}`
+                : 'Not checked yet'}
+            </span>
+            <Button variant="secondary" size="sm" onClick={refresh} disabled={refreshing}>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
+        )}
 
         {state.kind === 'loading' && (
           <DataState
@@ -60,10 +79,15 @@ export function ParentDashboardPage() {
           />
         )}
         {state.kind === 'error' && (
-          <DataState
-            title="We could not load your buses."
-            message="Bus status is unavailable. Check your connection and try Refresh."
-          />
+          <div className="space-y-3">
+            <DataState
+              title="We could not load your buses."
+              message="Bus status is unavailable. Check your connection and try again."
+            />
+            <Button onClick={refresh} disabled={refreshing}>
+              Try again
+            </Button>
+          </div>
         )}
         {state.kind === 'ready' && state.buses.length === 0 && (
           <DataState
@@ -83,71 +107,96 @@ export function ParentDashboardPage() {
                 data-testid="guardian-home-bus-card"
                 data-ui="guardian-bus-card"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-2xl font-bold">
-                    {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
-                  </h2>
-                  <StatusPill tone={status.tone} dot pulse={status.pulse}>
-                    {status.label}
-                  </StatusPill>
-                </div>
-                {group.visibility.locationRecordedAt && (
-                  <p className="mt-3 text-sm text-[var(--color-text-muted)]">
-                    Last location update{' '}
-                    {new Date(group.visibility.locationRecordedAt).toLocaleTimeString()}
-                  </p>
-                )}
-                {group.busNumber && (
-                  <div className="mt-4 flex flex-col gap-2">
-                    {group.hasActiveTrip && (
+                {(() => {
+                  const heading = (
+                    <>
+                      <BusFront aria-hidden className="h-8 w-8 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h2 className="text-2xl font-bold">
+                            {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
+                          </h2>
+                          <StatusPill tone={status.tone} dot pulse={status.pulse}>
+                            {status.label === 'Delayed' ? 'Location delayed' : status.label}
+                          </StatusPill>
+                        </div>
+                        {group.visibility.locationRecordedAt && (
+                          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+                            {group.visibility.locationState === 'fresh'
+                              ? 'Location updated'
+                              : 'Last location received'}{' '}
+                            {formatLocationAge(group.visibility.locationRecordedAt)}
+                          </p>
+                        )}
+                      </div>
+                      {group.busNumber && <ChevronRight aria-hidden className="h-6 w-6 shrink-0" />}
+                    </>
+                  );
+                  return group.busNumber ? (
+                    <Link
+                      to={guardianBusDetailsPath(group.busNumber)}
+                      aria-label={`View bus details for Bus ${group.busNumber}`}
+                      className="guardian-bus-summary"
+                    >
+                      {heading}
+                    </Link>
+                  ) : (
+                    <div className="guardian-bus-summary">{heading}</div>
+                  );
+                })()}
+                {group.hasActiveTrip && (
+                  <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                    {group.visibility.locationState === 'fresh' ? (
                       <Link
-                        className={actionLinkClass}
-                        to={`/guardian/live-map?bus=${encodeURIComponent(group.busNumber)}`}
+                        className={`${actionLinkClass} flex min-h-12 w-full items-center justify-center`}
+                        to={`/guardian/live-map?bus=${encodeURIComponent(group.busNumber ?? '')}`}
                       >
                         View live map
                       </Link>
+                    ) : (
+                      <>
+                        <Button disabled className="w-full">
+                          Location unavailable
+                        </Button>
+                        <p className="mt-3 text-sm text-[var(--color-text-muted)]">
+                          {group.visibility.locationState === 'stale'
+                            ? 'The bus location may have changed.'
+                            : 'Waiting for a verified bus location.'}
+                        </p>
+                      </>
                     )}
-                    <Link
-                      className="inline-flex min-h-12 items-center font-semibold underline"
-                      aria-label={`View bus details for Bus ${group.busNumber}`}
-                      to={guardianBusDetailsPath(group.busNumber)}
-                    >
-                      View bus details
-                    </Link>
                   </div>
                 )}
-                <ul className="mt-4 divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
-                  {group.students.map((student) => (
-                    <li
-                      key={student.studentId}
-                      data-testid="guardian-home-student-card"
-                      className="flex flex-wrap items-center justify-between gap-2 py-3"
-                    >
-                      <span className="font-semibold">
-                        {student.studentName}
-                        <span className="sr-only">
-                          {group.busNumber ? ` Bus ${group.busNumber}` : 'No bus assigned'}
-                        </span>
-                      </span>
-                      <span className="text-sm">
-                        {
-                          {
-                            no_active_trip: 'No active trip',
-                            not_picked_up: 'Not picked up',
-                            picked_up: 'Picked up',
-                            dropped_off: 'Dropped off',
-                          }[student.studentTripStatus]
-                        }
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  className="inline-flex min-h-12 items-center font-semibold underline"
-                  to="/guardian/events"
-                >
-                  Pickup &amp; drop-off status
-                </Link>
+                <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+                  <h3 className="text-lg font-bold">Your children</h3>
+                  <ul className="mt-2 divide-y divide-[var(--color-border)]">
+                    {group.students.map((student) => (
+                      <li key={student.studentId} data-testid="guardian-home-student-card">
+                        <Link
+                          className="guardian-child-status"
+                          to={`/guardian/events?student=${encodeURIComponent(student.studentId)}`}
+                          aria-label={`${student.studentName}: pickup and drop-off status`}
+                        >
+                          <UserRound aria-hidden className="h-6 w-6 shrink-0" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-semibold">{student.studentName}</span>
+                            <span className="mt-1 block text-sm text-[var(--color-text-muted)]">
+                              {
+                                {
+                                  no_active_trip: 'No active trip',
+                                  not_picked_up: 'Not picked up',
+                                  picked_up: 'Picked up',
+                                  dropped_off: 'Dropped off',
+                                }[student.studentTripStatus]
+                              }
+                            </span>
+                          </span>
+                          <ChevronRight aria-hidden className="h-5 w-5 shrink-0" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </Card>
             );
           })}
@@ -217,7 +266,7 @@ export function ParentDashboardPage() {
               </div>
             </Card>
           ))}
-      </div>
+      </GuardianRefresh>
     </DashboardLayout>
   );
 }

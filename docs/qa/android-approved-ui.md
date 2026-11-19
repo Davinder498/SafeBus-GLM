@@ -48,3 +48,22 @@ Local browser evidence is blocked: Playwright download returned an invalid ZIP;
 installed Chromium failed to start with socket permission denied. Do not claim
 visual comparison or physical-device verification until actual evidence exists.
 Final validation results are recorded in the PR after the final code revision.
+
+## Guardian Home and Buses refinement — approved November 19
+
+Owner approved the final white-header Home and Buses mockups after reviewing
+populated student assignments. Home uses one bus summary action, a separate map
+button, and child rows opening the selected child's latest recorded pickup/drop-off
+status. The existing endpoint is not an all-time history; no historical records
+are invented. Delayed/unverified locations cannot open a purported live map.
+
+Home and Buses use pull-to-refresh plus an accessible overflow-menu alternative.
+Automatic verification cadence and authorization clearing are unchanged. Buses
+shows labeled journey, pickup, drop-off and seat values, separated by child and
+journey with dividers. Missing seats say `Seat: Not assigned`; failed stop reads
+remain unavailable with retry and never look like missing assignments. Journey
+names remain the authority-configured names, with no inferred outbound direction.
+
+Review both themes, narrow widths, two children, multiple journeys, long stops,
+missing seats, error/empty/loading and delayed locations. Browser fixtures include
+populated stops; actual screenshots must be compared with the approved designs.
