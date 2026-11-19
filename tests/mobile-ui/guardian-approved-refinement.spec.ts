@@ -128,3 +128,34 @@ test('stale location disables map; menu and downward gesture refresh', async ({ 
   await surface.dispatchEvent('touchend', { touches: [] });
   await expect.poll(() => fixture.getCallCount()).toBeGreaterThan(afterMenu);
 });
+
+test('error, unassigned and unavailable stops remain distinct', async ({ page }, info) => {
+  const fixture = await setup(page);
+  fixture.setFail(true);
+  await page.goto('/parent');
+  await expect(page.getByText('We could not load your buses.', { exact: true })).toBeVisible();
+  await dismissNotice(page);
+  await page.screenshot({ path: info.outputPath('home-error.png'), fullPage: true });
+  fixture.setFail(false);
+  fixture.setRows([
+    guardianVisibilityRow({
+      assignment_state: 'unassigned',
+      bus_number: null,
+      has_active_trip: false,
+      location_state: 'inactive',
+      location_recorded_at: null,
+    }),
+  ]);
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'No bus assigned yet' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /View bus details/ })).toHaveCount(0);
+  await page.screenshot({ path: info.outputPath('home-unassigned.png'), fullPage: true });
+  fixture.setRows([guardianVisibilityRow()]);
+  await page.route('**/rest/v1/rpc/get_guardian_student_stops_v2', (route) =>
+    route.fulfill({ status: 503, json: { message: 'unavailable' } }),
+  );
+  await page.goto('/guardian/routes');
+  await expect(page.getByText('Stop information is unavailable right now.')).toBeVisible();
+  await expect(page.getByText('Not assigned', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: info.outputPath('buses-stops-unavailable.png'), fullPage: true });
+});

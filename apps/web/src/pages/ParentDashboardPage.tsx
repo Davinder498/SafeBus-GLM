@@ -1,5 +1,9 @@
 import { BusFront, ChevronRight, UserRound } from 'lucide-react';
-import { GuardianRefresh, GuardianRefreshMenu } from '@/components/guardian/GuardianRefresh';
+import {
+  GuardianRefresh,
+  GuardianRefreshMenu,
+  GuardianLoading,
+} from '@/components/guardian/GuardianRefresh';
 import { seatLabel } from '@/utils/studentSeat';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -72,12 +76,15 @@ export function ParentDashboardPage() {
           </div>
         )}
 
-        {state.kind === 'loading' && (
-          <DataState
-            title="Loading your buses"
-            message="Fetching bus information for your linked students."
-          />
-        )}
+        {state.kind === 'loading' &&
+          (appSurface === 'native-mobile' ? (
+            <GuardianLoading label="Loading your buses…" />
+          ) : (
+            <DataState
+              title="Loading your buses"
+              message="Fetching bus information for your linked students."
+            />
+          ))}
         {state.kind === 'error' && (
           <div className="space-y-3">
             <DataState
@@ -114,7 +121,11 @@ export function ParentDashboardPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="text-2xl font-bold">
-                            {group.busNumber ? `Bus ${group.busNumber}` : 'No bus assigned yet'}
+                            {group.busNumber
+                              ? `Bus ${group.busNumber}`
+                              : group.visibility.assignmentState === 'unavailable'
+                                ? 'Bus information unavailable'
+                                : 'No bus assigned yet'}
                           </h2>
                           <StatusPill tone={status.tone} dot pulse={status.pulse}>
                             {status.label === 'Delayed' ? 'Location delayed' : status.label}

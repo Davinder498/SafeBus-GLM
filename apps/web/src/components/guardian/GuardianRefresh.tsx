@@ -112,3 +112,19 @@ export function GuardianRefresh({
     </div>
   );
 }
+
+export function GuardianLoading({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+    >
+      <div aria-hidden="true" className="space-y-4">
+        <div className="h-6 w-1/2 rounded bg-[var(--color-border)]" />
+        <div className="h-4 w-3/4 rounded bg-[var(--color-border)]" />
+        <div className="h-4 w-2/3 rounded bg-[var(--color-border)]" />
+      </div>
+      <p className="mt-5 text-sm text-[var(--color-text-muted)]">{label}</p>
+    </div>
+  );
+}

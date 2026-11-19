@@ -7,7 +7,11 @@ import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { GuardianRefresh, GuardianRefreshMenu } from '@/components/guardian/GuardianRefresh';
+import {
+  GuardianRefresh,
+  GuardianRefreshMenu,
+  GuardianLoading,
+} from '@/components/guardian/GuardianRefresh';
 import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
 import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
 
@@ -76,12 +80,15 @@ export function GuardianRoutesPage() {
           </Card>
         )}
 
-        {state.kind === 'loading' && (
-          <DataState
-            title="Loading bus information"
-            message="Fetching the buses assigned to your linked students."
-          />
-        )}
+        {state.kind === 'loading' &&
+          (appSurface === 'native-mobile' ? (
+            <GuardianLoading label="Loading assignments…" />
+          ) : (
+            <DataState
+              title="Loading bus information"
+              message="Fetching the buses assigned to your linked students."
+            />
+          ))}
         {state.kind === 'error' && (
           <div className="space-y-4" data-testid="guardian-routes-error">
             <DataState
