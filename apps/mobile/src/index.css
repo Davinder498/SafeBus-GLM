@@ -2089,3 +2089,11 @@
     padding-bottom: 2rem !important;
   }
 }
+
+/* Approved Account root: a quiet header without a second account menu. */
+html[data-app-surface='native-mobile'] [data-ui='app-bar'][data-account-root='true'] {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text);
+  --color-wordmark: var(--color-text);
+}

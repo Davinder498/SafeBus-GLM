@@ -189,6 +189,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(
     page.getByTestId('guardian-home-student-card').locator(':scope > div:last-child'),
   ).toHaveCSS('border-top-color', 'rgb(215, 222, 232)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
@@ -435,6 +436,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(page.getByTestId('guardian-routes-refresh-button')).toBeHidden();
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('position', 'fixed');
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('top', '0px');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS('position', 'fixed');
   const bus42Card = page.getByRole('link', { name: 'View details for Bus 42' });
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
@@ -659,12 +661,8 @@ test('mobile notification settings autosave independent channel sections with sw
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('notification-settings.png'), fullPage: true });
 
-  await page.locator('[data-ui="dropdown"] > button').click();
-  const profileMenu = page.locator('[data-ui="dropdown-panel"]');
-  await expect(profileMenu).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await page.screenshot({ path: testInfo.outputPath('guardian-profile-menu.png') });
-  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
-  await page.getByRole('menuitem', { name: 'Privacy Notice', exact: true }).click();
+  await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+  await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Guardian privacy notice', exact: true }),
   ).toBeVisible();
@@ -779,12 +777,11 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
     'background-color',
     'rgb(180, 35, 51)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expect(
     notification.getByRole('button', {
       name: 'Update: Trip “Afternoon” for Bus 01 on Route 01 was cancelled by Alex Singh at 6:00 AM on Sep 1, 2026.',
@@ -856,12 +853,11 @@ test('driver updates include assignment, trip, and operational alerts', async ({
   await expect(page).toHaveURL('/notifications');
   await expect(page.locator('[data-ui="notification-detail-card"]')).toHaveCount(0);
   await expect(page.getByText('View update', { exact: true })).toHaveCount(0);
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveAttribute('data-tone', 'native-nav');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('driver-updates.png'), fullPage: true });
 });
@@ -917,12 +913,11 @@ test('driver support page shows one resolved support contact', async ({ page }) 
     'background-color',
     'rgb(255, 255, 255)',
   );
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
 
   await page.goto('/account');
   await expect(page).toHaveURL('/account');
-  await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(1);
-  await page.getByRole('link', { name: 'Notification preferences', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Appearance/ })).toHaveCount(1);
+  await page.getByRole('link', { name: 'Notification settings', exact: true }).click();
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
@@ -951,17 +946,13 @@ test('driver support page avoids a configuration dead end when no contact is ret
   );
 });
 
-test('driver account menu exposes existing secondary destinations', async ({ page }) => {
+test('driver Account exposes secondary destinations without a duplicate menu', async ({ page }) => {
   await installSupabaseMock(page);
-  await page.goto('/driver');
-
-  await page.locator('button[aria-haspopup="menu"]').click();
-  await expect(page.getByRole('menuitem', { name: 'Driver settings' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Profile' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Support' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Privacy & account' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Privacy Notice', exact: true })).toHaveCount(1);
-  await expect(page.getByRole('menuitem', { name: 'Sign out' })).toBeVisible();
+  await page.goto('/account');
+  await expect(page.locator('button[aria-haspopup="menu"]')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Help & support', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Privacy notice', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
 });
 
 test('driver settings keeps notification controls separate from Account', async ({ page }) => {
@@ -984,8 +975,6 @@ test('driver settings keeps notification controls separate from Account', async 
   await expect(tabs).toHaveCount(4);
   await expect(tabs.last()).toContainText('Account');
   await expect(tabs.filter({ hasText: 'Account' })).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('background-color', 'rgb(23, 43, 58)');
-  await expect(page.locator('[data-ui="avatar"]')).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expectTouchTargets(page.locator('[data-ui="notification-channel-control"]'));
   await expectNoHorizontalOverflow(page);
 });

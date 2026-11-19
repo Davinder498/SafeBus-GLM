@@ -143,36 +143,13 @@ describe('DashboardLayout navigation presentation', () => {
     expect(settingsTab?.querySelector('.sb-bottom-tab-badge')).toBeNull();
   });
 
-  it('opens the secondary driver Profile route from the account menu', async () => {
+  it('keeps Account as the single native account destination', async () => {
     const container = await renderDriverLayout('native-mobile');
-    const accountButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-haspopup="menu"]',
-    );
-
-    await act(async () => accountButton?.click());
-
-    const profileButton = Array.from(
-      container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
-    ).find((item) => item.textContent?.trim() === 'Profile');
-    await act(async () => profileButton?.click());
-
-    expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe(
-      '/driver/profile',
-    );
-  });
-
-  it('does not duplicate Driver settings in the native account menu', async () => {
-    const container = await renderDriverLayout('native-mobile');
-    const accountButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-haspopup="menu"]',
-    );
-
-    await act(async () => accountButton?.click());
-
-    const settingsButton = Array.from(
-      container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
-    ).find((item) => item.textContent?.trim() === 'Driver settings');
-    expect(settingsButton).toBeUndefined();
-    expect(container.querySelector('[role="menu"]')?.textContent).not.toContain('Account security');
+    expect(container.querySelector('button[aria-haspopup="menu"]')).toBeNull();
+    expect(container.querySelector('[role="menu"]')).toBeNull();
+    const account = container.querySelector<HTMLAnchorElement>('a[href="/account"]');
+    expect(account).not.toBeNull();
+    await act(async () => account?.click());
+    expect(container.querySelector('[data-testid="location-probe"]')?.textContent).toBe('/account');
   });
 });

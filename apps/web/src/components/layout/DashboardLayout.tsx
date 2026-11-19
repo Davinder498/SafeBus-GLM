@@ -69,7 +69,11 @@ interface DashboardLayoutProps {
 /* ----------------------------- nav definitions ---------------------------- */
 
 export const platformNavItems: DashboardNavItem[] = [
-  { label: 'Records disposal', to: '/admin/records-disposal', icon: <Settings className="h-4 w-4" /> },
+  {
+    label: 'Records disposal',
+    to: '/admin/records-disposal',
+    icon: <Settings className="h-4 w-4" />,
+  },
   { label: 'School authorities', to: '/admin/tenants', icon: <Building2 className="h-4 w-4" /> },
   { label: 'Agreements', to: '/admin/agreements', icon: <FileText className="h-4 w-4" /> },
   { label: 'Pricing & discounts', to: '/admin/pricing', icon: <CreditCard className="h-4 w-4" /> },
@@ -302,11 +306,7 @@ function NavListItem({
         )
       }
     >
-      {item.icon && (
-        <span className="shrink-0">
-          {item.icon}
-        </span>
-      )}
+      {item.icon && <span className="shrink-0">{item.icon}</span>}
       <span className="truncate">{item.label}</span>
     </NavLink>
   );
@@ -322,6 +322,7 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
+  const { pathname } = useLocation();
   const displayName = safeBusDisplayText(profile?.full_name ?? 'Account');
   const unreadCount = useContext(NotificationContext)?.unreadCount ?? 0;
   const appSurface = useAppSurface();
@@ -336,7 +337,8 @@ export function DashboardLayout({
 
   useEffect(() => {
     if (!mobileOpen) return;
-    const priorFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const priorFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const drawerTrigger = drawerTriggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -352,7 +354,9 @@ export function DashboardLayout({
         drawerRef.current.querySelectorAll<HTMLElement>(
           'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])',
         ),
-      ).filter((element) => element.getClientRects().length > 0 || element === document.activeElement);
+      ).filter(
+        (element) => element.getClientRects().length > 0 || element === document.activeElement,
+      );
       const first = controls[0];
       const last = controls.at(-1);
       if (!first || !last) return;
@@ -407,9 +411,12 @@ export function DashboardLayout({
       <header
         className={cn(
           'sticky top-0 z-40 border-b shadow-[0_1px_0_rgb(23_43_58_/_0.06)]',
-          portal === 'admin' ? 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]' : 'text-white',
+          portal === 'admin'
+            ? 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]'
+            : 'text-white',
         )}
         data-ui="app-bar"
+        data-account-root={usesBottomTabs && pathname === '/account' ? 'true' : undefined}
       >
         <div
           className={cn(
@@ -424,7 +431,9 @@ export function DashboardLayout({
               type="button"
               className={cn(
                 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg lg:hidden',
-                portal === 'admin' ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]' : 'text-white hover:bg-white/10',
+                portal === 'admin'
+                  ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]'
+                  : 'text-white hover:bg-white/10',
               )}
               ref={drawerTriggerRef}
               aria-label="Open navigation"
@@ -437,10 +446,19 @@ export function DashboardLayout({
           )}
 
           {/* Brand */}
-          <Link to="/" className={cn('min-w-0 items-center gap-2.5', portal === 'admin' ? 'flex lg:hidden' : 'flex')}>
+          <Link
+            to="/"
+            className={cn(
+              'min-w-0 items-center gap-2.5',
+              portal === 'admin' ? 'flex lg:hidden' : 'flex',
+            )}
+          >
             <span className="flex min-w-0 flex-col leading-tight">
-              <BrandMark className="text-xl" inverse={portal !== 'admin'} />
-              {portal !== 'admin' && (
+              <BrandMark
+                className="text-xl"
+                inverse={portal !== 'admin' && !(usesBottomTabs && pathname === '/account')}
+              />
+              {portal !== 'admin' && !(usesBottomTabs && pathname === '/account') && (
                 <span className="hidden text-xs text-white/80 min-[360px]:block">
                   {portalTitles[portal]} portal
                 </span>
@@ -464,13 +482,15 @@ export function DashboardLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
-            {portal !== 'parent' && (
+            {portal !== 'parent' && !(usesBottomTabs && pathname === '/account') && (
               <Link
                 to="/notifications"
                 data-ui="top-notifications"
                 className={cn(
                   'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
-                  portal === 'admin' ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]' : 'text-white hover:bg-white/10',
+                  portal === 'admin'
+                    ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]'
+                    : 'text-white hover:bg-white/10',
                 )}
                 aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
               >
@@ -483,82 +503,98 @@ export function DashboardLayout({
               </Link>
             )}
 
-            <DropdownMenu
-              trigger={
-                <span className={cn(
-                  'flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors',
-                  portal === 'admin' ? 'hover:bg-[var(--color-raised)]' : 'hover:bg-white/10',
-                )}>
-                  <Avatar
-                    name={displayName}
-                    size="sm"
-                    tone={usesBottomTabs ? 'native-nav' : 'default'}
-                  />
-                  <span className="hidden text-left leading-tight sm:block">
-                    <span className={cn('block text-sm font-semibold', portal === 'admin' ? 'text-[var(--color-text)]' : 'text-white')}>{displayName}</span>
-                    {profile && profile.role !== 'tenant_admin' && (
-                      <span className={cn('block text-xs capitalize', portal === 'admin' ? 'text-[var(--color-text-muted)]' : 'text-white/80')}>
-                        {getRoleLabel(profile.role)}
-                      </span>
+            {!usesBottomTabs && (
+              <DropdownMenu
+                trigger={
+                  <span
+                    className={cn(
+                      'flex items-center gap-2.5 rounded-lg py-1.5 pl-1.5 pr-2 transition-colors',
+                      portal === 'admin' ? 'hover:bg-[var(--color-raised)]' : 'hover:bg-white/10',
                     )}
+                  >
+                    <Avatar
+                      name={displayName}
+                      size="sm"
+                      tone={usesBottomTabs ? 'native-nav' : 'default'}
+                    />
+                    <span className="hidden text-left leading-tight sm:block">
+                      <span
+                        className={cn(
+                          'block text-sm font-semibold',
+                          portal === 'admin' ? 'text-[var(--color-text)]' : 'text-white',
+                        )}
+                      >
+                        {displayName}
+                      </span>
+                      {profile && profile.role !== 'tenant_admin' && (
+                        <span
+                          className={cn(
+                            'block text-xs capitalize',
+                            portal === 'admin' ? 'text-[var(--color-text-muted)]' : 'text-white/80',
+                          )}
+                        >
+                          {getRoleLabel(profile.role)}
+                        </span>
+                      )}
+                    </span>
                   </span>
-                </span>
-              }
-            >
-              <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-slate-900">{displayName}</p>
-                <p className="truncate text-xs text-slate-500">{profile?.email}</p>
-              </div>
-              <DropdownSeparator />
-              {usesBottomTabs && portal === 'driver' && (
-                <>
-                  <DropdownItem
-                    icon={<UserCircle className="h-4 w-4" />}
-                    onClick={() => navigate('/driver/profile')}
-                  >
-                    Profile
-                  </DropdownItem>
-                  <DropdownSeparator />
-                </>
-              )}
-              {usesBottomTabs && portal !== 'admin' && (
-                <>
-                  <DropdownItem
-                    icon={<CircleHelp className="h-4 w-4" />}
-                    onClick={() => navigate('/support')}
-                  >
-                    Support
-                  </DropdownItem>
-                </>
-              )}
-              <DropdownItem
-                icon={<ShieldCheck className="h-4 w-4" />}
-                onClick={() => navigate('/privacy')}
+                }
               >
-                Privacy Notice
-              </DropdownItem>
-              {portal === 'admin' && profile && (
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold text-slate-900">{displayName}</p>
+                  <p className="truncate text-xs text-slate-500">{profile?.email}</p>
+                </div>
+                <DropdownSeparator />
+                {usesBottomTabs && portal === 'driver' && (
+                  <>
+                    <DropdownItem
+                      icon={<UserCircle className="h-4 w-4" />}
+                      onClick={() => navigate('/driver/profile')}
+                    >
+                      Profile
+                    </DropdownItem>
+                    <DropdownSeparator />
+                  </>
+                )}
+                {usesBottomTabs && portal !== 'admin' && (
+                  <>
+                    <DropdownItem
+                      icon={<CircleHelp className="h-4 w-4" />}
+                      onClick={() => navigate('/support')}
+                    >
+                      Support
+                    </DropdownItem>
+                  </>
+                )}
                 <DropdownItem
-                  icon={<Settings className="h-4 w-4" />}
-                  onClick={() =>
-                    navigate(
-                      profile.role === 'platform_super_admin'
-                        ? '/notifications/settings'
-                        : '/admin/settings',
-                    )
-                  }
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  onClick={() => navigate('/privacy')}
                 >
-                  Settings
+                  Privacy Notice
                 </DropdownItem>
-              )}
-              <DropdownItem
-                destructive
-                icon={<LogOut className="h-4 w-4" />}
-                onClick={handleLogout}
-              >
-                Sign out
-              </DropdownItem>
-            </DropdownMenu>
+                {portal === 'admin' && profile && (
+                  <DropdownItem
+                    icon={<Settings className="h-4 w-4" />}
+                    onClick={() =>
+                      navigate(
+                        profile.role === 'platform_super_admin'
+                          ? '/notifications/settings'
+                          : '/admin/settings',
+                      )
+                    }
+                  >
+                    Settings
+                  </DropdownItem>
+                )}
+                <DropdownItem
+                  destructive
+                  icon={<LogOut className="h-4 w-4" />}
+                  onClick={handleLogout}
+                >
+                  Sign out
+                </DropdownItem>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </header>
@@ -572,12 +608,18 @@ export function DashboardLayout({
       >
         {/* Desktop sidebar */}
         {!usesBottomTabs && (
-          <aside className={cn(
-            'sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto py-6 lg:block',
-            portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
-          )}>
+          <aside
+            className={cn(
+              'sb-sidebar sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto py-6 lg:block',
+              portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
+            )}
+          >
             {portal === 'admin' && (
-              <Link to="/" aria-label="SafeBus home" className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-nav-focus)]">
+              <Link
+                to="/"
+                aria-label="SafeBus home"
+                className="mb-8 flex items-center gap-3 px-6 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-nav-focus)]"
+              >
                 <BrandMark className="text-xl" inverse />
               </Link>
             )}
@@ -599,17 +641,23 @@ export function DashboardLayout({
               aria-modal="true"
               aria-label="Navigation"
               className={cn(
-              'sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto p-4 shadow-popover animate-slide-in-right',
-              portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
-            )}>
+                'sb-sidebar absolute left-0 top-0 h-full w-72 max-w-[85vw] overflow-y-auto p-4 shadow-popover animate-slide-in-right',
+                portal === 'admin' ? 'bg-[#172B3A]' : 'bg-[var(--color-surface)]',
+              )}
+            >
               <div className="mb-4 flex items-center justify-between">
-                <BrandMark className={cn('text-sm', portal === 'admin' && 'text-white')} inverse={portal === 'admin'} />
+                <BrandMark
+                  className={cn('text-sm', portal === 'admin' && 'text-white')}
+                  inverse={portal === 'admin'}
+                />
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
                   className={cn(
                     'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg',
-                    portal === 'admin' ? 'text-white hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100',
+                    portal === 'admin'
+                      ? 'text-white hover:bg-white/10'
+                      : 'text-slate-500 hover:bg-slate-100',
                   )}
                   ref={drawerCloseRef}
                   aria-label="Close navigation"
@@ -668,9 +716,11 @@ function BottomTabNav({
   useLayoutEffect(() => {
     const node = navigationRef.current;
     if (!node || typeof ResizeObserver === 'undefined') return;
-    const update = () => document.documentElement.style.setProperty(
-      '--native-navigation-height', `${node.getBoundingClientRect().height}px`,
-    );
+    const update = () =>
+      document.documentElement.style.setProperty(
+        '--native-navigation-height',
+        `${node.getBoundingClientRect().height}px`,
+      );
     const observer = new ResizeObserver(update);
     observer.observe(node);
     update();
@@ -679,8 +729,12 @@ function BottomTabNav({
       document.documentElement.style.removeProperty('--native-navigation-height');
     };
   }, []);
-  const accountSection = pathname.startsWith('/account') || pathname === '/driver/settings' ||
-    pathname === '/driver/profile' || pathname.startsWith('/notifications/settings') || pathname === '/support';
+  const accountSection =
+    pathname.startsWith('/account') ||
+    pathname === '/driver/settings' ||
+    pathname === '/driver/profile' ||
+    pathname.startsWith('/notifications/settings') ||
+    pathname === '/support';
   return (
     <nav
       ref={navigationRef}
@@ -699,7 +753,9 @@ function BottomTabNav({
           const to = item.to ?? `/${portal}`;
           const isNotificationInbox = to === '/notifications';
           const selectedAccount = to === '/account' && accountSection;
-          const isActive = selectedAccount || pathname === to ||
+          const isActive =
+            selectedAccount ||
+            pathname === to ||
             (to !== `/${portal}` && !isNotificationInbox && pathname.startsWith(`${to}/`));
           return (
             <Link
@@ -713,12 +769,11 @@ function BottomTabNav({
                   : item.label
               }
               className={cn(
-                  'sb-bottom-tab flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
-                  isActive
-                    ? 'sb-bottom-tab-active bg-navy-50 font-bold text-navy-700'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
-                )
-              }
+                'sb-bottom-tab flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-500',
+                isActive
+                  ? 'sb-bottom-tab-active bg-navy-50 font-bold text-navy-700'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
+              )}
             >
               {item.icon && (
                 <span className="sb-bottom-tab-indicator" aria-hidden>
@@ -730,7 +785,9 @@ function BottomTabNav({
                   ) : null}
                 </span>
               )}
-              <span className="max-w-full whitespace-normal break-words text-center">{item.label}</span>
+              <span className="max-w-full whitespace-normal break-words text-center">
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -753,10 +810,12 @@ function SidebarNav({
       {groups.map((group, gi) => (
         <div key={gi} className="space-y-1">
           {group.label && (
-            <p className={cn(
+            <p
+              className={cn(
                 'px-3 pb-1 text-xs font-semibold uppercase tracking-wider',
                 portal === 'admin' ? 'text-[#B9C9D5]' : 'text-slate-600',
-              )}>
+              )}
+            >
               {group.label}
             </p>
           )}
