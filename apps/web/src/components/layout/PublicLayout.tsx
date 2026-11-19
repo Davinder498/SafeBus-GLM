@@ -32,12 +32,12 @@ export function PublicLayout({
       <div data-ui="public-shell" className="min-h-dvh bg-[var(--color-canvas)]">
         <header
           data-ui="native-public-header"
-          className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4"
+          className="relative flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4"
         >
           {pathname !== '/login' &&
             pathname !== '/participant/agreements' &&
             pathname !== '/mfa' && <NativeBackButton fallback={nativeParent(pathname, false)} />}
-          <BrandMark className="text-xl" />
+          <BrandMark className="absolute left-1/2 -translate-x-1/2 text-xl" />
         </header>
         {children}
       </div>

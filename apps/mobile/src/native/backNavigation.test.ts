@@ -22,6 +22,14 @@ afterEach(() => {
 });
 
 it('hands root Back to Android and returns deep links through their parent', () => {
+  expect(
+    backDestination({
+      pathname: '/notifications',
+      search: '?notification=sample',
+      home: '/parent',
+      historyIndex: 0,
+    }),
+  ).toBe('/notifications');
   expect(backDestination({ pathname: '/driver', home: '/driver', historyIndex: 8 })).toBe('system');
   expect(backDestination({ pathname: '/login', home: '/parent', historyIndex: 1 })).toBe('system');
   expect(backDestination({ pathname: '/account/security', home: '/parent', historyIndex: 0 })).toBe(

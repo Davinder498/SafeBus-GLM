@@ -3,18 +3,22 @@ import { App } from '@capacitor/app';
 
 export interface BackState {
   pathname: string;
+  search?: string;
   home: string;
   historyIndex: number;
 }
 
 export function backDestination({
   pathname,
+  search = '',
   home,
   historyIndex,
 }: BackState): 'system' | 'history' | string {
   // Top-level home and sign-in should hand Back to Android, including its preview.
   if (pathname === home || pathname === '/login' || pathname === '/') return 'system';
   if (historyIndex > 0) return 'history';
+  if (pathname === '/notifications' && new URLSearchParams(search).has('notification'))
+    return '/notifications';
   return nativeParent(pathname, home === '/driver');
 }
 

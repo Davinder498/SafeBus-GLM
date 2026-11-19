@@ -2131,9 +2131,15 @@ html[data-app-surface='native-mobile'] [data-ui='app-bar'] {
   box-shadow: none;
 }
 html[data-app-surface='native-mobile'] [data-ui='app-bar-inner'] {
+  position: relative;
   min-height: 4rem;
   height: auto;
   padding-block: 0.5rem;
+}
+html[data-app-surface='native-mobile'] [data-native-brand='true'] {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 html[data-app-surface='native-mobile'] [data-ui='top-notifications'] {
   color: var(--color-text);

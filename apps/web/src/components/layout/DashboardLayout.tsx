@@ -460,6 +460,7 @@ export function DashboardLayout({
           {/* Brand */}
           <Link
             to="/"
+            data-native-brand={usesBottomTabs ? 'true' : undefined}
             className={cn(
               'min-w-0 items-center gap-2.5',
               portal === 'admin' ? 'flex lg:hidden' : 'flex',

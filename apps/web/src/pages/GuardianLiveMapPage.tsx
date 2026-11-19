@@ -113,27 +113,29 @@ export function GuardianLiveMapPage() {
         data-testid="guardian-fullscreen-map"
       >
         <header
-          className="z-10 flex min-h-16 items-center gap-2 border-b px-3 py-2"
+          className="z-10 flex flex-col gap-2 border-b px-3 py-2"
           data-ui="guardian-map-app-bar"
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
-          <NativeBackButton fallback="/parent" />
-          <div className="min-w-0 flex-1">
-            <BrandMark className="text-base" />
-            <h1 className="break-words text-sm font-semibold text-navy-900">
+          <div className="relative flex min-h-12 w-full items-center">
+            <NativeBackButton fallback="/parent" />
+            <BrandMark className="absolute left-1/2 -translate-x-1/2 text-xl" />
+          </div>
+          <div className="flex w-full min-w-0 items-center justify-between gap-3">
+            <h1 className="break-words text-xl font-bold text-navy-900">
               {selectedBusNumber ? `Bus ${selectedBusNumber} live map` : 'Live bus map'}
             </h1>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={refresh}
+              disabled={refreshing}
+              data-testid="guardian-live-map-refresh-button"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={refresh}
-            disabled={refreshing}
-            data-testid="guardian-live-map-refresh-button"
-          >
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
         </header>
         <main
           className="relative min-h-0 flex-1"
