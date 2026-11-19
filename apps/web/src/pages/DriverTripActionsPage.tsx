@@ -436,7 +436,6 @@ function DriverOperationPage({ exceptions }: { exceptions: boolean }) {
           )}
           {stale && (
             <Link
-              data-native-duplicate-back
               to="/driver"
               className="inline-flex min-h-11 items-center font-semibold text-navy-700 underline"
             >

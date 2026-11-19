@@ -13,6 +13,8 @@ for (const role of ['guardian', 'driver'] as const) {
     if (role === 'guardian') await installGuardianVisibilityMock(page);
     else await installSupabaseMock(page);
     await page.goto('/account');
+    await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`${role}-account.png`), fullPage: true });
     for (const [label, path] of [
       ['Notification settings', role === 'driver' ? '/driver/settings' : '/notifications/settings'],
       ['Help & support', '/support'],
@@ -33,6 +35,8 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.getByRole('link', { name: 'Password & security', exact: true }).click();
     await page.getByRole('link', { name: /Change password/ }).click();
     await expect(page).toHaveURL('/account/security/password');
+    await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`${role}-password.png`), fullPage: true });
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL('/account/security');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
@@ -79,6 +83,18 @@ for (const role of ['guardian', 'driver'] as const) {
       await page.goto(path);
       await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
       await expect(page.locator('[data-ui="page-title"], h1').first()).toBeVisible();
+      const readyMarkers: Record<string, string> = {
+        '/parent': 'guardian-home-bus-card',
+        '/guardian/routes': 'guardian-routes-list',
+        '/guardian/events': 'guardian-events-list',
+        '/guardian/live': 'guardian-live-list',
+        '/driver': 'driver-active-bus-card',
+        '/driver/pickup-drop-off': 'driver-manifest-trip-context',
+        '/driver/history': 'driver-trip-history-list',
+        '/driver/trip-actions': 'driver-trip-action-cards',
+        '/driver/record-exception': 'driver-exception-types',
+      };
+      if (readyMarkers[path]) await expect(page.getByTestId(readyMarkers[path])).toBeVisible();
       await expectUsableMobileLayout(page);
       await page.screenshot({
         path: info.outputPath(path.replaceAll('/', '-') + '.png'),

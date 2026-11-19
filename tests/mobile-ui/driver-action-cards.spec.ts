@@ -95,17 +95,16 @@ test('active bus owns all three entry cards and navigation preserves GPS', async
   await bus.getByRole('link', { name: 'Trip actions', exact: true }).click();
   const before = locationUpdates;
   await expect.poll(() => locationUpdates, { timeout: 12_000 }).toBeGreaterThan(before);
-  await page.getByRole('link', { name: 'Back to active bus', exact: true }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await bus.getByRole('link', { name: 'Record exception', exact: true }).click();
   await page.goBack();
   await expect(bus).toBeVisible();
   expect(await page.evaluate(() => sessionStorage.getItem('safebus.activeBusTrackingToken'))).toBe(
     MOCK.trackingToken,
   );
-  await expect(bus.getByRole('link', { name: 'Pickup & drop-off', exact: true })).toHaveAttribute(
-    'href',
-    '/driver/pickup-drop-off',
-  );
+  await expect(
+    bus.getByRole('link', { name: 'Riders — pickup & drop-off', exact: true }),
+  ).toHaveAttribute('href', '/driver/pickup-drop-off');
 });
 
 test('exception validation and failed saves stay visible and preserve input', async ({ page }) => {

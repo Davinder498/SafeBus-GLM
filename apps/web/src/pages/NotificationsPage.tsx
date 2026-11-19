@@ -518,7 +518,7 @@ export function NotificationsPage() {
             </p>
           </Card>
         ) : null}
-        {loading ? (
+        {isRecipientMobile && requestedId ? null : loading ? (
           <DataState title="Loading notifications" message="Checking your authorized inbox." />
         ) : error ? (
           <DataState title="Notifications unavailable" message={error} />

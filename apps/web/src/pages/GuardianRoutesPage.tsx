@@ -2,7 +2,7 @@ import { BusFront, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -171,7 +171,11 @@ export function GuardianRoutesPage() {
                     </ul>
                   </div>
 
-                  {group.busNumber && <p className="mt-4 font-bold underline">View bus details</p>}
+                  {group.busNumber && (
+                    <span className={`${buttonClass({ size: 'lg' })} mt-4 w-full`}>
+                      View bus details
+                    </span>
+                  )}
                   {!group.busNumber ? (
                     <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
                       Bus information is not available yet.
