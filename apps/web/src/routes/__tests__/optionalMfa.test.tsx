@@ -136,10 +136,9 @@ it.each(['guardian', 'driver'] as const)(
     const container = await render();
     expect(container.querySelector('[data-ui="app-bar"]')).not.toBeNull();
     expect(container.querySelector('[data-ui="public-app-bar"]')).toBeNull();
-    expect(container.querySelector('[data-testid="native-bottom-navigation"]')).not.toBeNull();
-    expect(container.querySelector('[data-ui="top-notifications"]') !== null).toBe(
-      role === 'driver',
-    );
+    expect(container.querySelector('[data-testid="native-bottom-navigation"]')).toBeNull();
+    expect(container.querySelector('[data-ui="native-back"]')).not.toBeNull();
+    expect(container.querySelector('[data-ui="top-notifications"]') !== null).toBe(false);
     expect(container.querySelector('[data-testid="safebus-wordmark"]')?.textContent).toBe(
       'SafeBus',
     );
@@ -198,7 +197,9 @@ it('keeps MFA mandatory for an administrator without an enrolled factor', async 
 });
 it('allows an enrolled user after verification', async () => {
   mocks.auth.mfaStatus = { currentLevel: 'aal2', nextLevel: 'aal2', verifiedFactors: [factor] };
-  expect((await render('/account/security/mfa', true)).textContent).toContain('Preferences available');
+  expect((await render('/account/security/mfa', true)).textContent).toContain(
+    'Preferences available',
+  );
 });
 it('lets a guardian enroll and verify an authenticator from account settings', async () => {
   const c = await render();

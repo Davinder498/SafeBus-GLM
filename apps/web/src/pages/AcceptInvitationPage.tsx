@@ -1,3 +1,4 @@
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { KeyRound, ShieldCheck } from 'lucide-react';
@@ -6,7 +7,6 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
-import { Input } from '@/components/ui/Input';
 import {
   getDashboardPath,
   getSurfaceAccessMessage,
@@ -191,7 +191,7 @@ export function AcceptInvitationPage() {
           {!surfaceCompletion && !mobileReady && session && profile?.status === 'invited' && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="invitation-password" required>
-                <Input
+                <PasswordInput
                   id="invitation-password"
                   type="password"
                   autoComplete="new-password"
@@ -202,7 +202,7 @@ export function AcceptInvitationPage() {
                 />
               </Field>
               <Field label="Confirm password" htmlFor="invitation-password-confirmation" required>
-                <Input
+                <PasswordInput
                   id="invitation-password-confirmation"
                   type="password"
                   autoComplete="new-password"

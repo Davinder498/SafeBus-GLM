@@ -1,3 +1,4 @@
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { KeyRound } from 'lucide-react';
@@ -6,7 +7,6 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
-import { Input } from '@/components/ui/Input';
 import {
   getDashboardPath,
   getSurfaceAccessMessage,
@@ -94,7 +94,8 @@ export function UpdatePasswordPage() {
       navigate(
         nextProfile.role === 'tenant_admin' && profile?.status === 'invited'
           ? '/admin/onboarding/agreements'
-          : participantAgreementOnboardingEnabled && profile?.status === 'invited' &&
+          : participantAgreementOnboardingEnabled &&
+              profile?.status === 'invited' &&
               (nextProfile.role === 'driver' || nextProfile.role === 'guardian')
             ? '/participant/agreements'
             : getDashboardPath(nextProfile.role),
@@ -170,7 +171,7 @@ export function UpdatePasswordPage() {
           {!surfaceCompletion && !mobileReady && !loading && session && !recoveryError && (
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <Field label="New password" htmlFor="new-password" required>
-                <Input
+                <PasswordInput
                   id="new-password"
                   type="password"
                   autoComplete="new-password"
@@ -181,7 +182,7 @@ export function UpdatePasswordPage() {
                 />
               </Field>
               <Field label="Confirm password" htmlFor="new-password-confirmation" required>
-                <Input
+                <PasswordInput
                   id="new-password-confirmation"
                   type="password"
                   autoComplete="new-password"

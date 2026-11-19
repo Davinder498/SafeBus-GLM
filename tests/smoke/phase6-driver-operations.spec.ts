@@ -366,7 +366,7 @@ test.describe('Phase 6 — driver operational controls', () => {
         };
       });
       await page.goto('/driver');
-      await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Bus P6', exact: true })).toBeVisible();
       await page.getByRole('link', { name: 'Trip actions', exact: true }).click();
       await expect(page.getByTestId(`driver-${action}-trip`)).toBeVisible();
       let collectingAtPreflight: boolean | undefined;
@@ -399,7 +399,7 @@ test.describe('Phase 6 — driver operational controls', () => {
     await installPhase6DriverMock(page);
     await page.goto('/driver');
 
-    await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Bus P6', exact: true })).toBeVisible({
       timeout: 10000,
     });
 
@@ -423,7 +423,7 @@ test.describe('Phase 6 — driver operational controls', () => {
     await installPhase6DriverMock(page);
     await page.goto('/driver');
 
-    await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Bus P6', exact: true })).toBeVisible({
       timeout: 10000,
     });
 
@@ -452,7 +452,7 @@ test.describe('Phase 6 — driver operational controls', () => {
     await installPhase6DriverMock(page);
     await page.goto('/driver');
 
-    await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Bus P6', exact: true })).toBeVisible({
       timeout: 10000,
     });
 
@@ -473,7 +473,7 @@ test.describe('Phase 6 — driver operational controls', () => {
     await installPhase6DriverMock(page);
     await page.goto('/driver');
 
-    await expect(page.getByRole('heading', { name: 'Bus P6', level: 1 })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Bus P6', exact: true })).toBeVisible({
       timeout: 10000,
     });
 
@@ -487,7 +487,9 @@ test.describe('Phase 6 — driver operational controls', () => {
       timeout: 10000,
     });
     // The scan prompt returns.
-    await expect(page.getByRole('heading', { name: 'Scan the bus to start' })).toBeVisible({
+    await expect(
+      page.getByRole('button', { name: 'Scan bus QR to start', exact: true }),
+    ).toBeVisible({
       timeout: 10000,
     });
   });

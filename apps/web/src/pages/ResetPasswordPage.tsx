@@ -38,13 +38,19 @@ export function ResetPasswordPage() {
           </p>
 
           {(configError || error) && (
-            <div className="mt-5 rounded-lg border border-danger-100 bg-danger-50 p-4 text-sm font-medium text-danger-700">
+            <div
+              role="alert"
+              className="mt-5 rounded-lg border border-danger-100 bg-danger-50 p-4 text-sm font-medium text-danger-700"
+            >
               {configError ?? error}
             </div>
           )}
 
           {success && (
-            <div className="mt-5 rounded-lg border border-success-100 bg-success-50 p-4 text-sm font-medium text-success-700">
+            <div
+              role="status"
+              className="mt-5 rounded-lg border border-success-100 bg-success-50 p-4 text-sm font-medium text-success-700"
+            >
               {success}
             </div>
           )}
@@ -76,6 +82,7 @@ export function ResetPasswordPage() {
             </Button>
           </form>
           <Link
+            data-native-duplicate-back
             to="/login"
             className="mt-5 inline-flex text-sm font-semibold text-navy-700 hover:text-navy-900"
           >

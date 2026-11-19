@@ -1,3 +1,4 @@
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { MobileAppLinks } from '@/components/ui/MobileAppLinks';
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
@@ -129,7 +130,7 @@ export function LoginPage() {
               />
             </Field>
             <Field label="Password" htmlFor="password" required>
-              <Input
+              <PasswordInput
                 id="password"
                 type="password"
                 autoComplete="current-password"
@@ -154,7 +155,7 @@ export function LoginPage() {
               to="/reset-password"
               className="text-sm font-semibold text-navy-600 hover:text-navy-800"
             >
-              Reset password
+              Forgot password?
             </Link>
             <button
               type="button"
@@ -165,7 +166,11 @@ export function LoginPage() {
               Back to site
             </button>
           </div>
-          {appSurface === 'web' && <div className="mt-6"><MobileAppLinks /></div>}
+          {appSurface === 'web' && (
+            <div className="mt-6">
+              <MobileAppLinks />
+            </div>
+          )}
           <Link
             to="/privacy"
             className="mt-6 inline-flex text-sm font-semibold text-navy-700 underline underline-offset-4"

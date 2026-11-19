@@ -16,16 +16,18 @@ for (const role of ['driver', 'guardian'] as const) {
     else await installGuardianVisibilityMock(page);
     await page.goto(role === 'driver' ? '/driver' : '/parent');
     await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
-    await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
-    await expect(page.getByRole('link', { name: 'Privacy notice', exact: true })).toHaveCount(
-      1,
-    );
+    await page
+      .getByTestId('native-bottom-navigation')
+      .getByRole('link', { name: 'Account', exact: true })
+      .click();
+    await expect(page.getByRole('link', { name: 'Privacy notice', exact: true })).toHaveCount(1);
     await expect(
       page.getByRole('menuitem', { name: 'Privacy & account', exact: true }),
     ).toHaveCount(0);
     await page.getByRole('link', { name: 'Privacy notice', exact: true }).click();
     await expect(page).toHaveURL('/privacy');
-    await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
+    await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
     await expect(
       page.getByRole('heading', {
         name: role === 'driver' ? 'Driver privacy notice' : 'Guardian privacy notice',
@@ -35,7 +37,11 @@ for (const role of ['driver', 'guardian'] as const) {
 
     await page.getByRole('link', { name: 'Account deletion instructions', exact: true }).click();
     await expect(page).toHaveURL('/account-deletion');
-    await expect(page.getByTestId('native-bottom-navigation')).toBeVisible();
+    await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page).toHaveURL('/privacy');
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page).toHaveURL('/account');
   });
 }
 

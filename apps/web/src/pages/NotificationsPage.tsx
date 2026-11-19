@@ -83,9 +83,7 @@ export function NotificationsPage() {
     }
   }, [load, unreadCount]);
 
-  const admin =
-    profile?.role &&
-    ['tenant_admin', 'transportation_admin'].includes(profile.role);
+  const admin = profile?.role && ['tenant_admin', 'transportation_admin'].includes(profile.role);
   const portal =
     admin || profile?.role === 'platform_super_admin'
       ? 'admin'
@@ -120,6 +118,7 @@ export function NotificationsPage() {
     setDetail(null);
     setDetailError(null);
     if (!requestedId) {
+      markedFromLink.current.clear();
       setDetailLoading(false);
       return;
     }
@@ -247,19 +246,22 @@ export function NotificationsPage() {
             '-mx-3 -my-5 min-h-[calc(100vh-5rem)] bg-[var(--color-canvas)] px-3 py-5',
         )}
         data-ui="notification-inbox-page"
+        data-detail={requestedId ? 'true' : undefined}
       >
         {isRecipientMobile ? (
           <header className="mb-4" data-ui="notification-mobile-header">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-baseline gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-navy-900">Notification</h1>
+                <h1 className="text-xl font-bold tracking-tight text-navy-900">
+                  {requestedId ? 'Alert details' : 'Alerts'}
+                </h1>
                 {unreadCount > 0 ? (
                   <span className="shrink-0 text-[0.6875rem] font-semibold text-danger-600">
                     {unreadCount > 99 ? '99+' : unreadCount} new
                   </span>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1" data-ui="inbox-actions">
                 <Link
                   to={settingsPath}
                   aria-label="Notification settings"
@@ -459,6 +461,7 @@ export function NotificationsPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2
+                  data-ui="detail-eyebrow"
                   id="notification-detail-heading"
                   ref={detailHeadingRef}
                   tabIndex={-1}
@@ -470,6 +473,7 @@ export function NotificationsPage() {
               <Button
                 variant="ghost"
                 onClick={() => navigate('/notifications')}
+                data-native-duplicate-back
                 aria-label="Close notification details"
               >
                 <X className="h-5 w-5" />
@@ -515,7 +519,7 @@ export function NotificationsPage() {
             </p>
           </Card>
         ) : null}
-        {loading ? (
+        {isRecipientMobile && requestedId ? null : loading ? (
           <DataState title="Loading notifications" message="Checking your authorized inbox." />
         ) : error ? (
           <DataState title="Notifications unavailable" message={error} />
@@ -541,6 +545,7 @@ export function NotificationsPage() {
                   {isRecipientMobile ? (
                     <NotificationUpdateCard
                       item={item}
+                      onOpen={() => openNotification(item)}
                       onRead={() => void setReadState(item, true)}
                       onArchive={() => void archive(item)}
                     />

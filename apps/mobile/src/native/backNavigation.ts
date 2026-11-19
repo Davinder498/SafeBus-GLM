@@ -1,16 +1,25 @@
+import { nativeParent } from '@/components/navigation/NativeBackButton';
 import { App } from '@capacitor/app';
 
 export interface BackState {
   pathname: string;
+  search?: string;
   home: string;
   historyIndex: number;
 }
 
-export function backDestination({ pathname, home, historyIndex }: BackState): 'system' | 'history' | string {
+export function backDestination({
+  pathname,
+  search = '',
+  home,
+  historyIndex,
+}: BackState): 'system' | 'history' | string {
   // Top-level home and sign-in should hand Back to Android, including its preview.
   if (pathname === home || pathname === '/login' || pathname === '/') return 'system';
   if (historyIndex > 0) return 'history';
-  return home;
+  if (pathname === '/notifications' && new URLSearchParams(search).has('notification'))
+    return '/notifications';
+  return nativeParent(pathname, home === '/driver');
 }
 
 function overlay(): Element | null {
@@ -25,15 +34,17 @@ export async function installBackNavigation(
   let queue = Promise.resolve();
   let enabled: boolean | undefined;
   const refresh = () => {
-    queue = queue.catch(() => undefined).then(async () => {
-      if (disposed) return;
-      const nextEnabled = !!overlay() || backDestination(state()) !== 'system';
-      // Map/status updates also mutate the DOM; cross the native bridge only
-      // when ownership of Back actually changes.
-      if (nextEnabled === enabled) return;
-      await App.toggleBackButtonHandler({ enabled: nextEnabled });
-      enabled = nextEnabled;
-    });
+    queue = queue
+      .catch(() => undefined)
+      .then(async () => {
+        if (disposed) return;
+        const nextEnabled = !!overlay() || backDestination(state()) !== 'system';
+        // Map/status updates also mutate the DOM; cross the native bridge only
+        // when ownership of Back actually changes.
+        if (nextEnabled === enabled) return;
+        await App.toggleBackButtonHandler({ enabled: nextEnabled });
+        enabled = nextEnabled;
+      });
     void queue.catch(() => undefined);
   };
   const listener = await App.addListener('backButton', () => {
@@ -44,7 +55,9 @@ export async function installBackNavigation(
         const allowed = activeOverlay.dispatchEvent(new Event('cancel', { cancelable: true }));
         if (allowed) activeOverlay.close();
       } else {
-        const target = activeOverlay.contains(document.activeElement) ? document.activeElement! : activeOverlay;
+        const target = activeOverlay.contains(document.activeElement)
+          ? document.activeElement!
+          : activeOverlay;
         target.dispatchEvent(
           new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
         );
@@ -60,8 +73,12 @@ export async function installBackNavigation(
     refresh();
   });
   const observer = new MutationObserver(refresh);
-  observer.observe(document.body, { subtree: true, childList: true, attributes: true,
-    attributeFilter: ['open', 'aria-modal', 'role'] });
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['open', 'aria-modal', 'role'],
+  });
   refresh();
   return {
     refresh,

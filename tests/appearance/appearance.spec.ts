@@ -93,7 +93,9 @@ test('appearance follows System on mobile and preserves explicit choices', async
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expectNoWcagAaViolations(page, 'native account light');
     await page.setViewportSize({ width: 320, height: 700 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
     await page.screenshot({ path: info.outputPath('native-account.png'), fullPage: true });
     return;
   }
@@ -127,10 +129,7 @@ test('appearance follows System on mobile and preserves explicit choices', async
   await page.keyboard.press('Space');
   await expect(toggle).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(appBar).toHaveCSS(
-    'background-color',
-    mobile ? 'rgb(23, 43, 58)' : 'rgb(24, 35, 47)',
-  );
+  await expect(appBar).toHaveCSS('background-color', 'rgb(24, 35, 47)');
   await page.reload();
   await expect(toggle).toBeChecked();
   await page.emulateMedia({ colorScheme: 'light' });
@@ -153,15 +152,16 @@ test('unavailable preference storage keeps the settings toggle usable', async ({
       return original.call(this, key, value);
     };
   });
-  await page.goto(
-    info.project.name === 'android-webview' ? '/account' : '/admin/settings',
-  );
+  await page.goto(info.project.name === 'android-webview' ? '/account' : '/admin/settings');
   if (info.project.name === 'android-webview') {
     await page.getByRole('button', { name: /Appearance/ }).click();
     await page.getByRole('radio', { name: 'Dark', exact: true }).check();
     await page.getByRole('button', { name: 'Done', exact: true }).click();
   } else {
-    await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+    await page
+      .locator('[data-ui=appearance-settings]')
+      .getByRole('switch', { name: 'Dark mode' })
+      .click();
   }
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
@@ -172,9 +172,7 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
 }, info) => {
   if (info.project.name === 'android-webview') await installGuardianVisibilityMock(page);
   else await installAdminWorkflowMock(page);
-  await page.goto(
-    info.project.name === 'android-webview' ? '/account' : '/admin/settings',
-  );
+  await page.goto(info.project.name === 'android-webview' ? '/account' : '/admin/settings');
   const other = await context.newPage();
   await installLocalOnlyBoundary(other);
   await other.goto(info.project.name === 'web' ? '/' : '/login');
@@ -184,7 +182,10 @@ test('cross-tab changes preserve fixed public web appearance and the saved dashb
     await page.getByRole('radio', { name: 'Dark', exact: true }).check();
     await page.getByRole('button', { name: 'Done', exact: true }).click();
   } else {
-    await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+    await page
+      .locator('[data-ui=appearance-settings]')
+      .getByRole('switch', { name: 'Dark mode' })
+      .click();
   }
   await expect(other.locator('html')).toHaveAttribute(
     'data-theme',
@@ -262,7 +263,10 @@ for (const width of [1280, 390]) {
       'background-color',
       'rgba(255, 255, 255, 0.95)',
     );
-    await expect(page.locator('[data-ui=public-app-bar] .sb-primary-action')).toHaveCSS('background-color', 'rgb(29, 78, 216)');
+    await expect(page.locator('[data-ui=public-app-bar] .sb-primary-action')).toHaveCSS(
+      'background-color',
+      'rgb(29, 78, 216)',
+    );
     await expect(page.getByRole('switch', { name: 'Dark mode' })).toHaveCount(0);
     for (const name of ['Contact', 'Privacy']) {
       await page.locator('footer').getByRole('link', { name, exact: true }).click();
@@ -292,10 +296,16 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
           : '/admin/settings',
     );
     if (!mobile) {
-      await expect(page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Account', exact: true })).toHaveAttribute('aria-current', 'page');
+      await expect(
+        page
+          .getByRole('navigation', { name: 'Settings sections' })
+          .getByRole('link', { name: 'Account', exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
       await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(1);
       await page.goto('/admin/settings/notifications');
-      await expect(page.getByRole('heading', { name: 'Notification preferences', exact: true })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Notification preferences', exact: true }),
+      ).toBeVisible();
       await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(0);
       await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(0);
       await page.goto('/admin/settings');
@@ -303,23 +313,23 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(mobile ? 0 : 1);
     await expect(page.locator('[data-ui=app-bar]')).toHaveCSS(
       'background-color',
-      mobile ? 'rgb(23, 43, 58)' : 'rgb(24, 35, 47)',
+      'rgb(24, 35, 47)',
     );
     if (!mobile) {
       await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
         'background-color',
         'rgb(24, 35, 47)',
       );
-      await expect(page.getByRole('heading', { name: 'Standalone service announcements', exact: true })).toHaveCSS(
-        'color',
-        'rgb(232, 238, 245)',
-      );
+      await expect(
+        page.getByRole('heading', { name: 'Standalone service announcements', exact: true }),
+      ).toHaveCSS('color', 'rgb(232, 238, 245)');
     }
     await expectNoWcagAaViolations(page, `${role} dark settings`);
     await page.screenshot({ path: info.outputPath(role + '-dark-settings.png'), fullPage: true });
     if (mobile) {
       await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
-      await page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Account', exact: true }).click();
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      await expect(page).toHaveURL('/account');
       await page.getByRole('button', { name: /Appearance/ }).click();
       const appearanceDialog = page.getByRole('dialog', { name: 'Appearance', exact: true });
       await expect(appearanceDialog).toBeVisible();
@@ -333,11 +343,20 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
       await expect(page.getByRole('button', { name: /Appearance/ })).toBeFocused();
     } else {
       await page.locator('[data-ui=dropdown] > button').click();
-      await expect(page.locator('[data-ui=dropdown-panel]')).toHaveCSS('background-color', 'rgb(24, 35, 47)');
+      await expect(page.locator('[data-ui=dropdown-panel]')).toHaveCSS(
+        'background-color',
+        'rgb(24, 35, 47)',
+      );
       await page.keyboard.press('Escape');
-      await page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' }).click();
+      await page
+        .locator('[data-ui=appearance-settings]')
+        .getByRole('switch', { name: 'Dark mode' })
+        .click();
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-      await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+      await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)',
+      );
     }
   });
 }
@@ -363,12 +382,19 @@ test('platform pricing forms, dropdowns and confirmation dialogs use the same da
   await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(0);
   await expect(page.locator('[data-ui=account-security-card]')).toHaveCount(0);
   await page.locator('header button[aria-haspopup="menu"]').click();
-  await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Account security', exact: true })).toHaveCount(
+    0,
+  );
   await page.keyboard.press('Escape');
-  await page.getByRole('navigation', { name: 'Primary', exact: true }).getByRole('link', { name: 'Account', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Primary', exact: true })
+    .getByRole('link', { name: 'Account', exact: true })
+    .click();
   await expect(page).toHaveURL('/account/security');
   await expect(page.getByRole('heading', { name: 'Account security', exact: true })).toBeVisible();
-  const toggle = page.locator('[data-ui=appearance-settings]').getByRole('switch', { name: 'Dark mode' });
+  const toggle = page
+    .locator('[data-ui=appearance-settings]')
+    .getByRole('switch', { name: 'Dark mode' });
   await expect(toggle).toBeChecked();
   await toggle.click();
   await expect(toggle).not.toBeChecked();

@@ -1,3 +1,8 @@
+import {
+  NativeBackButton,
+  isNativeRoot,
+  nativeParent,
+} from '@/components/navigation/NativeBackButton';
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate, type NavLinkRenderProps } from 'react-router';
 import {
@@ -322,7 +327,7 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const displayName = safeBusDisplayText(profile?.full_name ?? 'Account');
   const unreadCount = useContext(NotificationContext)?.unreadCount ?? 0;
   const appSurface = useAppSurface();
@@ -381,6 +386,12 @@ export function DashboardLayout({
 
   const navigationMode = getDashboardNavigationMode(appSurface, portal);
   const usesBottomTabs = navigationMode === 'bottom-tabs';
+  const nativeRoot = isNativeRoot(pathname, portal === 'driver', search);
+  const showBottomTabs = usesBottomTabs && nativeRoot;
+  const parent =
+    pathname === '/notifications' && new URLSearchParams(search).has('notification')
+      ? '/notifications'
+      : nativeParent(pathname, portal === 'driver');
   const bottomTabItems = portal === 'driver' ? driverNativeNavItems : guardianNativeNavItems;
 
   async function handleLogout() {
@@ -406,6 +417,7 @@ export function DashboardLayout({
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
+      data-native-child={usesBottomTabs && !nativeRoot ? 'true' : undefined}
     >
       {/* Top header */}
       <header
@@ -425,6 +437,7 @@ export function DashboardLayout({
           )}
           data-ui="app-bar-inner"
         >
+          {usesBottomTabs && !nativeRoot && <NativeBackButton fallback={parent} />}
           {/* Mobile menu button */}
           {!usesBottomTabs && (
             <button
@@ -448,17 +461,15 @@ export function DashboardLayout({
           {/* Brand */}
           <Link
             to="/"
+            data-native-brand={usesBottomTabs ? 'true' : undefined}
             className={cn(
               'min-w-0 items-center gap-2.5',
               portal === 'admin' ? 'flex lg:hidden' : 'flex',
             )}
           >
             <span className="flex min-w-0 flex-col leading-tight">
-              <BrandMark
-                className="text-xl"
-                inverse={portal !== 'admin' && !(usesBottomTabs && pathname === '/account')}
-              />
-              {portal !== 'admin' && !(usesBottomTabs && pathname === '/account') && (
+              <BrandMark className="text-xl" inverse={portal !== 'admin' && !usesBottomTabs} />
+              {portal !== 'admin' && !usesBottomTabs && (
                 <span className="hidden text-xs text-white/80 min-[360px]:block">
                   {portalTitles[portal]} portal
                 </span>
@@ -482,26 +493,29 @@ export function DashboardLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
-            {portal !== 'parent' && !(usesBottomTabs && pathname === '/account') && (
-              <Link
-                to="/notifications"
-                data-ui="top-notifications"
-                className={cn(
-                  'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
-                  portal === 'admin'
-                    ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]'
-                    : 'text-white hover:bg-white/10',
-                )}
-                aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-danger-strong)] px-1 text-center text-[10px] font-bold leading-5 text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                ) : null}
-              </Link>
-            )}
+            {portal !== 'parent' &&
+              (!usesBottomTabs || (nativeRoot && pathname !== '/account')) && (
+                <Link
+                  to="/notifications"
+                  data-ui="top-notifications"
+                  className={cn(
+                    'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors',
+                    portal === 'admin'
+                      ? 'text-[var(--color-text)] hover:bg-[var(--color-raised)]'
+                      : 'text-white hover:bg-white/10',
+                  )}
+                  aria-label={
+                    unreadCount ? `Notifications, ${unreadCount} unread` : 'Notifications'
+                  }
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-[var(--color-danger-strong)] px-1 text-center text-[10px] font-bold leading-5 text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Link>
+              )}
 
             {!usesBottomTabs && (
               <DropdownMenu
@@ -675,7 +689,7 @@ export function DashboardLayout({
           className="min-w-0 max-w-full flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:px-8"
           data-ui="mobile-main"
           style={
-            usesBottomTabs
+            showBottomTabs
               ? { paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }
               : undefined
           }
@@ -695,7 +709,7 @@ export function DashboardLayout({
         </main>
       </div>
 
-      {usesBottomTabs && (
+      {showBottomTabs && (
         <BottomTabNav items={bottomTabItems} portal={portal} unreadCount={unreadCount} />
       )}
     </div>

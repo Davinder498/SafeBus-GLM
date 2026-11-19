@@ -104,6 +104,7 @@ export function GuardianBusDetailPage() {
     >
       <div className="mx-auto max-w-3xl space-y-5" data-ui="guardian-bus-detail-page">
         <Link
+          data-native-duplicate-back
           to="/guardian/routes"
           className="inline-flex min-h-12 items-center gap-2 rounded-xl px-2 text-sm font-bold text-navy-700 hover:bg-navy-50"
         >
@@ -163,7 +164,7 @@ function BusDetails({
       >
         <div className="p-5 text-[var(--color-text)] sm:p-6" data-ui="guardian-bus-detail-summary">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3" data-ui="bus-detail-repeat-heading">
               <GuardianIconTile size="lg">
                 <BusFront className="h-7 w-7" aria-hidden />
               </GuardianIconTile>
@@ -185,7 +186,10 @@ function BusDetails({
               <p className="text-xs font-semibold text-navy-700">License plate</p>
               <p className="mt-1 font-bold">{group.licensePlate ?? 'Not available'}</p>
             </div>
-            <div className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3">
+            <div
+              className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3"
+              data-ui="bus-detail-student-count"
+            >
               <p className="text-xs font-semibold text-navy-700">Students</p>
               <p className="mt-1 font-bold">{group.students.length}</p>
             </div>
@@ -244,7 +248,7 @@ function BusDetails({
         to={liveMapPath}
         className="sb-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-bold shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2"
       >
-        <MapPin className="h-5 w-5" aria-hidden /> See live map
+        <MapPin className="h-5 w-5" aria-hidden /> View live map
       </Link>
     </>
   );

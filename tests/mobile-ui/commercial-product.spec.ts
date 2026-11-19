@@ -79,7 +79,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
     expect(writes).toEqual([]);
     await page.getByLabel(/I confirm the pre-trip inspection/).check();
     await page.getByTestId('driver-confirm-inspection-start').click();
-    await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bus 12', level: 2 })).toBeVisible();
     await expect(
       page.getByText('Bus 12 started. This phone is now its GPS.', { exact: true }),
     ).toBeVisible();
@@ -122,7 +122,7 @@ test.describe('Commercial mobile journeys and degraded behavior', () => {
     await expect(student).toContainText('Avery Johnson');
     await expect(student).toContainText('Bus 42');
     await expect(page.getByText('51.0447')).toHaveCount(0);
-    await page.getByRole('link', { name: 'View details for Bus 42' }).click();
+    await page.getByRole('link', { name: /View (?:bus )?details for Bus 42/ }).click();
     await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
     await expect(page.getByText('Avery Johnson', { exact: true })).toBeVisible();
 
@@ -217,16 +217,14 @@ test.describe('Commercial mobile WCAG 2.2 AA gate', () => {
   test('driver bus-scan surface', async ({ page }) => {
     await installSupabaseMock(page);
     await page.goto('/driver');
-    await expect(
-      page.getByRole('heading', { name: 'Scan the bus to start', level: 1 }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Trip', level: 1 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile driver bus scan');
   });
 
   test('driver active-trip surface', async ({ page }) => {
     await installSupabaseMock(page, { withActiveTrip: true });
     await page.goto('/driver');
-    await expect(page.getByRole('heading', { name: 'Bus 12', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bus 12', level: 2 })).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile driver active trip');
   });
 
@@ -238,7 +236,7 @@ test.describe('Commercial mobile WCAG 2.2 AA gate', () => {
     await page.goto('/guardian/routes');
     await expect(page.getByTestId('guardian-student-bus-card')).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile guardian assigned buses');
-    await page.getByRole('link', { name: 'View details for Bus 42' }).click();
+    await page.getByRole('link', { name: /View (?:bus )?details for Bus 42/ }).click();
     await expect(page.locator('[data-ui="guardian-service-line"]')).toBeVisible();
     await expectNoWcagAaViolations(page, 'Mobile guardian bus detail');
   });
