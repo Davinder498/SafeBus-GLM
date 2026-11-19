@@ -111,6 +111,9 @@ async function installNotificationInboxMock(
       body: JSON.stringify(archived ? [] : [{ ...notification, read_at: readAt }]),
     }),
   );
+  await page.route('**/rest/v1/rpc/get_user_notification_detail', (route) =>
+    route.fulfill({ json: archived ? [] : [{ ...notification, read_at: readAt }] }),
+  );
   await page.route('**/rest/v1/rpc/mark_user_notifications_read', (route) => {
     readCalls++;
     readAt = '2026-10-18T03:30:00Z';
@@ -162,7 +165,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   );
   await expect(page.getByRole('heading', { name: 'Bus number and license plate' })).toHaveCount(0);
   await expect(page.getByText('Active', { exact: true })).toBeVisible();
-  const homeBusLink = page.getByRole('link', { name: 'View details for Bus 42' });
+  const homeBusLink = page.getByRole('link', { name: /View (?:bus )?details for Bus 42/ });
   const homeBusCard = page.getByTestId('guardian-home-bus-card');
   await expect(homeBusLink).toHaveAttribute('href', '/guardian/buses/42');
   await expect(homeBusCard).not.toContainText('License plate');
@@ -205,7 +208,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page).toHaveURL('/guardian/buses/42');
   await expect(page.getByText('License plate')).toBeVisible();
   await expect(page.getByText('TEST-42')).toBeVisible();
-  await page.getByRole('link', { name: 'See live map' }).click();
+  await page.getByRole('link', { name: 'View live map' }).click();
   await expect(page.getByTestId('guardian-fullscreen-map')).toBeVisible();
   await expect(
     page.getByTestId('guardian-fullscreen-map').getByTestId('safebus-wordmark'),
@@ -325,7 +328,9 @@ test('guardian home keeps each linked student with their own bus and stops', asy
   await expect(cards.nth(0)).toContainText('Cedar Avenue');
   await expect(cards.nth(0)).not.toContainText('Oak Street');
   await expect(cards.nth(1)).toContainText('Morgan Johnson');
-  await expect(cards.nth(1)).toContainText('Bus 27');
+  await expect(
+    page.getByTestId('guardian-student-bus-card').filter({ has: cards.nth(1) }),
+  ).toContainText('Bus 27');
   await expect(cards.nth(1)).toContainText('Oak Street');
   await expect(cards.nth(1)).not.toContainText('Cedar Avenue');
 });
@@ -428,12 +433,12 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS('position', 'fixed');
   const bus42Card = page
-    .getByTestId('guardian-home-bus-card')
+    .getByTestId('guardian-student-bus-card')
     .filter({ has: page.getByRole('heading', { name: 'Bus 42', exact: true }) });
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
   await expect(bus42Card.getByText('Morgan Johnson')).toBeVisible();
   await expect(bus42Card.getByText('License plate')).toHaveCount(0);
-  await expect(bus42Card.getByText('View bus details')).toHaveCount(0);
+  await expect(bus42Card.getByText('View bus details')).toBeVisible();
   await expect(bus42Card.locator('[data-ui="guardian-icon-tile"]')).toHaveCSS(
     'background-color',
     'rgb(23, 43, 58)',
@@ -501,15 +506,15 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await page.locator('[data-ui="guardian-service-line-card"]').screenshot({
     path: testInfo.outputPath('guardian-service-line.png'),
   });
-  await expect(page.getByRole('link', { name: 'See live map' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'View live map' })).toHaveAttribute(
     'href',
     '/guardian/live-map?bus=42',
   );
-  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS(
+  await expect(page.getByRole('link', { name: 'View live map' })).toHaveCSS(
     'background-color',
     'rgb(29, 78, 216)',
   );
-  await expect(page.getByRole('link', { name: 'See live map' })).toHaveCSS(
+  await expect(page.getByRole('link', { name: 'View live map' })).toHaveCSS(
     'color',
     'rgb(255, 255, 255)',
   );
@@ -573,7 +578,7 @@ test('guardian bus detail remains useful while the route contract is unavailable
   await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
   await expect(page.getByText('Route line is not available')).toBeVisible();
   await expect(page.getByText('private backend error')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'See live map' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View live map' })).toBeVisible();
 });
 
 test('mobile notification settings autosave independent channel sections with switches', async ({
@@ -637,13 +642,8 @@ test('mobile notification settings autosave independent channel sections with sw
   await push.click();
   await expect.poll(() => mock.getDeliveryPreferenceSaveCount()).toBe(5);
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
-  const settingsTab = page
-    .getByTestId('native-bottom-navigation')
-    .getByRole('link', { name: 'Account' });
-  await expect(settingsTab).toHaveAttribute('aria-current', 'page');
-  await expect(
-    page.getByTestId('native-bottom-navigation').getByRole('link', { name: 'Alerts' }),
-  ).not.toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
 
   await expect(page.getByText('Registered Android devices', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Quiet hours', { exact: true })).toHaveCount(0);
@@ -912,11 +912,9 @@ test('driver support page shows one resolved support contact', async ({ page }) 
   await expect(page).toHaveURL('/driver/settings');
   await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
   await expect(page.locator('[data-ui="appearance-settings"]')).toHaveCount(0);
-  await expect(
-    page
-      .getByTestId('native-bottom-navigation')
-      .getByRole('link', { name: 'Account', exact: true }),
-  ).toHaveAttribute('href', '/account');
+  await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(page).toHaveURL('/account');
 });
 
 test('driver support page avoids a configuration dead end when no contact is returned', async ({
@@ -1020,8 +1018,8 @@ for (const path of ['/privacy', '/account-deletion']) {
     await page.evaluate(() => {
       document.documentElement.style.setProperty('--safe-area-inset-top', '32px');
     });
-    const header = page.locator('[data-ui="public-app-bar"]');
-    await expect(header).toHaveCSS('position', 'fixed');
+    const header = page.locator('[data-ui="native-public-header"]');
+    await expect(header).toHaveCSS('position', 'sticky');
     await expect(header).toHaveCSS('padding-top', '32px');
     await expect(page.locator('main [data-ui="card"]')).toHaveCSS(
       'border-top-color',

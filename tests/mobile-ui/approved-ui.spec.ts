@@ -23,6 +23,8 @@ for (const role of ['guardian', 'driver'] as const) {
     ]) {
       await page.getByRole('link', { name: label, exact: true }).click();
       await expect(page).toHaveURL(path);
+      await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible();
+      await expect(page.locator('[data-ui="page-title"], main h1').first()).toBeVisible();
       await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
       await expectUsableMobileLayout(page);
       await page.screenshot({
@@ -95,6 +97,11 @@ for (const role of ['guardian', 'driver'] as const) {
         '/driver/record-exception': 'driver-exception-types',
       };
       if (readyMarkers[path]) await expect(page.getByTestId(readyMarkers[path])).toBeVisible();
+      const privacyAcknowledgement = page.getByRole('button', {
+        name: 'I understand',
+        exact: true,
+      });
+      if (await privacyAcknowledgement.isVisible()) await privacyAcknowledgement.click();
       await expectUsableMobileLayout(page);
       await page.screenshot({
         path: info.outputPath(path.replaceAll('/', '-') + '.png'),

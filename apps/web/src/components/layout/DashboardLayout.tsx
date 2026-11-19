@@ -417,6 +417,7 @@ export function DashboardLayout({
       data-ui="dashboard-shell"
       data-app-surface={appSurface}
       data-portal={portal}
+      data-native-child={usesBottomTabs && !nativeRoot ? 'true' : undefined}
     >
       {/* Top header */}
       <header

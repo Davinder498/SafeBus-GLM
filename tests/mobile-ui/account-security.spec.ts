@@ -139,7 +139,7 @@ for (const role of ['guardian', 'driver'] as const) {
       .getByRole('link', { name: 'Account', exact: true })
       .click();
     await page.getByRole('link', { name: 'Password & security', exact: true }).click();
-    await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
+    await page.getByRole('link', { name: /Two-step verification/ }).click();
     await expect(page.locator('[data-ui="app-bar"]')).toBeVisible();
     await expect(page.getByTestId('native-bottom-navigation')).toHaveCount(0);
     await expect(page.locator('[data-ui="public-app-bar"]')).toHaveCount(0);
@@ -151,15 +151,13 @@ for (const role of ['guardian', 'driver'] as const) {
     await page.locator('#mfa-code').fill('123456');
     await page.getByRole('button', { name: 'Enable MFA', exact: true }).click();
     await expect(page).toHaveURL('/account/security');
-    await expect(
-      page.getByRole('link', { name: 'Manage multi-factor authentication' }),
-    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /Two-step verification/ })).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`${role}-account-security.png`),
       fullPage: true,
       animations: 'disabled',
     });
-    await page.getByRole('link', { name: 'Manage multi-factor authentication' }).click();
+    await page.getByRole('link', { name: /Two-step verification/ }).click();
     await page.getByRole('button', { name: 'Remove authenticator', exact: true }).click();
     expect(fixture.removals()).toBe(0);
     await page.locator('#mfa-code').fill('111111');
@@ -204,7 +202,7 @@ for (const role of ['guardian', 'driver'] as const) {
     await expect(page.locator('[data-ui="account-security-card"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('link', { name: 'Password & security', exact: true }).click();
-    await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
+    await page.getByRole('link', { name: /Two-step verification/ }).click();
     await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(page).toHaveURL('/account/security');
@@ -271,7 +269,7 @@ for (const role of ['guardian', 'driver'] as const) {
         .click();
       await page.getByRole('link', { name: 'Password & security', exact: true }).click();
       await expect(page).toHaveURL('/account/security');
-      await page.getByRole('link', { name: 'Enable multi-factor authentication' }).click();
+      await page.getByRole('link', { name: /Two-step verification/ }).click();
       await expect(page).toHaveURL('/account/security/mfa');
       await expect(page.getByRole('button', { name: 'Set up authenticator app' })).toBeVisible();
       const dimensions = await page.evaluate(() => ({

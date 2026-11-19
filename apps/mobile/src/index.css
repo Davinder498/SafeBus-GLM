@@ -2114,6 +2114,9 @@ html[data-app-surface='native-mobile'] [data-ui='app-bar'][data-account-root='tr
 }
 
 /* Owner-approved November 19 Android screen family. Keep semantic dark colors. */
+html[data-app-surface='native-mobile'] [data-native-child='true'] [data-ui='mobile-main'] {
+  margin-left: 0;
+}
 html[data-app-surface='native-mobile'] [data-native-duplicate-back] {
   display: none !important;
 }
@@ -2125,10 +2128,33 @@ html[data-app-surface='native-mobile'] [data-ui='login-shell'] {
   color: var(--color-text);
 }
 html[data-app-surface='native-mobile'] [data-ui='app-bar'] {
+  --color-wordmark: var(--color-text);
   background: var(--color-surface) !important;
   color: var(--color-text);
   border-color: var(--color-border);
   box-shadow: none;
+}
+html[data-app-surface='native-mobile'] [data-ui='native-public-header'] {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+}
+html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'] {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+}
+html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card']::before,
+html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card']::after {
+  display: none;
+}
+html[data-app-surface='native-mobile'] li[data-testid='guardian-home-student-card'] {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 html[data-app-surface='native-mobile'] [data-ui='app-bar-inner'] {
   position: relative;

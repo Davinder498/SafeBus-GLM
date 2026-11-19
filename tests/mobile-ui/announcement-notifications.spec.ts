@@ -63,11 +63,13 @@ for (const role of ['guardian', 'driver'] as const) {
     });
     await detail.getByRole('button', { name: 'Mark unread', exact: true }).click();
     await expect(detail.getByRole('button', { name: 'Mark read', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Close notification details' }).click();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
     const card = page.locator('[data-ui="notification-card"]');
     await expect(card).toHaveCount(1);
     await expect(card.getByText('Service update', { exact: true })).toBeVisible();
     await card.getByRole('button', { name: `Update: ${notice().body}` }).click();
+    await expect(detail.getByRole('button', { name: 'Mark unread', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(card.getByText('Read', { exact: true })).toBeVisible();
     await card.getByRole('button', { name: 'Archive Service update', exact: true }).click();
     await expect(card).toHaveCount(0);

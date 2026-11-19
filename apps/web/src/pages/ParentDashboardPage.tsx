@@ -109,7 +109,7 @@ export function ParentDashboardPage() {
                     )}
                     <Link
                       className="inline-flex min-h-12 items-center font-semibold underline"
-                      aria-label={`View details for Bus ${group.busNumber}`}
+                      aria-label={`View bus details for Bus ${group.busNumber}`}
                       to={guardianBusDetailsPath(group.busNumber)}
                     >
                       View bus details
