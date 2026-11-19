@@ -99,7 +99,10 @@ for (const theme of ['light', 'dark']) {
     await expect(page.getByText('View bus details', { exact: true })).toHaveCount(0);
     await expectUsableMobileLayout(page);
     await expectNoWcagAaViolations(page, `refined buses ${theme}`);
-    await page.screenshot({ path: info.outputPath(`buses-${theme}.png`), fullPage: true });
+    await page.screenshot({ path: info.outputPath(`buses-${theme}.png`) });
+    await page.getByTestId('guardian-assigned-student').last().scrollIntoViewIfNeeded();
+    await page.screenshot({ path: info.outputPath(`buses-scrolled-${theme}.png`) });
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.setViewportSize({ width: 320, height: 700 });
     await expectUsableMobileLayout(page);
     await page.screenshot({ path: info.outputPath(`buses-narrow-${theme}.png`), fullPage: true });

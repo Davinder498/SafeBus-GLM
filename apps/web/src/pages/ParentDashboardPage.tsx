@@ -27,7 +27,7 @@ function formatLocationAge(recordedAt: string): string {
   const time = new Date(recordedAt).getTime();
   if (!Number.isFinite(time)) return 'time unavailable';
   const seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
-  if (seconds < 60) return `${seconds} seconds ago`;
+  if (seconds < 60) return `${seconds} ${seconds === 1 ? 'second' : 'seconds'} ago`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
   return new Date(time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
