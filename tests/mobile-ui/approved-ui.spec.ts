@@ -124,6 +124,10 @@ for (const role of ['guardian', 'driver'] as const) {
         '/driver/record-exception': 'driver-exception-types',
       };
       if (readyMarkers[path]) await expect(page.getByTestId(readyMarkers[path])).toBeVisible();
+      await expect(page.getByTestId('safebus-wordmark').last()).toHaveCSS(
+        'color',
+        'rgb(23, 43, 58)',
+      );
       const privacyAcknowledgement = page.getByRole('button', {
         name: 'I understand',
         exact: true,

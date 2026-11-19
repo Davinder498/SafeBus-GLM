@@ -2145,11 +2145,20 @@ html[data-app-surface='native-mobile'] [data-ui='native-public-header'] {
 html[data-app-surface='native-mobile'] [data-ui='public-shell'] {
   padding-top: calc(4rem + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
 }
-html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'] {
+html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card'],
+html[data-app-surface='native-mobile'] [data-ui='guardian-bus-detail-hero'],
+html[data-app-surface='native-mobile'] [data-ui='guardian-service-line-card'] {
   background: var(--color-surface) !important;
   border: 1px solid var(--color-border) !important;
   border-radius: 1rem !important;
   box-shadow: none !important;
+}
+html[data-app-surface='native-mobile'] [data-ui='bus-detail-repeat-heading'],
+html[data-app-surface='native-mobile'] [data-ui='bus-detail-student-count'],
+html[data-app-surface='native-mobile']
+  [data-ui='guardian-bus-detail-page']
+  [data-ui='page-description'] {
+  display: none;
 }
 html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card']::before,
 html[data-app-surface='native-mobile'] [data-ui='guardian-bus-card']::after {

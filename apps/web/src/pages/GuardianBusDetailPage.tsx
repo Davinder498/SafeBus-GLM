@@ -164,7 +164,7 @@ function BusDetails({
       >
         <div className="p-5 text-[var(--color-text)] sm:p-6" data-ui="guardian-bus-detail-summary">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3" data-ui="bus-detail-repeat-heading">
               <GuardianIconTile size="lg">
                 <BusFront className="h-7 w-7" aria-hidden />
               </GuardianIconTile>
@@ -186,7 +186,10 @@ function BusDetails({
               <p className="text-xs font-semibold text-navy-700">License plate</p>
               <p className="mt-1 font-bold">{group.licensePlate ?? 'Not available'}</p>
             </div>
-            <div className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3">
+            <div
+              className="rounded-2xl border border-navy-900/10 bg-navy-900/5 p-3"
+              data-ui="bus-detail-student-count"
+            >
               <p className="text-xs font-semibold text-navy-700">Students</p>
               <p className="mt-1 font-bold">{group.students.length}</p>
             </div>
