@@ -1,0 +1,295 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261120224212_compact_shared_tracking_schedule.sql",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.dispatch_compact_shared_tracking()",
+      "before": {
+        "md5": null
+      },
+      "after": {
+        "md5": "422678485769f82dd5b867121838c0d9"
+      },
+      "owner": "postgres",
+      "acl": ["postgres=X/postgres"]
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "jobs": [
+    {
+      "name": "safebus-shared-tracking-00",
+      "before": {
+        "name": "safebus-shared-tracking-00",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "ad1d35cdccb29b3b8040a26e8a0527c4"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-00",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "11f633bda106c292a23f7b5c8e70f2b2"
+      },
+      "restoreCommand": "\n  set local statement_timeout = '750ms';\n  set local lock_timeout = '100ms';\n  select safebus_private.dispatch_shared_tracking(0, 256);\n"
+    },
+    {
+      "name": "safebus-shared-tracking-01",
+      "before": {
+        "name": "safebus-shared-tracking-01",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "54c296de4f769940f80d7fd78faddd3e"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-01",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "54c296de4f769940f80d7fd78faddd3e"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-02",
+      "before": {
+        "name": "safebus-shared-tracking-02",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "17a3d97e349cc402b9608cb14d05f1ea"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-02",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "17a3d97e349cc402b9608cb14d05f1ea"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-03",
+      "before": {
+        "name": "safebus-shared-tracking-03",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "c4839eb042490a4cece5033c185b767c"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-03",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "c4839eb042490a4cece5033c185b767c"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-04",
+      "before": {
+        "name": "safebus-shared-tracking-04",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "062aacca95bc705d071ab76aa4e24647"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-04",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "062aacca95bc705d071ab76aa4e24647"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-05",
+      "before": {
+        "name": "safebus-shared-tracking-05",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "e9847550c34139b1f7a8f048bbd317ba"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-05",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "e9847550c34139b1f7a8f048bbd317ba"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-06",
+      "before": {
+        "name": "safebus-shared-tracking-06",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "a3921253d77d0bac13c539c108042cd5"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-06",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "a3921253d77d0bac13c539c108042cd5"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-07",
+      "before": {
+        "name": "safebus-shared-tracking-07",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "364f1f6a6f12c4f9ecb506ab856f51d9"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-07",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "364f1f6a6f12c4f9ecb506ab856f51d9"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-08",
+      "before": {
+        "name": "safebus-shared-tracking-08",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "a4cd4028c05e3364a11f61cc3df734d4"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-08",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "a4cd4028c05e3364a11f61cc3df734d4"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-09",
+      "before": {
+        "name": "safebus-shared-tracking-09",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "46685815c3013fd03efa62e1e6646bde"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-09",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "46685815c3013fd03efa62e1e6646bde"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-10",
+      "before": {
+        "name": "safebus-shared-tracking-10",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b318ade2059967d1f4ff044575845646"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-10",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "b318ade2059967d1f4ff044575845646"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-11",
+      "before": {
+        "name": "safebus-shared-tracking-11",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "e4eefe5b91b4aed3ab240f7173aa36d8"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-11",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "e4eefe5b91b4aed3ab240f7173aa36d8"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-12",
+      "before": {
+        "name": "safebus-shared-tracking-12",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "be1edcefbc441d456bc7844643956aef"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-12",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "be1edcefbc441d456bc7844643956aef"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-13",
+      "before": {
+        "name": "safebus-shared-tracking-13",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "4b75a15c304aee25cc21c3a6e7e6011c"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-13",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "4b75a15c304aee25cc21c3a6e7e6011c"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-14",
+      "before": {
+        "name": "safebus-shared-tracking-14",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "22c90ff38d85bf5dbdad237afb467990"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-14",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "22c90ff38d85bf5dbdad237afb467990"
+      }
+    },
+    {
+      "name": "safebus-shared-tracking-15",
+      "before": {
+        "name": "safebus-shared-tracking-15",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "ab0748bb77afbda440bf7d033e740d07"
+      },
+      "after": {
+        "name": "safebus-shared-tracking-15",
+        "schedule": "1 second",
+        "active": false,
+        "command_md5": "ab0748bb77afbda440bf7d033e740d07"
+      }
+    },
+    {
+      "name": "safebus-tracking-invalidation-dispatcher",
+      "before": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-dispatcher",
+        "schedule": "1 second",
+        "active": true,
+        "command_md5": "b12e56fbe4fcb12833769e371a155ce2"
+      }
+    },
+    {
+      "name": "safebus-tracking-invalidation-history",
+      "before": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      }
+    }
+  ],
+  "migrationSha256": "ba16fd09f95438c9a99fc8f61a909f8e37d488c40dd50cd034148369c9fb3d25"
+}

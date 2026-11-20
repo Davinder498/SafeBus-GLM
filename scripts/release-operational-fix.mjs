@@ -42,6 +42,7 @@ const manifests = {
   tracking_batch: 'config/pending/tracking-batch.json',
   shared_bus_feed: 'config/pending/shared-bus-feed.json',
   independent_shared_tracking: 'config/pending/independent-shared-tracking.json',
+  compact_shared_tracking: 'config/pending/compact-shared-tracking.json',
   shared_route_geometry: 'config/pending/shared-route-geometry.json',
   shared_live_progress: 'config/pending/shared-live-progress.json',
   calendar: 'config/pending/route-service-calendar.json',
