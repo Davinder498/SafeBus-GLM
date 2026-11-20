@@ -90,3 +90,14 @@ on pale blue and light icons on navy. Device verification remains required.
 The expanded dark-mode checks also cover loaded profile initials and sign-out
 text. Avatars use the action/on-action colour pair; sign-out uses danger-text,
 not the dark button-fill colour as text.
+
+## Home refresh icon — owner-approved correction, November 19
+
+Guardian Home uses a small refresh icon directly at the top right of the app bar,
+replacing its refresh-only overflow menu. Keep pull-down refresh and the existing
+refresh progress announcement. Both controls invoke the same refresh operation.
+The icon has a 48-by-48 CSS-pixel touch target, accessible name Refresh, visible
+keyboard focus and is disabled while refreshing. Buses and driver controls are
+unchanged by this Home-only correction. Verify light/dark Home screenshots,
+one-tap refresh, pull-down refresh and recovery after a failed refresh.
+Guidance checked: https://developer.android.com/guide/topics/ui/accessibility/apps

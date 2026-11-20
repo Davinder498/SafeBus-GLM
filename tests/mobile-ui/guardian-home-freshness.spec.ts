@@ -54,8 +54,7 @@ test('failed home recheck removes old status and manual refresh recovers denied 
   await expect(page.getByTestId('guardian-home-bus-card')).toHaveCount(0);
   fixture.setFail(false);
   fixture.setRows([]);
-  await page.getByRole('button', { name: 'Page options' }).click();
-  await page.getByRole('menuitem', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(
     page.getByText('No linked students are available yet.', { exact: true }),
   ).toBeVisible();
