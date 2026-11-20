@@ -179,7 +179,8 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
     'rgb(245, 247, 250)',
   );
   await expect(page.getByTestId('guardian-home-student-card')).toContainText('Not picked up');
-  await expect(page.getByRole('button', { name: 'Page options' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Page options' })).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(234, 241, 255)',
