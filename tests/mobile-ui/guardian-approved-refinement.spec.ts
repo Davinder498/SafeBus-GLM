@@ -108,7 +108,7 @@ for (const theme of ['light', 'dark']) {
     await page.screenshot({ path: info.outputPath(`buses-narrow-${theme}.png`), fullPage: true });
   });
 }
-test('stale location disables map; menu and downward gesture refresh', async ({ page }, info) => {
+test('stale location disables map; icon and downward gesture refresh', async ({ page }, info) => {
   const fixture = await setup(page, true);
   await page.goto('/parent');
   await expect(page.getByTestId('guardian-home-bus-card')).toBeVisible();
@@ -117,14 +117,18 @@ test('stale location disables map; menu and downward gesture refresh', async ({ 
     page.getByRole('button', { name: 'Location unavailable', exact: true }),
   ).toBeDisabled();
   await expect(page.getByRole('link', { name: 'View live map' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Page options' }).click();
-  await page.screenshot({ path: info.outputPath('home-stale-refresh-menu.png'), fullPage: true });
+  await expect(page.getByRole('button', { name: 'Page options' })).toHaveCount(0);
+  const refreshIcon = page.getByRole('button', { name: 'Refresh', exact: true });
+  const target = await refreshIcon.boundingBox();
+  expect(target?.width).toBeGreaterThanOrEqual(48);
+  expect(target?.height).toBeGreaterThanOrEqual(48);
+  await page.screenshot({ path: info.outputPath('home-stale-refresh-icon.png'), fullPage: true });
   const before = fixture.getCallCount();
-  await page.getByRole('menuitem', { name: 'Refresh', exact: true }).click();
+  await refreshIcon.click();
   await expect.poll(() => fixture.getCallCount()).toBeGreaterThan(before);
   await expect(page.getByText('Refreshing…', { exact: true })).toHaveCount(0);
   const surface = page.locator('[data-ui="guardian-refresh-surface"]');
-  const afterMenu = fixture.getCallCount();
+  const afterIcon = fixture.getCallCount();
   await surface.dispatchEvent('touchstart', {
     touches: [{ identifier: 0, clientX: 100, clientY: 100 }],
   });
@@ -133,7 +137,7 @@ test('stale location disables map; menu and downward gesture refresh', async ({ 
   });
   await expect(page.getByText('Release to refresh', { exact: true })).toBeVisible();
   await surface.dispatchEvent('touchend', { touches: [] });
-  await expect.poll(() => fixture.getCallCount()).toBeGreaterThan(afterMenu);
+  await expect.poll(() => fixture.getCallCount()).toBeGreaterThan(afterIcon);
 });
 
 test('error, unassigned and unavailable stops remain distinct', async ({ page }, info) => {

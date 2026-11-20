@@ -1,9 +1,5 @@
-import { BusFront, ChevronRight, UserRound } from 'lucide-react';
-import {
-  GuardianRefresh,
-  GuardianRefreshMenu,
-  GuardianLoading,
-} from '@/components/guardian/GuardianRefresh';
+import { BusFront, ChevronRight, RefreshCw, UserRound } from 'lucide-react';
+import { GuardianRefresh, GuardianLoading } from '@/components/guardian/GuardianRefresh';
 import { seatLabel } from '@/utils/studentSeat';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
@@ -46,7 +42,18 @@ export function ParentDashboardPage() {
       portal="parent"
       navItems={[]}
       navGroups={guardianNavGroups}
-      nativeHeaderActions={<GuardianRefreshMenu refreshing={refreshing} refresh={refresh} />}
+      nativeHeaderActions={
+        <button
+          type="button"
+          aria-label="Refresh"
+          title="Refresh"
+          disabled={refreshing}
+          onClick={refresh}
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full text-[var(--color-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-action)] disabled:opacity-50"
+        >
+          <RefreshCw aria-hidden="true" className="h-5 w-5" />
+        </button>
+      }
     >
       <GuardianRefresh
         enabled={appSurface === 'native-mobile'}
