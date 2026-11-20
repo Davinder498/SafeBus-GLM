@@ -67,3 +67,26 @@ names remain the authority-configured names, with no inferred outbound direction
 Review both themes, narrow widths, two children, multiple journeys, long stops,
 missing seats, error/empty/loading and delayed locations. Browser fixtures include
 populated stops; actual screenshots must be compared with the approved designs.
+
+## Website-matched mobile colour refinement — approved November 19
+
+Owner approved matching both guardian and driver apps to safebus.kids:
+website blue (#1d4ed8) for light-mode actions, existing accessible pale blue
+for dark-mode actions, navy text, blue-tinted app bars/selected tabs, and school-bus
+gold (#f2b84b) for bus identity. Preserve the text-only wordmark and approved
+layouts. Status colours retain their meaning and labels. Public website and
+administrator themes are unchanged.
+
+Native map overlays use opaque theme-paired backgrounds and text, including
+missing location and unavailable stop messages. Check both messages in light and
+dark, including a rendered text/background contrast measurement of at least 4.5:1.
+Review guardian Home, Buses, map, Alerts, Account/security/settings and the driver
+home/scan/active-trip/Alerts/Account/settings families, plus sign-in and dialogs.
+Official guidance consulted: https://developer.android.com/design/ui/mobile/guides/styles/color
+
+Android system bars also follow the native light/dark chrome, using dark system icons
+on pale blue and light icons on navy. Device verification remains required.
+
+The expanded dark-mode checks also cover loaded profile initials and sign-out
+text. Avatars use the action/on-action colour pair; sign-out uses danger-text,
+not the dark button-fill colour as text.

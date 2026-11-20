@@ -2331,3 +2331,82 @@ html[data-app-surface='native-mobile'] [data-ui='button'].guardian-map-unavailab
   opacity: 1;
   box-shadow: none;
 }
+
+/* Website-matched brand roles, shared by guardian and driver.
+ * Actions inherit the website's blue; gold identifies buses, never status.
+ * Keep these native-only so public pages and administrator dashboards retain
+ * their existing approved appearance. */
+html[data-app-surface='native-mobile'] {
+  --color-mobile-chrome: #eaf1ff;
+  --color-mobile-selected: #d7e5ff;
+  --color-bus-identity: #f2b84b;
+  --color-on-bus-identity: #172b3a;
+  --color-map-message: #eaf1ff;
+  --color-on-map-message: #172b3a;
+}
+html[data-app-surface='native-mobile'][data-theme='dark'] {
+  --color-mobile-chrome: #20344f;
+  --color-mobile-selected: #304c70;
+  --color-map-message: #20344f;
+  --color-on-map-message: #e8eef5;
+}
+html[data-app-surface='native-mobile'] body,
+html[data-app-surface='native-mobile'] {
+  background: var(--color-mobile-chrome) !important;
+}
+html[data-app-surface='native-mobile'] :is(
+  [data-ui='app-bar'],
+  [data-ui='app-bar'][data-account-root='true'],
+  [data-ui='public-app-bar'],
+  [data-ui='native-public-header'],
+  [data-ui='guardian-map-app-bar'],
+  [data-testid='native-bottom-navigation']
+) {
+  background: var(--color-mobile-chrome) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text);
+  --color-wordmark: var(--color-text);
+}
+html[data-app-surface='native-mobile'] .sb-bottom-tab-active,
+html[data-app-surface='native-mobile'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
+  color: var(--color-action) !important;
+}
+html[data-app-surface='native-mobile'] .sb-bottom-tab-active .sb-bottom-tab-indicator {
+  background: var(--color-mobile-selected) !important;
+}
+html[data-app-surface='native-mobile'] .guardian-bus-summary > .lucide-bus-front {
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--color-bus-identity);
+  color: var(--color-on-bus-identity);
+}
+html[data-app-surface='native-mobile'] [data-ui='guardian-icon-tile'],
+html[data-app-surface='native-mobile'] [data-ui='bus-identity-icon'] {
+  background: var(--color-bus-identity) !important;
+  color: var(--color-on-bus-identity) !important;
+  border-color: transparent;
+}
+html[data-app-surface='native-mobile'] [data-testid='driver-active-bus-card'] {
+  border-top: 3px solid var(--color-bus-identity);
+}
+html[data-app-surface='native-mobile'] [data-ui='guardian-map-message'] {
+  background: var(--color-map-message) !important;
+  color: var(--color-on-map-message) !important;
+  border-color: var(--color-control-outline);
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 1;
+}
+
+/* Override the earlier layered guardian avatar rule with a complete colour
+ * pair; otherwise its dark foreground colour becomes a pale badge background. */
+@layer components {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell'] [data-ui='avatar'] {
+    background: var(--color-action) !important;
+    color: var(--color-on-action) !important;
+    border-color: var(--color-action);
+  }
+}

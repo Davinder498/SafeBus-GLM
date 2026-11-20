@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="cool_cloud_background">#F5F7FA</color>
-    <color name="safebus_chrome">#172B3A</color>
-    <bool name="safebus_light_system_bars">false</bool>
+    <color name="safebus_chrome">#EAF1FF</color>
+    <bool name="safebus_light_system_bars">true</bool>
 </resources>

@@ -175,14 +175,14 @@ export function AccountSettingsPage() {
           </Card>
         </section>
         {signOutError && (
-          <p role="alert" className="text-[var(--color-danger-strong)]">
+          <p role="alert" className="text-[var(--color-danger-text)]">
             Could not sign out. Try again.
           </p>
         )}
         <button
           onClick={() => void logout()}
           disabled={busy}
-          className="min-h-12 w-full rounded-xl border border-[var(--color-danger-strong)] px-4 py-3 font-semibold text-[var(--color-danger-strong)] disabled:opacity-60"
+          className="min-h-12 w-full rounded-xl border border-[var(--color-danger-text)] px-4 py-3 font-semibold text-[var(--color-danger-text)] disabled:opacity-60"
         >
           {busy ? 'Signing out…' : 'Sign out'}
         </button>

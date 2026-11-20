@@ -182,7 +182,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(page.getByRole('button', { name: 'Page options' })).toBeVisible();
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
-    'rgb(255, 255, 255)',
+    'rgb(234, 241, 255)',
   );
   const activeStatus = homeBusCard.locator('[data-ui="status-pill"][data-tone="success"]');
   await expect(activeStatus).toHaveAttribute('data-pulse', 'true');
@@ -220,7 +220,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   );
   await expect(page.locator('[data-ui="guardian-map-app-bar"]')).toHaveCSS(
     'background-color',
-    'rgb(255, 255, 255)',
+    'rgb(234, 241, 255)',
   );
   await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(1);
   await expect(page.getByTestId('guardian-live-map-pickup-stop-marker')).toHaveCount(1);
@@ -770,7 +770,7 @@ test('guardian updates prioritize compact filters and alert cards', async ({ pag
   await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
-    'rgb(255, 255, 255)',
+    'rgb(234, 241, 255)',
   );
   await expect(
     notification.getByRole('button', {

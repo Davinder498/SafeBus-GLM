@@ -313,7 +313,7 @@ for (const role of ['tenant_admin', 'transportation_admin', 'guardian', 'driver'
     await expect(page.locator('[data-ui=appearance-settings]')).toHaveCount(mobile ? 0 : 1);
     await expect(page.locator('[data-ui=app-bar]')).toHaveCSS(
       'background-color',
-      'rgb(24, 35, 47)',
+      mobile ? 'rgb(32, 52, 79)' : 'rgb(24, 35, 47)',
     );
     if (!mobile) {
       await expect(page.locator('[data-ui=appearance-settings]')).toHaveCSS(

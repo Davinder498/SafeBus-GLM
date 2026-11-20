@@ -323,7 +323,7 @@ export function BusQrStartScanner({
     <Card className="border-blue-200 p-5 ring-1 ring-blue-100" data-testid="driver-bus-qr-scanner">
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <span className="rounded-xl bg-blue-50 p-2 text-blue-700">
+          <span data-ui="bus-identity-icon" className="rounded-xl bg-blue-50 p-2 text-blue-700">
             <Bus className="h-6 w-6" />
           </span>
           <div>
