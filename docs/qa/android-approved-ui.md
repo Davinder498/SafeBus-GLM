@@ -83,3 +83,6 @@ dark, including a rendered text/background contrast measurement of at least 4.5:
 Review guardian Home, Buses, map, Alerts, Account/security/settings and the driver
 home/scan/active-trip/Alerts/Account/settings families, plus sign-in and dialogs.
 Official guidance consulted: https://developer.android.com/design/ui/mobile/guides/styles/color
+
+Android system bars also follow the native light/dark chrome, using dark system icons
+on pale blue and light icons on navy. Device verification remains required.
