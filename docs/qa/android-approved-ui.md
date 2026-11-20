@@ -86,3 +86,7 @@ Official guidance consulted: https://developer.android.com/design/ui/mobile/guid
 
 Android system bars also follow the native light/dark chrome, using dark system icons
 on pale blue and light icons on navy. Device verification remains required.
+
+The expanded dark-mode checks also cover loaded profile initials and sign-out
+text. Avatars use the action/on-action colour pair; sign-out uses danger-text,
+not the dark button-fill colour as text.

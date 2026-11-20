@@ -2399,3 +2399,14 @@ html[data-app-surface='native-mobile'] [data-ui='guardian-map-message'] {
   line-height: 1.5;
   opacity: 1;
 }
+
+/* Override the earlier layered guardian avatar rule with a complete colour
+ * pair; otherwise its dark foreground colour becomes a pale badge background. */
+@layer components {
+  html[data-app-surface='native-mobile']
+    [data-portal][data-ui='dashboard-shell'] [data-ui='avatar'] {
+    background: var(--color-action) !important;
+    color: var(--color-on-action) !important;
+    border-color: var(--color-action);
+  }
+}
