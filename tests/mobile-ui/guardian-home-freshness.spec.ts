@@ -15,7 +15,7 @@ async function openHome(page: import('@playwright/test').Page) {
   await page.clock.install();
   await page.goto('/parent');
   await expect(page.getByTestId('guardian-home-bus-card')).toBeVisible();
-  await expect(page.getByTestId('guardian-home-last-checked')).toContainText('Last checked');
+  await expect(page.getByTestId('guardian-home-last-checked')).toHaveCount(0);
   return fixture;
 }
 
@@ -40,7 +40,7 @@ test('home reconciles a trip ending and reassignment with no realtime delivery',
   await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Bus 43');
   await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Inactive');
   expect(fixture.getCallCount()).toBe(calls + 1);
-  await expect(page.getByTestId('guardian-home-student-card')).toContainText('Bus 43');
+  await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Avery Johnson');
   await expect(page.getByTestId('guardian-home-student-card')).not.toContainText('Cedar Avenue');
 });
 
@@ -54,7 +54,8 @@ test('failed home recheck removes old status and manual refresh recovers denied 
   await expect(page.getByTestId('guardian-home-bus-card')).toHaveCount(0);
   fixture.setFail(false);
   fixture.setRows([]);
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Page options' }).click();
+  await page.getByRole('menuitem', { name: 'Refresh', exact: true }).click();
   await expect(
     page.getByText('No linked students are available yet.', { exact: true }),
   ).toBeVisible();

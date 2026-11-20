@@ -1,20 +1,19 @@
-import { BusFront, Users } from 'lucide-react';
+import { BusFront, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { DashboardLayout, guardianNavGroups } from '@/components/layout/DashboardLayout';
 import { useAppSurface } from '@/contexts/AppSurfaceContext';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DataState } from '@/components/ui/DataState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { GuardianIconTile } from '@/components/ui/GuardianIconTile';
-import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
-import { seatLabel } from '@/utils/studentSeat';
 import {
-  groupGuardianBuses,
-  guardianBusDetailsPath,
-  guardianBusStatus,
-} from '@/utils/guardianBusGroups';
+  GuardianRefresh,
+  GuardianRefreshMenu,
+  GuardianLoading,
+} from '@/components/guardian/GuardianRefresh';
+import { useGuardianHomeData } from '@/hooks/useGuardianHomeData';
+import { groupGuardianBuses, guardianBusDetailsPath } from '@/utils/guardianBusGroups';
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -42,40 +41,54 @@ export function GuardianRoutesPage() {
       portal="parent"
       navItems={[]}
       navGroups={guardianNavGroups}
+      nativeHeaderActions={<GuardianRefreshMenu refreshing={refreshing} refresh={load} />}
     >
-      <div className="mx-auto max-w-3xl space-y-5">
+      <GuardianRefresh
+        enabled={appSurface === 'native-mobile'}
+        refreshing={refreshing}
+        refresh={load}
+      >
         <PageHeader
           eyebrow="Assigned buses"
           title="My Buses"
-          description="See each linked student's assigned bus and its current service status."
+          description={
+            appSurface === 'web'
+              ? "See each linked student's assigned bus and its current service status."
+              : undefined
+          }
         />
 
-        <Card className="p-4" data-ui="manual-refresh-card">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => void load()}
-              disabled={refreshing}
-              data-testid="guardian-routes-refresh-button"
-            >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </Button>
-            <span className="text-sm text-gray-600" data-testid="guardian-routes-last-refreshed">
-              {lastRefreshedAt
-                ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}`
-                : 'Not refreshed yet'}
-            </span>
-          </div>
-        </Card>
-
-        {state.kind === 'loading' && (
-          <DataState
-            title="Loading bus information"
-            message="Fetching the buses assigned to your linked students."
-          />
+        {appSurface === 'web' && (
+          <Card className="p-4" data-ui="manual-refresh-card">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => void load()}
+                disabled={refreshing}
+                data-testid="guardian-routes-refresh-button"
+              >
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              <span className="text-sm text-gray-600" data-testid="guardian-routes-last-refreshed">
+                {lastRefreshedAt
+                  ? `Last refreshed ${formatTimestamp(lastRefreshedAt)}`
+                  : 'Not refreshed yet'}
+              </span>
+            </div>
+          </Card>
         )}
+
+        {state.kind === 'loading' &&
+          (appSurface === 'native-mobile' ? (
+            <GuardianLoading label="Loading assignments…" />
+          ) : (
+            <DataState
+              title="Loading bus information"
+              message="Fetching the buses assigned to your linked students."
+            />
+          ))}
         {state.kind === 'error' && (
           <div className="space-y-4" data-testid="guardian-routes-error">
             <DataState
@@ -97,107 +110,107 @@ export function GuardianRoutesPage() {
         )}
         {state.kind === 'ready' && appSurface === 'native-mobile' && busGroups.length > 0 && (
           <section className="grid gap-4" data-testid="guardian-routes-list">
-            {busGroups.map((group) => {
-              const status = guardianBusStatus(group);
-              const content = (
-                <Card
-                  className="p-5"
-                  data-testid="guardian-student-bus-card"
-                  data-ui="guardian-bus-card"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <GuardianIconTile>
-                        <BusFront className="h-6 w-6" aria-hidden />
-                      </GuardianIconTile>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
-                          Assigned bus
-                        </p>
-                        <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-navy-900">
-                          {group.busNumber ? `Bus ${group.busNumber}` : 'Not assigned'}
-                        </h2>
-                      </div>
-                    </div>
-                    <StatusPill tone={status.tone} dot pulse={status.pulse}>
-                      {status.label}
-                    </StatusPill>
-                  </div>
-
-                  <div className="mt-5 border-t border-navy-900/15 pt-4">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      <Users className="h-4 w-4" aria-hidden /> Assigned students
-                    </p>
-                    <ul className="mt-2 space-y-1" aria-label="Assigned students">
-                      {group.students.map((student) => (
+            {busGroups.map((group) => (
+              <Card
+                key={group.key}
+                className="p-5"
+                data-testid="guardian-student-bus-card"
+                data-ui="guardian-bus-card"
+              >
+                {group.busNumber ? (
+                  <Link
+                    to={guardianBusDetailsPath(group.busNumber)}
+                    className="guardian-bus-summary"
+                    data-testid="guardian-bus-details-link"
+                  >
+                    <span className="sr-only">View details for </span>
+                    <BusFront aria-hidden className="h-8 w-8 shrink-0" />
+                    <h2 className="min-w-0 flex-1 text-2xl font-bold">Bus {group.busNumber}</h2>
+                    <StatusPill tone="success">Assigned</StatusPill>
+                    <ChevronRight aria-hidden className="h-6 w-6 shrink-0" />
+                  </Link>
+                ) : (
+                  <h2 className="text-xl font-bold">
+                    {group.visibility.assignmentState === 'unavailable'
+                      ? 'Bus information unavailable'
+                      : 'No bus assigned yet'}
+                  </h2>
+                )}
+                <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                  <h3 className="text-lg font-bold">Your children</h3>
+                  <ul
+                    aria-label="Your children"
+                    className="mt-4 divide-y divide-[var(--color-border)]"
+                  >
+                    {group.students.map((student) => {
+                      const assignments =
+                        state.stops?.filter(
+                          (stop) =>
+                            stop.studentId === student.studentId &&
+                            stop.busNumber === student.busNumber,
+                        ) ?? [];
+                      return (
                         <li
                           key={student.studentId}
                           data-testid="guardian-assigned-student"
-                          className="font-semibold text-navy-900"
+                          className="guardian-assignment-student"
                         >
-                          {student.studentName}
-                          {student.studentGrade ? (
-                            <span className="font-normal text-gray-500">
-                              {' '}
-                              · {formatGrade(student.studentGrade)}
-                            </span>
-                          ) : null}
-                          {state.stops === null ? (
-                            <p className="text-sm font-normal">
-                              Stop information is unavailable right now.
+                          <h4 className="text-lg font-bold">{student.studentName}</h4>
+                          {student.studentGrade && (
+                            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                              {formatGrade(student.studentGrade)}
                             </p>
-                          ) : (
-                            state.stops
-                              .filter(
-                                (stop) =>
-                                  stop.studentId === student.studentId &&
-                                  stop.busNumber === student.busNumber,
-                              )
-                              .map((stop, index) => (
+                          )}
+                          {state.stops === null ? (
+                            <div className="mt-3 space-y-2">
+                              <p role="status" className="text-sm">
+                                Stop information is unavailable right now.
+                              </p>
+                              <Button variant="secondary" onClick={load} disabled={refreshing}>
+                                Try again
+                              </Button>
+                            </div>
+                          ) : assignments.length > 0 ? (
+                            <div className="divide-y divide-[var(--color-border)]">
+                              {assignments.map((stop, index) => (
                                 <div
-                                  key={index}
-                                  className="mt-2 text-sm font-normal text-[var(--color-text-muted)]"
+                                  key={`${stop.direction}:${stop.tripName}:${index}`}
+                                  className="guardian-assignment-journey"
                                 >
-                                  <p>
-                                    {stop.tripName} · {seatLabel(stop.seatNumber)}
-                                  </p>
-                                  <p>Pickup: {stop.pickupStopName ?? 'Not assigned'}</p>
-                                  <p>Drop-off: {stop.dropoffStopName ?? 'Not assigned'}</p>
+                                  {assignments.length > 1 && (
+                                    <h5 className="mb-3 font-semibold">{stop.tripName}</h5>
+                                  )}
+                                  <dl className="guardian-assignment-details">
+                                    {assignments.length === 1 && (
+                                      <>
+                                        <dt>Journey</dt>
+                                        <dd>{stop.tripName}</dd>
+                                      </>
+                                    )}
+                                    <dt>Pickup</dt>
+                                    <dd>{stop.pickupStopName ?? 'Not assigned'}</dd>
+                                    <dt>Drop-off</dt>
+                                    <dd>{stop.dropoffStopName ?? 'Not assigned'}</dd>
+                                    <dt>Seat</dt>
+                                    <dd>{stop.seatNumber ?? 'Not assigned'}</dd>
+                                  </dl>
                                 </div>
-                              ))
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-3 text-sm text-[var(--color-text-muted)]">
+                              {group.busNumber
+                                ? 'No journey details are available yet.'
+                                : 'Contact your school transportation office.'}
+                            </p>
                           )}
                         </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {group.busNumber && (
-                    <span className={`${buttonClass({ size: 'lg' })} mt-4 w-full`}>
-                      View bus details
-                    </span>
-                  )}
-                  {!group.busNumber ? (
-                    <p className="mt-5 border-t border-gray-200 pt-4 text-sm text-gray-600">
-                      Bus information is not available yet.
-                    </p>
-                  ) : null}
-                </Card>
-              );
-
-              return group.busNumber ? (
-                <Link
-                  key={group.key}
-                  to={guardianBusDetailsPath(group.busNumber)}
-                  className="block rounded-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-navy-900/20"
-                  data-testid="guardian-bus-details-link"
-                >
-                  <span className="sr-only">View details for Bus {group.busNumber}</span>
-                  {content}
-                </Link>
-              ) : (
-                <div key={group.key}>{content}</div>
-              );
-            })}
+                      );
+                    })}
+                  </ul>
+                </div>
+              </Card>
+            ))}
           </section>
         )}
 
@@ -245,7 +258,7 @@ export function GuardianRoutesPage() {
             ))}
           </section>
         )}
-      </div>
+      </GuardianRefresh>
     </DashboardLayout>
   );
 }

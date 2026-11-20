@@ -171,7 +171,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(homeBusCard).not.toContainText('License plate');
   await expect(homeBusCard).not.toContainText('TEST-42');
   await expect(homeBusCard).toContainText('View live map');
-  await expect(homeBusCard).toContainText('View bus details');
+  await expect(homeBusCard.getByRole('link', { name: /View bus details/ })).toBeVisible();
   await expect(homeBusCard).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(homeBusCard).toHaveCSS('border-color', 'rgb(215, 222, 232)');
   await expect(page.locator('[data-ui="dashboard-shell"]')).toHaveCSS(
@@ -179,7 +179,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
     'rgb(245, 247, 250)',
   );
   await expect(page.getByTestId('guardian-home-student-card')).toContainText('Not picked up');
-  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Page options' })).toBeVisible();
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS(
     'background-color',
     'rgb(255, 255, 255)',
@@ -189,7 +189,7 @@ test('guardian shell uses the branded Material mobile treatment', async ({ page 
   await expect(activeStatus).toHaveCSS('color', 'rgb(22, 101, 52)');
   const studentCard = page.getByTestId('guardian-home-student-card');
   await expect(studentCard).toContainText('Avery Johnson');
-  await expect(studentCard).toContainText('Bus 42');
+  await expect(page.getByTestId('guardian-home-bus-card')).toContainText('Bus 42');
   await expect(studentCard).not.toContainText('Cedar Avenue');
   await expect(studentCard).not.toContainText('Riverside School');
 
@@ -385,7 +385,7 @@ test('guardian home gives each current bus state a distinct accessible treatment
     'guardian-live-status-pulse',
   );
   await expect(delayed.locator('[data-ui="status-pill"]')).toHaveAttribute('data-tone', 'warning');
-  await expect(delayed.locator('[data-ui="status-pill"]')).toContainText('Delayed');
+  await expect(delayed.locator('[data-ui="status-pill"]')).toContainText('Location delayed');
   await expect(unavailable.locator('[data-ui="status-pill"]')).toHaveAttribute(
     'data-tone',
     'warning',
@@ -430,7 +430,7 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(page.getByTestId('guardian-routes-refresh-button')).toBeHidden();
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('position', 'fixed');
   await expect(page.locator('[data-ui="app-bar"]')).toHaveCSS('top', '0px');
-  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(0);
+  await expect(page.locator('header button[aria-haspopup="menu"]')).toHaveCount(1);
   await expect(page.getByTestId('native-bottom-navigation')).toHaveCSS('position', 'fixed');
   const bus42Card = page
     .getByTestId('guardian-student-bus-card')
@@ -438,13 +438,9 @@ test('guardian buses group students and open a clean bus detail view', async ({
   await expect(bus42Card.getByText('Avery Johnson')).toBeVisible();
   await expect(bus42Card.getByText('Morgan Johnson')).toBeVisible();
   await expect(bus42Card.getByText('License plate')).toHaveCount(0);
-  await expect(bus42Card.getByText('View bus details')).toBeVisible();
-  await expect(bus42Card.locator('[data-ui="guardian-icon-tile"]')).toHaveCSS(
-    'background-color',
-    'rgb(23, 43, 58)',
-  );
+  await expect(bus42Card.getByRole('link', { name: 'View details for Bus 42' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('guardian-buses.png'), fullPage: true });
-  await bus42Card.click();
+  await bus42Card.getByRole('link', { name: 'View details for Bus 42' }).click();
 
   await expect(page.getByRole('heading', { name: 'Bus 42', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Cedar School Line' })).toBeVisible();

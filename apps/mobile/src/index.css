@@ -1014,8 +1014,8 @@
     [data-testid='guardian-home-bus-card']
     h2 {
     color: var(--guardian-navy);
-    font-size: 2.25rem;
-    letter-spacing: -0.045em;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
   }
 
   html[data-app-surface='native-mobile'] [data-testid='guardian-live-bus-map'] {
@@ -2277,4 +2277,57 @@ html[data-app-surface='native-mobile']
   > div
   > #driver-notification-settings {
   display: none;
+}
+
+/* Approved guardian Home/Buses refinement: one summary action and clear detail rows. */
+html[data-app-surface='native-mobile'] .guardian-bus-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  color: var(--color-text);
+  border-radius: 8px;
+}
+html[data-app-surface='native-mobile'] .guardian-child-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 80px;
+  padding: 16px 0;
+  color: var(--color-text);
+}
+html[data-app-surface='native-mobile'] :is(.guardian-child-status, .guardian-bus-summary):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+html[data-app-surface='native-mobile'] .guardian-assignment-student { padding: 20px 0; }
+html[data-app-surface='native-mobile'] .guardian-assignment-student:first-child { padding-top: 0; }
+html[data-app-surface='native-mobile'] .guardian-assignment-student:last-child { padding-bottom: 0; }
+html[data-app-surface='native-mobile'] .guardian-assignment-journey { padding: 16px 0; }
+html[data-app-surface='native-mobile'] .guardian-assignment-journey:last-child { padding-bottom: 0; }
+html[data-app-surface='native-mobile'] .guardian-assignment-details {
+  display: grid;
+  grid-template-columns: minmax(64px, 0.65fr) minmax(0, 1.35fr);
+  gap: 10px 16px;
+  line-height: 1.5;
+}
+html[data-app-surface='native-mobile'] .guardian-assignment-details dt { font-weight: 600; }
+html[data-app-surface='native-mobile'] .guardian-assignment-details dd { overflow-wrap: anywhere; }
+html[data-app-surface='native-mobile']:has([data-ui='guardian-refresh-surface']) { overscroll-behavior-y: contain; }
+html[data-app-surface='native-mobile'] li[data-testid='guardian-home-student-card'] + li[data-testid='guardian-home-student-card'] {
+  border-top: 1px solid var(--color-border) !important;
+}
+
+html[data-app-surface='native-mobile'] [data-ui='dropdown-panel'].guardian-refresh-menu {
+  min-width: 10rem;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.16);
+}
+html[data-app-surface='native-mobile'] [data-ui='button'].guardian-map-unavailable:disabled {
+  background: var(--color-raised) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-muted) !important;
+  opacity: 1;
+  box-shadow: none;
 }

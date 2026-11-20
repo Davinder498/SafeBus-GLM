@@ -69,6 +69,7 @@ interface DashboardLayoutProps {
   /** Optional grouped nav for the modern sidebar. */
   navGroups?: DashboardNavGroup[];
   children: ReactNode;
+  nativeHeaderActions?: ReactNode;
 }
 
 /* ----------------------------- nav definitions ---------------------------- */
@@ -325,6 +326,7 @@ export function DashboardLayout({
   navItems,
   navGroups,
   children,
+  nativeHeaderActions,
 }: DashboardLayoutProps) {
   const { signOut, profile } = useAuth();
   const { pathname, search } = useLocation();
@@ -493,6 +495,7 @@ export function DashboardLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-1.5">
+            {usesBottomTabs && nativeHeaderActions}
             {portal !== 'parent' &&
               (!usesBottomTabs || (nativeRoot && pathname !== '/account')) && (
                 <Link
