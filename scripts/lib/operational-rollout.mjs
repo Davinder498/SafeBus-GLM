@@ -407,10 +407,24 @@ export function operationalRestoreSql(snapshot, config) {
   }
   for (const [index, job] of (config.jobs ?? []).entries()) {
     const previous = snapshot.jobs[index];
+    let command = '';
+    if (
+      job.before?.command_md5 !== job.after?.command_md5 &&
+      previous !== null &&
+      job.after !== null
+    ) {
+      if (
+        typeof job.restoreCommand !== 'string' ||
+        createHash('md5').update(job.restoreCommand.replaceAll('\r', '')).digest('hex') !==
+          previous.command_md5
+      )
+        throw new Error('OPERATIONAL_RECOVERY_SCOPE');
+      command = `,command:=${literal(job.restoreCommand)}`;
+    }
     statements.push(
       previous === null
         ? `SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname=${literal(job.name)};`
-        : `SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname=${literal(job.name)}),schedule:=${literal(previous.schedule)},active:=${previous.active ? 'true' : 'false'});`,
+        : `SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname=${literal(job.name)}),schedule:=${literal(previous.schedule)},active:=${previous.active ? 'true' : 'false'}${command});`,
     );
   }
   // Function replacement preserves ACLs. Restore explicitly when a reviewed

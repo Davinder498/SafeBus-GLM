@@ -36,6 +36,50 @@ const gps = async (db) =>
  on conflict(driver_trip_id) do update set latitude=driver_trip_current_locations.latitude+0.001;`);
 const count = (db, table) => value(db, `select count(*)::int as value from ${table}`);
 
+test('compact schedule serves ready trips on any shard and restores all original jobs', async (t) => {
+  const db = await independentTrackingFixture(t);
+  await db.exec(sql);
+  await db.exec(`
+    alter table cron.test_jobs add column active boolean not null default true;
+    create or replace view cron.job as select name as jobname,schedule,command,active,
+      current_user::text as username,jobid from cron.test_jobs;
+    drop function cron.alter_job(bigint,text,boolean);
+    create or replace function cron.alter_job(job_id bigint,schedule text default null,
+      active boolean default null,command text default null) returns void language sql as $$
+      update cron.test_jobs j set schedule=coalesce($2,j.schedule),active=coalesce($3,j.active),
+        command=coalesce($4,j.command) where j.jobid=$1 $$;
+  `);
+  const compact = JSON.parse(
+    await fs.readFile('config/pending/compact-shared-tracking.json', 'utf8'),
+  );
+  const migration = await fs.readFile(compact.migration, 'utf8');
+  assert.equal(operationalDigest(migration), compact.migrationSha256);
+  await seedSharedTrip(db);
+  await gps(db);
+  const other = 'f' + id(6).slice(1);
+  await db.exec(`insert into driver_trips(id,tenant_id,driver_id,bus_id,route_id,route_trip_pattern_id)
+    values('${other}','${id(1)}','${id(2)}','${id(3)}','${id(4)}','${id(5)}');
+    insert into safebus_private.shared_tracking_queue(driver_trip_id,tenant_id)
+    values('${other}','${id(1)}')`);
+  const before = await operationalSnapshot(db, compact);
+  verifyOperationalSnapshot(before, compact, 'before');
+  await db.exec(migration);
+  verifyOperationalSnapshot(await operationalSnapshot(db, compact), compact, 'after');
+  const legacyBefore = await count(db, 'safebus_private.tracking_invalidation_queue');
+  assert.equal(
+    await value(db, 'select safebus_private.dispatch_compact_shared_tracking() as value'),
+    0,
+  );
+  assert.equal(await count(db, 'safebus_private.shared_tracking_queue'), 0);
+  assert.equal(await count(db, 'safebus_private.tracking_invalidation_queue'), legacyBefore);
+  const topics = (
+    await db.query("select topic from realtime.messages where topic like 'safebus:bus:%'")
+  ).rows;
+  assert.equal(new Set(topics.map((row) => row.topic)).size, 2);
+  await db.exec(operationalRestoreSql(before, compact));
+  verifyOperationalSnapshot(await operationalSnapshot(db, compact), compact, 'before');
+});
+
 // The only application changes are private DB workers. All client protocol and
 // notification source/push/email functions must remain outside this catalog delta.
 test('exact manifest, bounded jobs, private ACLs, catalog lineage and recoverable queued work', async (t) => {
