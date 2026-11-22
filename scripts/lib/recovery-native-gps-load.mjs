@@ -8,6 +8,14 @@ import { percentiles } from './recovery-capacity-scheduler.mjs';
 
 const endpoint = RECOVERY_AUTH_URL + '/rest/v1/rpc/ingest_driver_location_event';
 const periodMs = 3000;
+const minimumUploadPauseMs = 500;
+const rejectedFixReasons = new Set([
+  'out_of_order',
+  'trip_not_active',
+  'stale_fix',
+  'invalid_fix',
+  'impossible_jump',
+]);
 
 export async function verifyNativeGpsPositions(db, latest) {
   if (!latest.size) return false;
@@ -83,6 +91,8 @@ export function createNativeGpsUpload(publishableKey, fetchImpl = fetch) {
       throw Error(status >= 400 && status <= 599 ? `NATIVE_GPS_HTTP_${status}` : 'NATIVE_GPS_HTTP');
     }
     const ack = await response.json();
+    if (ack?.accepted === false && rejectedFixReasons.has(ack.rejectionReason))
+      throw Error('NATIVE_GPS_REJECTED_' + ack.rejectionReason.toUpperCase());
     if (
       ack?.accepted !== true ||
       ack.duplicate !== false ||
@@ -143,10 +153,13 @@ export async function measureNativeGps({
   const latency = [];
   const latest = new Map();
   const pending = new Set();
+  const uploading = new Set();
+  const nextUploadAt = new Map();
   const errors = {};
   let offered = 0;
   let accepted = 0;
   let late = 0;
+  let deviceBackpressure = 0;
   let maxDispatchLagMs = 0;
   const fail = (code) => {
     errors[code] = (errors[code] ?? 0) + 1;
@@ -164,22 +177,34 @@ export async function measureNativeGps({
     const dispatchedAt = clock();
     const lag = dispatchedAt - due;
     maxDispatchLagMs = Math.max(maxDispatchLagMs, lag);
-    if (lag > 1000 || pending.size >= maxInFlight) {
-      fail(lag > 1000 ? 'NATIVE_GPS_GENERATOR_LAG' : 'NATIVE_GPS_IN_FLIGHT_LIMIT');
+    if (lag > 1000) {
+      fail('NATIVE_GPS_GENERATOR_LAG');
+      break;
+    }
+    const driver = drivers[index];
+    // Android uploads serially, with at least a 500 ms pause after success.
+    // A blocked slot still counts against the offered workload's passing target.
+    if (uploading.has(driver.tripId) || dispatchedAt < (nextUploadAt.get(driver.tripId) ?? 0)) {
+      deviceBackpressure++;
+      continue;
+    }
+    if (pending.size >= maxInFlight) {
+      fail('NATIVE_GPS_IN_FLIGHT_LIMIT');
       break;
     }
 
-    const driver = drivers[index];
     const sequence = driver.lastSequence + round + 1;
     const recordedAt = new Date(beganAt + Math.floor(offset)).toISOString();
     const latitude = capacityGpsLatitude(sequence);
     offered++;
+    uploading.add(driver.tripId);
     const request = Promise.resolve()
       .then(() => upload(driver, sequence, recordedAt, latitude, signal))
       .then(
         () => {
           const elapsed = clock() - due;
           latency.push(elapsed);
+          nextUploadAt.set(driver.tripId, clock() + minimumUploadPauseMs);
           if (elapsed > periodMs) late++;
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
@@ -188,13 +213,18 @@ export async function measureNativeGps({
         (error) => {
           const code = error?.message;
           fail(
-            /^NATIVE_GPS_(HTTP(?:_[45]\d\d)?|ACK_MISMATCH)$/.test(code)
+            /^NATIVE_GPS_(HTTP(?:_[45]\d\d)?|ACK_MISMATCH|REJECTED_(OUT_OF_ORDER|TRIP_NOT_ACTIVE|STALE_FIX|INVALID_FIX|IMPOSSIBLE_JUMP))$/.test(
+              code,
+            )
               ? code
               : 'NATIVE_GPS_TRANSPORT',
           );
         },
       )
-      .finally(() => pending.delete(request));
+      .finally(() => {
+        uploading.delete(driver.tripId);
+        pending.delete(request);
+      });
     pending.add(request);
   }
   await Promise.all(pending);
@@ -215,6 +245,7 @@ export async function measureNativeGps({
     offered,
     accepted,
     late,
+    deviceBackpressure,
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
     errors,
