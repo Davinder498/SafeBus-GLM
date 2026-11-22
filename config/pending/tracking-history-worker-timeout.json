@@ -1,0 +1,42 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261122004653_tracking_history_worker_timeout.sql",
+  "migrationSha256": "e4066e46835d52de3392c73e7a2dcc905c92ead735936018b9d8debd4f0d016d",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.prune_tracking_worker_history()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "dffed8d740e2bf343bc5cf9d716851db"
+      },
+      "after": {
+        "md5": "dffed8d740e2bf343bc5cf9d716851db"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": [],
+  "jobs": [
+    {
+      "name": "safebus-tracking-invalidation-history",
+      "before": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "0f85bbf8fef55dfcc525636c5a6634fc"
+      },
+      "after": {
+        "name": "safebus-tracking-invalidation-history",
+        "schedule": "* * * * *",
+        "active": true,
+        "command_md5": "b3af6d0df7a9ca40b8bfb025adadb7c8"
+      },
+      "restoreCommand": "\n  set local statement_timeout = '750ms';\n  set local lock_timeout = '100ms';\n  select safebus_private.prune_tracking_worker_history();\n"
+    }
+  ]
+}
