@@ -7,9 +7,7 @@
     {
       "signature": "safebus_private.prune_tracking_worker_history()",
       "owner": "postgres",
-      "acl": [
-        "postgres=X/postgres"
-      ],
+      "acl": ["postgres=X/postgres"],
       "before": {
         "md5": "dffed8d740e2bf343bc5cf9d716851db"
       },
