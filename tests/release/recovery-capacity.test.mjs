@@ -9,9 +9,145 @@ import {
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
 import { runArrivals, percentiles } from '../../scripts/lib/recovery-capacity-scheduler.mjs';
 import {
+  createNativeGpsUpload,
+  measureNativeGps,
+  verifyNativeGpsPositions,
+} from '../../scripts/lib/recovery-native-gps-load.mjs';
+import { RECOVERY_AUTH_URL } from '../../scripts/lib/recovery-auth.mjs';
+import {
   capacityGpsLatitude,
   assertCapacityGpsAck,
 } from '../../scripts/lib/recovery-capacity-gps.mjs';
+
+function nativeDrivers(count) {
+  return Array.from({ length: count }, (_, i) => ({
+    tripId: `trip-${i}`,
+    accessToken: `token-${i}`,
+    trackingToken: `tracking-${i}`,
+    deviceCredential: `device-${i}`,
+    lastSequence: 0,
+  }));
+}
+
+test('native GPS storage check detects a missing, duplicated, or stale bus position', async () => {
+  const at = '2027-01-15T08:00:00.000Z';
+  const latest = new Map([
+    ['trip-a', { sequence: 2, recordedAt: at, latitude: 52.26 }],
+    ['trip-b', { sequence: 2, recordedAt: at, latitude: 52.26 }],
+  ]);
+  const a = {
+    driver_trip_id: 'trip-a',
+    last_sequence: '2',
+    recorded_at: new Date(at),
+    latitude: 52.26,
+    longitude: -113.81,
+  };
+  const b = { ...a, driver_trip_id: 'trip-b' };
+  const check = (rows) =>
+    verifyNativeGpsPositions(
+      {
+        query: async (_sql, params) => {
+          assert.deepEqual(params, [['trip-a', 'trip-b']]);
+          return { rows };
+        },
+      },
+      latest,
+    );
+  assert.equal(await check([a, b]), true);
+  assert.equal(await check([a]), false);
+  assert.equal(await check([a, a]), false);
+  assert.equal(await check([a, { ...b, last_sequence: '1' }]), false);
+});
+
+test('native GPS runner issues two separate requests per driver for a 10,000-bus burst', async () => {
+  const drivers = nativeDrivers(10_000);
+  const observed = new Map();
+  const eventIds = new Set();
+  let now = 0;
+  const upload = createNativeGpsUpload('sb_publishable_fixture', async (url, init) => {
+    assert.equal(url, RECOVERY_AUTH_URL + '/rest/v1/rpc/ingest_driver_location_event');
+    assert.equal(init.method, 'POST');
+    assert.equal(init.redirect, 'error');
+    assert.equal(init.headers.apikey, 'sb_publishable_fixture');
+    const payload = JSON.parse(init.body);
+    const index = Number(payload.p_device_credential.slice('device-'.length));
+    assert.equal(init.headers.authorization, 'Bearer ' + drivers[index].accessToken);
+    assert.equal(payload.p_tracking_token, drivers[index].trackingToken);
+    assert.equal(payload.p_sequence, (observed.get(index)?.p_sequence ?? 0) + 1);
+    assert.equal(Date.parse(payload.p_recorded_at), 1_800_000_000_000 + now);
+    assert.ok(!eventIds.has(payload.p_event_id));
+    eventIds.add(payload.p_event_id);
+    observed.set(index, payload);
+    return {
+      ok: true,
+      json: async () => ({
+        accepted: true,
+        duplicate: false,
+        stopTracking: false,
+        tripState: 'active',
+        recordedAt: payload.p_recorded_at,
+      }),
+    };
+  });
+  const result = await measureNativeGps({
+    drivers,
+    rounds: 2,
+    pattern: 'synchronized',
+    upload,
+    clock: () => now,
+    wallClock: () => 1_800_000_000_000,
+    wait: async (ms) => {
+      await new Promise(setImmediate);
+      now += ms;
+    },
+    verifyPositions: async (latest) => {
+      assert.equal(latest.size, 10_000);
+      for (const [i, payload] of observed) {
+        assert.deepEqual(latest.get(drivers[i].tripId), {
+          sequence: 2,
+          latitude: payload.p_latitude,
+          recordedAt: payload.p_recorded_at,
+        });
+      }
+      return true;
+    },
+  });
+  assert.equal(eventIds.size, 20_000);
+  assert.equal(result.accepted, 20_000);
+  assert.equal(result.passed, true);
+});
+
+test('native GPS runner rejects stale acknowledgements and reports unsent load', async () => {
+  const upload = createNativeGpsUpload('sb_publishable_fixture', async () => ({
+    ok: true,
+    json: async () => ({
+      accepted: true,
+      duplicate: false,
+      stopTracking: false,
+      tripState: 'active',
+      recordedAt: '2020-01-01T00:00:00.000Z',
+    }),
+  }));
+  let now = 0;
+  const result = await measureNativeGps({
+    drivers: nativeDrivers(2),
+    rounds: 2,
+    pattern: 'synchronized',
+    upload,
+    clock: () => now,
+    wallClock: () => 1_800_000_000_000,
+    wait: async (ms) => {
+      now += ms;
+      await new Promise(setImmediate);
+    },
+    verifyPositions: async () => true,
+  });
+  assert.equal(result.planned, 4);
+  assert.equal(result.offered, 2);
+  assert.equal(result.accepted, 0);
+  assert.deepEqual(result.errors, { NATIVE_GPS_ACK_MISMATCH: 2 });
+  assert.equal(result.passed, false);
+});
 
 test('all synthetic GPS coordinates round-trip exactly through hosted PostgreSQL float output', async (t) => {
   const db = new PGlite();
@@ -291,7 +427,8 @@ async function fixture(t) {
     await db.exec(
       `create table public.${table}(id uuid primary key,tenant_id uuid references public.tenants)`,
     );
-  await db.exec(`create table safebus_private.notification_audience_queue(tenant_id uuid references public.tenants);
+  await db.exec(`create table safebus_private.driver_tracking_state(device_id uuid primary key references public.driver_tracking_devices on delete cascade);
+    create table safebus_private.notification_audience_queue(tenant_id uuid references public.tenants);
     create table safebus_private.agreement_packages(tenant_id uuid references public.tenants);
     create table safebus_private.participant_agreement_requirements(profile_id uuid references public.profiles);
     create table safebus_private.tenant_agreement_requirement(tenant_id uuid references public.tenants);`);
@@ -303,6 +440,7 @@ async function fixture(t) {
   ]);
   for (const table of capacityTables)
     await db.query(`insert into public.${table} values($1,$2)`, [uid, tid]);
+  await db.query('insert into safebus_private.driver_tracking_state values($1)', [uid]);
   await db.query('insert into safebus_private.participant_agreement_requirements values($1)', [
     uid,
   ]);
@@ -318,6 +456,8 @@ async function state(db) {
   (select count(*)::int from public.profiles) profiles,
   (select count(*)::int from public.driver_trips) trips,
   (select count(*)::int from public.user_notifications) notifications,
+  (select count(*)::int from public.driver_tracking_devices) devices,
+  (select count(*)::int from safebus_private.driver_tracking_state) device_cursors,
   (select count(*)::int from pg_trigger where not tgisinternal and tgenabled='O') guards`)
   ).rows[0];
 }
@@ -328,7 +468,16 @@ test('capacity cleanup rehearses without loss and restores all 16 guards after d
   await cleanupCapacity(db, scope, true);
   assert.deepEqual(await state(db), before);
   await cleanupCapacity(db, scope);
-  assert.deepEqual(await state(db), { profiles: 0, trips: 0, notifications: 0, guards: 16 });
+  assert.equal(before.devices, 1);
+  assert.equal(before.device_cursors, 1);
+  assert.deepEqual(await state(db), {
+    profiles: 0,
+    trips: 0,
+    notifications: 0,
+    devices: 0,
+    device_cursors: 0,
+    guards: 16,
+  });
   assert.equal(
     (await db.query('select * from auth.users')).rows.length,
     1,

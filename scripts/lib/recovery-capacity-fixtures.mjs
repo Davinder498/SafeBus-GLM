@@ -110,6 +110,30 @@ export async function seedCapacityBus(db, tenant, profile, index) {
         .digest('hex'),
   };
 }
+export async function seedCapacityNativeDevice(db, bus, account) {
+  const id = randomUUID();
+  const credential = 'sbus_device_v1_' + randomBytes(32).toString('base64url');
+  await db.query(
+    `insert into public.driver_tracking_devices
+       (id,tenant_id,driver_id,profile_id,installation_id,credential_hash,
+        platform,ownership,app_version,privacy_notice_version,privacy_notice_acknowledged_at)
+     values($1,$2,$3,$4,$5,safebus_private.hash_driver_device_credential($6),
+       'android','personal','capacity-probe','driver-location-byod-v1',now())`,
+    [id, bus.tenant, bus.driver, account.id, randomUUID(), credential],
+  );
+  const bound = await db.query(
+    'update public.bus_tracking_sessions set device_id=$1 where id=$2 and driver_id=$3',
+    [id, bus.session, bus.driver],
+  );
+  if (bound.rowCount !== 1) throw Error('CAPACITY_ANDROID_DEVICE_BINDING');
+  return {
+    tripId: bus.trip,
+    accessToken: account.token,
+    trackingToken: bus.token,
+    deviceCredential: credential,
+  };
+}
+
 export async function seedCapacityGuardian(db, bus, account, index) {
   const guardian = randomUUID(),
     student = randomUUID();

@@ -8,10 +8,32 @@ The owner approved the expanded synthetic cleanup exception on November 18.
 The exact 16-guard allowlist is in `scripts/lib/recovery-capacity-cleanup.mjs`.
 It never disables all triggers, RLS, foreign keys or authentication checks.
 
+## Android GPS-only probe
+
+Select workload `android_gps` and `buses=10` in the protected workflow.
+The test binds a synthetic Android device to each driver session and checks
+that another driver cannot upload with that device. It then sends two stages
+of 100 HTTPS requests to the real Android GPS endpoint. One spreads sends
+over each three-second interval and the other starts all ten drivers together.
+Every acknowledgment must arrive within its collection interval. After
+each stage, the test compares the coordinates, timestamp and event sequence
+stored for each bus against the latest accepted request.
+
+The probe leaves maps and delivery workers idle. It records HTTP timing,
+failed or unsent requests, and the position check. It qualifies only this
+small Android upload workload. Larger runs need their own device provisioning
+and Auth setup. The local generator test covers two 10,000-request waves against
+a simulated endpoint.
+
+The protected test rehearses cleanup before opening the API, restores the
+API quarantine after testing, and verifies removal of synthetic devices and
+their dependent cursors. It does not disable any additional triggers.
+
 ## What this first test measures
 
 Dispatch `run-recovery-capacity.yml` at the reviewed current main SHA, confirmation
-`RUN_RECOVERY_CAPACITY`, initially `buses=10`. The protected GitHub environment
+`RUN_RECOVERY_CAPACITY`, initially `buses=10` and workload `combined`.
+The protected GitHub environment
 must be approved by its reviewer. Existing Recovery credentials are reused.
 The workflow writes redacted evidence even on failure.
 
