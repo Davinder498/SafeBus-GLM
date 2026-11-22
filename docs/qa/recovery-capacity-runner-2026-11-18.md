@@ -36,14 +36,22 @@ Record the original quota and restore it after the run. Leave public sign-ups
 disabled. The workflow does not change either setting.
 
 The runner creates 5,000 synthetic drivers split across two test school
-authorities. It sets up the trips and devices and rehearses cleanup while the
-Data API is quarantined. It then signs the drivers in with at least 250 ms
+authorities. It sets up the trips and devices on four database connections,
+closes those connections, and rehearses cleanup while the Data API is
+quarantined. It then signs the drivers in with at least 250 ms
 between attempts. Before opening the API it verifies that all access tokens
 have at least five minutes remaining. The test attempts 50,000 HTTPS uploads
 per stage if the three-second target holds. Any missed slot or failed saved
 position check fails the stage. This measures 5,000 simulated GPS uploaders
 on Recovery. It leaves guardian maps, alert delivery, and production outside
 the test.
+
+Run 45048001090 created the accounts but reached its setup deadline after 91
+successful sign-ins. It ended before GPS measurement and verified cleanup.
+The large workflow now gives setup and measurement up to 160 minutes and
+reserves the final 50 minutes of its 210-minute job limit for cleanup. It
+records completion times for accounts, devices, cleanup rehearsal, and
+sign-ins, and names deadline failures explicitly.
 
 The protected test rehearses cleanup before opening the API, restores the
 API quarantine after testing, and verifies removal of synthetic devices and

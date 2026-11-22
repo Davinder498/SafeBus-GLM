@@ -9,6 +9,7 @@ import {
   assertCapacityScope,
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
 import { runArrivals, percentiles } from '../../scripts/lib/recovery-capacity-scheduler.mjs';
+import { seedCapacityFleetInLanes } from '../../scripts/lib/recovery-capacity-fixtures.mjs';
 import {
   createNativeGpsUpload,
   measureNativeGps,
@@ -352,6 +353,54 @@ test('capacity setup sustains 551 sign-ins without exhausting a 150/5-minute tok
   assert.equal(rejections, 0);
   assert.equal(starts.length, 551);
   assert.ok(starts.slice(1).every((time, i) => time - starts[i] >= 2100));
+});
+
+test('fleet setup uses four connections and seeds each bus index once', async () => {
+  const seeded = new Set();
+  let opened = 0;
+  let closed = 0;
+  await seedCapacityFleetInLanes({
+    count: 5000,
+    connect: async () => ({
+      lane: opened++,
+      end: async () => {
+        closed++;
+      },
+    }),
+    assertRunning: () => {},
+    seed: async ({ lane }, index) => {
+      assert.equal(index % 4, lane);
+      assert.equal(seeded.has(index), false);
+      seeded.add(index);
+    },
+  });
+  assert.equal(opened, 4);
+  assert.equal(closed, 4);
+  assert.equal(seeded.size, 5000);
+});
+
+test('fleet setup waits for all connections to close before reporting a seed failure', async () => {
+  let closed = 0;
+  const seeded = [];
+  await assert.rejects(
+    seedCapacityFleetInLanes({
+      count: 5000,
+      connect: async () => ({
+        end: async () => {
+          await new Promise(setImmediate);
+          closed++;
+        },
+      }),
+      assertRunning: () => {},
+      seed: async (_connection, index) => {
+        seeded.push(index);
+        if (index === 0) throw Error('FIXTURE_FAILED');
+      },
+    }),
+    { message: 'FIXTURE_FAILED' },
+  );
+  assert.deepEqual(seeded, [0, 1, 2, 3]);
+  assert.equal(closed, 4);
 });
 
 test('5,000 Recovery sign-ins fit the dedicated fixture quota at 250 ms pacing', async () => {

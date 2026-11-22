@@ -1,4 +1,31 @@
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
+
+export async function seedCapacityFleetInLanes({ count, connect, assertRunning, seed }) {
+  const laneCount = 4;
+  let failure;
+  const lanes = await Promise.allSettled(
+    Array.from({ length: laneCount }, async (_, lane) => {
+      let connection;
+      try {
+        assertRunning();
+        connection = await connect('safebus-capacity-fixture');
+        for (let index = lane; index < count && !failure; index += laneCount) {
+          assertRunning();
+          await seed(connection, index);
+        }
+      } catch (error) {
+        failure ??= error;
+        throw error;
+      } finally {
+        if (connection) await connection.end();
+      }
+    }),
+  );
+  if (failure) throw failure;
+  const closeFailure = lanes.find((lane) => lane.status === 'rejected');
+  if (closeFailure) throw closeFailure.reason;
+}
+
 export async function seedCapacityTenant(db, scope, index, issuer) {
   const tenant = scope.tenantIds[index];
   // Synthetic entitlement/contract state, not Stripe activity or a legal receipt.

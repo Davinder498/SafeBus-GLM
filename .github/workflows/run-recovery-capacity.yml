@@ -37,7 +37,7 @@ jobs:
   install:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.buses == '5000' && 150 || 45 }}
+    timeout-minutes: ${{ inputs.buses == '5000' && 210 || 45 }}
     environment: production
     steps:
       - name: Verify exact main revision

@@ -24,6 +24,7 @@ import {
   seedCapacityBus,
   seedCapacityGuardian,
   seedCapacityNativeDevice,
+  seedCapacityFleetInLanes,
 } from './lib/recovery-capacity-fixtures.mjs';
 import {
   quarantineCapacity,
@@ -84,6 +85,7 @@ const evidence = {
       ],
 };
 const stop = new AbortController();
+let deadlineReached = false;
 let db,
   admin,
   connected = false,
@@ -99,7 +101,13 @@ const accounts = [],
   channels = [];
 let hintCount = 0;
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => stop.abort());
-const deadline = setTimeout(() => stop.abort(), (largeNativeRun ? 110 : 35) * 60 * 1000);
+const deadline = setTimeout(
+  () => {
+    deadlineReached = true;
+    stop.abort();
+  },
+  (largeNativeRun ? 160 : 35) * 60 * 1000,
+);
 const checked = checkedCapacityAuth;
 const loginAccount = createCapacityLogin({
   signal: stop.signal,
@@ -126,6 +134,10 @@ const safeCode = (e) =>
     : /^[A-Z0-9]{5}$/.test(e?.code ?? '')
       ? e.code
       : 'UNCLASSIFIED_FAILURE';
+function phaseComplete(name) {
+  (evidence.setupMilestones ??= {})[name] = new Date().toISOString();
+  console.log(`Recovery setup complete: ${name}.`);
+}
 try {
   assertCapacityScope(scope);
   if (
@@ -164,9 +176,14 @@ try {
       process.env.SAFEBUS_CAPACITY_DATABASE_CA_CERT,
       name,
     );
-    await c.connect();
-    await c.query("set statement_timeout='8s';set lock_timeout='1s'");
-    return c;
+    try {
+      await c.connect();
+      await c.query("set statement_timeout='8s';set lock_timeout='1s'");
+      return c;
+    } catch (error) {
+      await c.end().catch(() => {});
+      throw error;
+    }
   };
   db = await connect('safebus-capacity-control');
   connected = true;
@@ -277,13 +294,29 @@ try {
     if (largeNativeRun) a.password = password;
     else await signInAccount(a, password);
   }
+  if (largeNativeRun) phaseComplete('accounts-created');
   stage = 'fixtures';
   for (let i = 0; i < 2; i++)
     await seedCapacityTenant(db, scope, i, accounts[largeNativeRun ? i : 0].id);
-  for (let i = 0; i < buses; i++) {
-    assertRunning();
-    stage = `fixture-bus-${i}`;
-    fleet.push(await seedCapacityBus(db, accounts[i].tenant, accounts[i].id, i));
+  const nativeDrivers = [];
+  if (largeNativeRun) {
+    await seedCapacityFleetInLanes({
+      count: buses,
+      connect,
+      assertRunning,
+      seed: async (connection, i) => {
+        const account = accounts[i];
+        const bus = await seedCapacityBus(connection, account.tenant, account.id, i);
+        nativeDrivers[i] = await seedCapacityNativeDevice(connection, bus, account);
+      },
+    });
+    phaseComplete('buses-and-devices-created');
+  } else {
+    for (let i = 0; i < buses; i++) {
+      assertRunning();
+      stage = `fixture-bus-${i}`;
+      fleet.push(await seedCapacityBus(db, accounts[i].tenant, accounts[i].id, i));
+    }
   }
   if (!largeNativeRun) {
     for (let i = 0; i < 50; i++) {
@@ -299,8 +332,7 @@ try {
       [outsider.tenant, outsider.id, outsider.email],
     );
   }
-  const nativeDrivers = [];
-  if (nativeGpsOnly) {
+  if (nativeGpsOnly && !largeNativeRun) {
     stage = 'android-device-fixtures';
     for (let i = 0; i < buses; i++) {
       assertRunning();
@@ -310,12 +342,14 @@ try {
   stage = 'cleanup-rehearsal';
   await cleanupCapacity(db, scope, true);
   if (largeNativeRun) {
+    phaseComplete('cleanup-rehearsed');
     for (const [index, account] of accounts.entries()) {
       stage = `account-login-${index}`;
       await signInAccount(account, account.password);
       delete account.password;
       nativeDrivers[index].accessToken = account.token;
     }
+    phaseComplete('driver-sign-ins-complete');
     stage = 'android-session-window';
     const expiresAfter = Date.now() + 300000;
     if (
@@ -332,11 +366,11 @@ try {
 } catch (e) {
   evidence.exploratoryPassed = false;
   evidence.failedStage = stage;
-  evidence.failureCode = safeCode(e);
+  evidence.failureCode = deadlineReached ? 'CAPACITY_SETUP_OR_WORKLOAD_DEADLINE' : safeCode(e);
   if (/^[a-z_][a-z0-9_]{0,79}$/.test(e.constraint ?? '')) evidence.failedConstraint = e.constraint;
   process.exitCode = 1;
   console.error(
-    `Recovery capacity stopped at stage=${stage}; code=${safeCode(e)}; provider details omitted.`,
+    `Recovery capacity stopped at stage=${stage}; code=${evidence.failureCode}; provider details omitted.`,
   );
 } finally {
   workerStop = true;
