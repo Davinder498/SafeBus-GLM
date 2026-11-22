@@ -301,7 +301,7 @@ try {
   const nativeDrivers = [];
   if (largeNativeRun) {
     await seedCapacityFleetInLanes({
-      count: buses,
+      tenants: accounts.slice(0, buses).map((account) => account.tenant),
       connect,
       assertRunning,
       seed: async (connection, i) => {

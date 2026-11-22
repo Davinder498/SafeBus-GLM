@@ -1,15 +1,17 @@
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 
-export async function seedCapacityFleetInLanes({ count, connect, assertRunning, seed }) {
-  const laneCount = 4;
+export async function seedCapacityFleetInLanes({ tenants, connect, assertRunning, seed }) {
+  // Bus inserts lock the district row while checking its licensed bus count.
+  const indexesByTenant = Map.groupBy(tenants.keys(), (index) => tenants[index]);
   let failure;
   const lanes = await Promise.allSettled(
-    Array.from({ length: laneCount }, async (_, lane) => {
+    Array.from(indexesByTenant.values(), async (indexes) => {
       let connection;
       try {
         assertRunning();
         connection = await connect('safebus-capacity-fixture');
-        for (let index = lane; index < count && !failure; index += laneCount) {
+        for (const index of indexes) {
+          if (failure) break;
           assertRunning();
           await seed(connection, index);
         }
