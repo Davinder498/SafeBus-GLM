@@ -6,19 +6,19 @@ on:
         description: Full reviewed current main SHA
         required: true
       buses:
-        description: Maximum buses; start with 10
+        description: Fleet size; 5000 requires Android GPS
         type: choice
-        options: ['10', '100', '500']
+        options: ['10', '100', '500', '5000']
         default: '10'
         required: true
       workload:
-        description: Android GPS probe requires 10 buses
+        description: Android GPS uses 10 or 5000 buses
         type: choice
         options: [combined, android_gps]
         default: combined
         required: true
       confirmation:
-        description: Type RUN_RECOVERY_CAPACITY
+        description: Type RUN_RECOVERY_CAPACITY or RUN_RECOVERY_CAPACITY_5000
         required: true
 permissions:
   contents: read
@@ -27,14 +27,17 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      ((inputs.buses != '5000' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      (inputs.buses == '5000' && inputs.workload == 'android_gps' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY_5000'))
     uses: ./.github/workflows/validate-security-install.yml
     with:
       git_ref: ${{ inputs.git_ref }}
   install:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: ${{ inputs.buses == '5000' && 150 || 45 }}
     environment: production
     steps:
       - name: Verify exact main revision

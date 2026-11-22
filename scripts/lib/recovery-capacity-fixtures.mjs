@@ -10,8 +10,8 @@ export async function seedCapacityTenant(db, scope, index, issuer) {
   await db.query(
     `insert into safebus_private.tenant_subscription_projections
     (tenant_id,external_subscription_id,external_price_id,product_name,status,licensed_bus_count,currency,unit_amount,trial_end,provider_event_created_at)
-    values($1,$2,'capacity_synthetic','Capacity synthetic','trialing',500,'cad',199,now()+interval '1 day',now())`,
-    [tenant, `capacity_${scope.run}_${index}`],
+    values($1,$2,'capacity_synthetic','Capacity synthetic','trialing',$3,'cad',199,now()+interval '1 day',now())`,
+    [tenant, `capacity_${scope.run}_${index}`, Math.max(scope.buses, 500)],
   );
 }
 export async function seedCapacityBus(db, tenant, profile, index) {

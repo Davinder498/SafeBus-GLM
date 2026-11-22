@@ -11,7 +11,7 @@ on:
       buses:
         description: Bus count of the failed run
         type: choice
-        options: ['10', '100', '500']
+        options: ['10', '100', '500', '5000']
         default: '10'
         required: true
       confirmation:
@@ -31,7 +31,7 @@ jobs:
   install:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ inputs.buses == '5000' && 45 || 15 }}
     environment: production
     steps:
       - name: Verify exact main revision

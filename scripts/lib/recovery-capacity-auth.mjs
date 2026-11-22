@@ -14,13 +14,17 @@ export function checkedCapacityAuth(result) {
 }
 
 // Sequential fixture sign-ins, outside measured load. Preserve provider limits.
-// Default token limit is 150 / 5 minutes; do not depend on its initial burst.
+// Default token limit is 150 / 5 minutes. The isolated 5,000-driver run
+// uses a separately configured quota and does not depend on its initial burst.
 export function createCapacityLogin({
   signal,
+  minimumIntervalMs = 2100,
   clock = () => performance.now(),
   wait = delay,
   onRetry = () => {},
 } = {}) {
+  if (!Number.isInteger(minimumIntervalMs) || minimumIntervalMs < 250)
+    throw Error('CAPACITY_AUTH_PACING_INVALID');
   let nextStart = 0;
   let retryWaitMs = 0;
   return async (operation) => {
@@ -29,7 +33,7 @@ export function createCapacityLogin({
       const pause = Math.max(0, nextStart - clock());
       if (pause) await wait(pause, undefined, { signal });
       if (signal?.aborted) throw Error('CAPACITY_STOP_REQUESTED');
-      nextStart = clock() + 2100;
+      nextStart = clock() + minimumIntervalMs;
       const result = await operation();
       if (result.error?.status !== 429) return checkedCapacityAuth(result);
       const backoff = 5000 * 2 ** attempt;

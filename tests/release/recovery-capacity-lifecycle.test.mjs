@@ -106,6 +106,28 @@ test('workload cancellation aborts pending fetches without cancelling cleanup re
 });
 
 import { recoverCapacityScope } from '../../scripts/lib/recovery-capacity-recovery.mjs';
+test('5,000-driver recovery accepts only a uniquely owned partial setup', () => {
+  const run = '123-1';
+  const input = {
+    run,
+    buses: 5000,
+    tenants: [1, 2].map((i) => ({
+      id: `00000000-0000-0000-0000-00000000000${i}`,
+      type: 'demo',
+      name: `Capacity Load ${run} ${i}`,
+    })),
+    users: [0, 1].map((i) => ({ run, email: `capacity-load-${run}-${i}@example.test` })),
+  };
+  assert.equal(recoverCapacityScope(input).emails.length, 5000);
+  for (const invalid of [
+    { ...input.users[1], run: '123-2' },
+    { ...input.users[1], email: `capacity-load-${run}-5000@example.test` },
+    input.users[0],
+  ]) {
+    assert.throws(() => recoverCapacityScope({ ...input, users: [input.users[0], invalid] }));
+  }
+});
+
 test('recovery requires exact run-owned tenants and every expected synthetic identity', () => {
   const input = {
     run: '44270874052-1',
