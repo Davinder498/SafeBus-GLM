@@ -11,6 +11,12 @@ on:
         options: ['10', '100', '500']
         default: '10'
         required: true
+      workload:
+        description: Android GPS probe requires 10 buses
+        type: choice
+        options: [combined, android_gps]
+        default: combined
+        required: true
       confirmation:
         description: Type RUN_RECOVERY_CAPACITY
         required: true
@@ -50,6 +56,7 @@ jobs:
       - name: Run bounded Recovery workload
         env:
           SAFEBUS_CAPACITY_BUSES: ${{ inputs.buses }}
+          SAFEBUS_CAPACITY_WORKLOAD: ${{ inputs.workload }}
           SAFEBUS_RELEASE_SHA: ${{ inputs.git_ref }}
           SAFEBUS_CAPACITY_CONFIRM: ${{ inputs.confirmation }}
           SAFEBUS_CAPACITY_DATABASE_URL: ${{ secrets.SAFEBUS_CAPACITY_DATABASE_URL }}

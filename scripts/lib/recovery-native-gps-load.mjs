@@ -1,0 +1,224 @@
+import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
+import { performance } from 'node:perf_hooks';
+import { RECOVERY_AUTH_URL } from './recovery-auth.mjs';
+import { capacityFetch } from './recovery-capacity-lifecycle.mjs';
+import { capacityGpsLatitude } from './recovery-capacity-gps.mjs';
+import { percentiles } from './recovery-capacity-scheduler.mjs';
+
+const endpoint = RECOVERY_AUTH_URL + '/rest/v1/rpc/ingest_driver_location_event';
+const periodMs = 3000;
+
+export async function verifyNativeGpsPositions(db, latest) {
+  if (!latest.size) return false;
+  const { rows } = await db.query(
+    `select loc.driver_trip_id,loc.latitude,loc.longitude,loc.recorded_at,state.last_sequence
+     from public.driver_trip_current_locations loc
+     join public.bus_tracking_sessions session on session.driver_trip_id=loc.driver_trip_id
+       and session.status='active'
+     join safebus_private.driver_tracking_state state on state.device_id=session.device_id
+       and state.last_trip_id=loc.driver_trip_id
+     where loc.driver_trip_id=any($1::uuid[]) and loc.source='android_native'`,
+    [[...latest.keys()]],
+  );
+  const verified = new Set();
+  for (const row of rows) {
+    const expected = latest.get(row.driver_trip_id);
+    if (
+      !expected ||
+      verified.has(row.driver_trip_id) ||
+      row.latitude !== expected.latitude ||
+      row.longitude !== -113.81 ||
+      new Date(row.recorded_at).getTime() !== Date.parse(expected.recordedAt) ||
+      Number(row.last_sequence) !== expected.sequence
+    )
+      return false;
+    verified.add(row.driver_trip_id);
+  }
+  return verified.size === latest.size;
+}
+
+export function createNativeGpsUpload(publishableKey, fetchImpl = fetch) {
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publishableKey ?? '')) {
+    // Legacy public keys are usable here only if their claims name Recovery.
+    let claims;
+    try {
+      claims = JSON.parse(Buffer.from(publishableKey.split('.')[1], 'base64url').toString());
+    } catch {
+      throw Error('NATIVE_GPS_PUBLIC_KEY_REQUIRED');
+    }
+    if (claims.role !== 'anon' || `https://${claims.ref}.supabase.co` !== RECOVERY_AUTH_URL)
+      throw Error('NATIVE_GPS_PUBLIC_KEY_REQUIRED');
+  }
+  return async (driver, sequence, recordedAt, latitude, signal) => {
+    const response = await capacityFetch(
+      endpoint,
+      {
+        method: 'POST',
+        headers: {
+          apikey: publishableKey,
+          authorization: `Bearer ${driver.accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          p_tracking_token: driver.trackingToken,
+          p_device_credential: driver.deviceCredential,
+          p_event_id: randomUUID(),
+          p_sequence: sequence,
+          p_recorded_at: recordedAt,
+          p_latitude: latitude,
+          p_longitude: -113.81,
+          p_accuracy_m: 5,
+          p_heading_deg: null,
+          p_speed_mps: 5,
+          p_battery_percent: 80,
+          p_connectivity: 'cellular',
+        }),
+      },
+      { origin: RECOVERY_AUTH_URL, fetchImpl, signal },
+    );
+    if (!response.ok) {
+      await response.body?.cancel();
+      const status = response.status;
+      throw Error(status >= 400 && status <= 599 ? `NATIVE_GPS_HTTP_${status}` : 'NATIVE_GPS_HTTP');
+    }
+    const ack = await response.json();
+    if (
+      ack?.accepted !== true ||
+      ack.duplicate !== false ||
+      ack.stopTracking !== false ||
+      ack.tripState !== 'active' ||
+      Date.parse(ack.recordedAt) !== Date.parse(recordedAt)
+    )
+      throw Error('NATIVE_GPS_ACK_MISMATCH');
+  };
+}
+
+// Each driver has their own application credentials and starting sequence.
+// Absolute arrival times ensure a slow response cannot reduce offered load
+// without failing the measurement. No request retry masks a missed deadline.
+export async function measureNativeGps({
+  drivers,
+  rounds,
+  pattern,
+  upload,
+  verifyPositions,
+  signal,
+  maxInFlight = 10_000,
+  clock = () => performance.now(),
+  wallClock = Date.now,
+  wait = delay,
+}) {
+  const distinct = (field) =>
+    new Set(drivers.map((driver) => driver[field])).size === drivers.length;
+  if (
+    drivers.length < 1 ||
+    drivers.length > 10_000 ||
+    !Number.isInteger(rounds) ||
+    rounds < 1 ||
+    rounds > 200 ||
+    !['staggered', 'synchronized'].includes(pattern) ||
+    !Number.isInteger(maxInFlight) ||
+    maxInFlight < 1 ||
+    maxInFlight > 10_000 ||
+    typeof upload !== 'function' ||
+    typeof verifyPositions !== 'function' ||
+    drivers.some(
+      (d) =>
+        !d.tripId ||
+        !d.accessToken ||
+        !d.trackingToken ||
+        !d.deviceCredential ||
+        !Number.isSafeInteger(d.lastSequence) ||
+        d.lastSequence < 0 ||
+        d.lastSequence > Number.MAX_SAFE_INTEGER - rounds,
+    ) ||
+    !['tripId', 'accessToken', 'trackingToken', 'deviceCredential'].every(distinct)
+  )
+    throw Error('NATIVE_GPS_LOAD_BOUNDS');
+
+  const started = clock();
+  const beganAt = wallClock();
+  const slots = drivers.length * rounds;
+  const latency = [];
+  const latest = new Map();
+  const pending = new Set();
+  const errors = {};
+  let offered = 0;
+  let accepted = 0;
+  let late = 0;
+  let maxDispatchLagMs = 0;
+  const fail = (code) => {
+    errors[code] = (errors[code] ?? 0) + 1;
+  };
+
+  for (let slot = 0; slot < slots; slot++) {
+    if (signal?.aborted || Object.keys(errors).length) break;
+    const index = slot % drivers.length;
+    const round = Math.floor(slot / drivers.length);
+    const offset =
+      round * periodMs + (pattern === 'staggered' ? (index * periodMs) / drivers.length : 0);
+    const due = started + offset;
+    if (clock() < due) await wait(due - clock());
+    if (signal?.aborted || Object.keys(errors).length) break;
+    const dispatchedAt = clock();
+    const lag = dispatchedAt - due;
+    maxDispatchLagMs = Math.max(maxDispatchLagMs, lag);
+    if (lag > 1000 || pending.size >= maxInFlight) {
+      fail(lag > 1000 ? 'NATIVE_GPS_GENERATOR_LAG' : 'NATIVE_GPS_IN_FLIGHT_LIMIT');
+      break;
+    }
+
+    const driver = drivers[index];
+    const sequence = driver.lastSequence + round + 1;
+    const recordedAt = new Date(beganAt + Math.floor(offset)).toISOString();
+    const latitude = capacityGpsLatitude(sequence);
+    offered++;
+    const request = Promise.resolve()
+      .then(() => upload(driver, sequence, recordedAt, latitude, signal))
+      .then(
+        () => {
+          const elapsed = clock() - due;
+          latency.push(elapsed);
+          if (elapsed > periodMs) late++;
+          accepted++;
+          if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
+            latest.set(driver.tripId, { sequence, recordedAt, latitude });
+        },
+        (error) => {
+          const code = error?.message;
+          fail(
+            /^NATIVE_GPS_(HTTP(?:_[45]\d\d)?|ACK_MISMATCH)$/.test(code)
+              ? code
+              : 'NATIVE_GPS_TRANSPORT',
+          );
+        },
+      )
+      .finally(() => pending.delete(request));
+    pending.add(request);
+  }
+  await Promise.all(pending);
+  if (signal?.aborted) fail('NATIVE_GPS_CANCELLED');
+  let reconciled = false;
+  if (latest.size === drivers.length) {
+    try {
+      reconciled = (await verifyPositions(latest)) === true;
+    } catch {
+      fail('NATIVE_GPS_VERIFY_FAILED');
+    }
+  }
+  return {
+    pattern,
+    drivers: drivers.length,
+    rounds,
+    planned: slots,
+    offered,
+    accepted,
+    late,
+    maxDispatchLagMs,
+    latencyMs: percentiles(latency),
+    errors,
+    reconciled,
+    passed: accepted === slots && late === 0 && Object.keys(errors).length === 0 && reconciled,
+  };
+}

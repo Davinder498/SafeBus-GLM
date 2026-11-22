@@ -6,6 +6,7 @@ export const capacityTables = [
   'audit_events',
   'bus_tracking_sessions',
   'driver_trip_current_locations',
+  'driver_tracking_devices',
   'driver_trips',
   'student_bus_assignments',
   'student_route_assignments',
@@ -71,7 +72,8 @@ export async function cleanupCapacity(db, scope, rehearse = false) {
     await db.query("set local lock_timeout='2s'");
     await db.query("set local statement_timeout='20s'");
     await db.query(
-      `lock table public.tenants, ${capacityTables.map((t) => 'public.' + t).join(',')} in access exclusive mode`,
+      `lock table public.tenants, ${capacityTables.map((t) => 'public.' + t).join(',')},
+        safebus_private.driver_tracking_state in access exclusive mode`,
     );
     await capacityQuarantine(db);
     const g = (
@@ -147,8 +149,11 @@ export async function cleanupCapacity(db, scope, rehearse = false) {
       )
         throw Error('CAPACITY_RESTORE_FAILED');
     }
-    for (const table of ['tenants', ...capacityTables])
-      if ((await db.query(`select 1 from public.${table} limit 1`)).rows.length)
+    for (const table of [
+      ...['tenants', ...capacityTables].map((name) => 'public.' + name),
+      'safebus_private.driver_tracking_state',
+    ])
+      if ((await db.query(`select 1 from ${table} limit 1`)).rows.length)
         throw Error('CAPACITY_CLEANUP_INCOMPLETE');
     await db.query(rehearse ? 'rollback' : 'commit');
   } catch (error) {
