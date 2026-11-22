@@ -19,6 +19,11 @@ Every acknowledgment must arrive within its collection interval. After
 each stage, the test compares the coordinates, timestamp and event sequence
 stored for each bus against the latest accepted request.
 
+Each simulated phone has at most one outstanding upload and waits at least
+500 ms after success before its next upload. A slot missed while a phone
+is busy is counted separately and fails the same three-second acceptance
+criterion. Results also log recognized rejection reasons without response bodies.
+
 The probe leaves maps and delivery workers idle. It records HTTP timing,
 failed or unsent requests, and the position check. It qualifies only this
 small Android upload workload. Larger runs need their own device provisioning

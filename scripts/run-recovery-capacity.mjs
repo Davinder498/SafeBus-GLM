@@ -382,10 +382,10 @@ async function runNativeGps(drivers) {
       maxInFlight: buses * 2,
     });
     evidence.nativeGpsStages.push(result);
-    if (!result.passed) throw Error('CAPACITY_ANDROID_GPS_FAILED');
     console.log(
-      `Android GPS stage passed: pattern=${pattern}; accepted=${result.accepted}; p99_ms=${result.latencyMs.p99.toFixed(1)}; verified_positions=${buses}`,
+      `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? 'unavailable'}; final_positions_matched=${result.reconciled}; errors=${JSON.stringify(result.errors)}`,
     );
+    if (!result.passed) throw Error('CAPACITY_ANDROID_GPS_FAILED');
   }
 }
 async function runCombined(connect) {

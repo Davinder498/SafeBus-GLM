@@ -117,6 +117,51 @@ test('native GPS runner issues two separate requests per driver for a 10,000-bus
   assert.equal(result.passed, true);
 });
 
+test('native GPS counts busy phone slots without submitting overlapping requests', async () => {
+  let now = 0;
+  let complete;
+  const sent = [];
+  const result = await measureNativeGps({
+    drivers: nativeDrivers(1),
+    rounds: 3,
+    pattern: 'synchronized',
+    upload: (_driver, sequence) => {
+      sent.push(sequence);
+      if (sequence === 1) return new Promise((resolve) => (complete = resolve));
+    },
+    verifyPositions: async (latest) => latest.get('trip-0')?.sequence === 3,
+    clock: () => now,
+    wallClock: () => 1_800_000_000_000,
+    wait: async (ms) => {
+      if (now >= 3000) {
+        complete();
+        await new Promise(setImmediate);
+      }
+      now += ms;
+    },
+  });
+  assert.deepEqual(sent, [1, 3]);
+  assert.equal(result.deviceBackpressure, 1);
+  assert.equal(result.accepted, 2);
+  assert.equal(result.planned, 3);
+  assert.equal(result.passed, false);
+});
+
+test('native GPS reports only known provider rejection reasons', async () => {
+  for (const [reason, code] of [
+    ['out_of_order', 'NATIVE_GPS_REJECTED_OUT_OF_ORDER'],
+    ['unknown-provider-response', 'NATIVE_GPS_ACK_MISMATCH'],
+  ]) {
+    const upload = createNativeGpsUpload('sb_publishable_fixture', async () => ({
+      ok: true,
+      json: async () => ({ accepted: false, rejectionReason: reason }),
+    }));
+    await assert.rejects(upload(nativeDrivers(1)[0], 1, '2027-01-01T00:00:00Z', 52.26), {
+      message: code,
+    });
+  }
+});
+
 test('native GPS runner rejects stale acknowledgements and reports unsent load', async () => {
   const upload = createNativeGpsUpload('sb_publishable_fixture', async () => ({
     ok: true,
