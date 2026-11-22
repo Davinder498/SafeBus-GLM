@@ -20,6 +20,7 @@ on:
             tracking,
             tracking_invalidations,
             tracking_history,
+            tracking_history_worker_timeout,
             tracking_batch,
             shared_bus_feed,
             independent_shared_tracking,

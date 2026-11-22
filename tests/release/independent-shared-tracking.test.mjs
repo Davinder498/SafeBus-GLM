@@ -36,9 +36,7 @@ const gps = async (db) =>
  on conflict(driver_trip_id) do update set latitude=driver_trip_current_locations.latitude+0.001;`);
 const count = (db, table) => value(db, `select count(*)::int as value from ${table}`);
 
-test('compact schedule serves ready trips on any shard and restores all original jobs', async (t) => {
-  const db = await independentTrackingFixture(t);
-  await db.exec(sql);
+async function enableCronCommandChanges(db) {
   await db.exec(`
     alter table cron.test_jobs add column active boolean not null default true;
     create or replace view cron.job as select name as jobname,schedule,command,active,
@@ -49,6 +47,12 @@ test('compact schedule serves ready trips on any shard and restores all original
       update cron.test_jobs j set schedule=coalesce($2,j.schedule),active=coalesce($3,j.active),
         command=coalesce($4,j.command) where j.jobid=$1 $$;
   `);
+}
+
+test('compact schedule serves ready trips on any shard and restores all original jobs', async (t) => {
+  const db = await independentTrackingFixture(t);
+  await db.exec(sql);
+  await enableCronCommandChanges(db);
   const compact = JSON.parse(
     await fs.readFile('config/pending/compact-shared-tracking.json', 'utf8'),
   );
@@ -78,6 +82,23 @@ test('compact schedule serves ready trips on any shard and restores all original
   assert.equal(new Set(topics.map((row) => row.topic)).size, 2);
   await db.exec(operationalRestoreSql(before, compact));
   verifyOperationalSnapshot(await operationalSnapshot(db, compact), compact, 'before');
+});
+
+test('history cleanup timeout changes only the reviewed cron command and can be rolled back', async (t) => {
+  const db = await independentTrackingFixture(t);
+  await db.exec(sql);
+  await enableCronCommandChanges(db);
+  const maintenance = JSON.parse(
+    await fs.readFile('config/pending/tracking-history-worker-timeout.json', 'utf8'),
+  );
+  const migration = await fs.readFile(maintenance.migration, 'utf8');
+  assert.equal(operationalDigest(migration), maintenance.migrationSha256);
+  const before = await operationalSnapshot(db, maintenance);
+  verifyOperationalSnapshot(before, maintenance, 'before');
+  await db.exec(migration);
+  verifyOperationalSnapshot(await operationalSnapshot(db, maintenance), maintenance, 'after');
+  await db.exec(operationalRestoreSql(before, maintenance));
+  verifyOperationalSnapshot(await operationalSnapshot(db, maintenance), maintenance, 'before');
 });
 
 // The only application changes are private DB workers. All client protocol and

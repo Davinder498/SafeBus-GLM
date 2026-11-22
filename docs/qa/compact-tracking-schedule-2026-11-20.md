@@ -30,3 +30,18 @@ using measured work and progress, before increasing fleet admission.
 After reducing new history growth, review the retained job history separately
 and plan the removal and storage reclamation of expired execution records.
 The current release reuses the existing cleanup job and retention policy.
+
+## Production follow-up
+
+The compact schedule is live. Both tracking jobs completed successfully.
+The cron execution history was about 1,530 MB. The separate minute-by-minute
+history cleaner was repeatedly hitting its 750 ms statement timeout before
+advancing its cursor.
+
+The `tracking_history_worker_timeout` protected milestone gives the existing
+cleaner up to eight seconds per run. Its one-minute schedule, 100 ms lock
+timeout, 5,000-record scan limit, 48-hour retention window and tracking-job
+allowlist remain in force. Verify a successful cleanup run and advancing cursor
+after deployment. Observe disk usage before planning a table rewrite. A
+successful delete frees space for reuse inside the table, and a table rewrite
+to return disk space requires separate maintenance planning.

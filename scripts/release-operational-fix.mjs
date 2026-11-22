@@ -39,6 +39,7 @@ const manifests = {
   tracking: 'config/pending/tracking-queue-recovery.json',
   tracking_invalidations: 'config/pending/async-tracking-invalidations.json',
   tracking_history: 'config/pending/tracking-history-cleanup.json',
+  tracking_history_worker_timeout: 'config/pending/tracking-history-worker-timeout.json',
   tracking_batch: 'config/pending/tracking-batch.json',
   shared_bus_feed: 'config/pending/shared-bus-feed.json',
   independent_shared_tracking: 'config/pending/independent-shared-tracking.json',
