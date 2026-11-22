@@ -355,27 +355,36 @@ test('capacity setup sustains 551 sign-ins without exhausting a 150/5-minute tok
   assert.ok(starts.slice(1).every((time, i) => time - starts[i] >= 2100));
 });
 
-test('fleet setup uses four connections and seeds each bus index once', async () => {
+test('fleet setup seeds 5,000 buses once with one connection per district', async () => {
+  const tenants = Array.from({ length: 5000 }, (_, index) => (index % 3 === 0 ? 'a' : 'b'));
   const seeded = new Set();
+  const active = new Set();
   let opened = 0;
   let closed = 0;
+  let peak = 0;
   await seedCapacityFleetInLanes({
-    count: 5000,
+    tenants,
     connect: async () => ({
-      lane: opened++,
+      lane: opened++ === 0 ? 'a' : 'b',
       end: async () => {
         closed++;
       },
     }),
     assertRunning: () => {},
     seed: async ({ lane }, index) => {
-      assert.equal(index % 4, lane);
+      assert.equal(tenants[index], lane);
       assert.equal(seeded.has(index), false);
+      assert.equal(active.has(lane), false);
+      active.add(lane);
+      peak = Math.max(peak, active.size);
+      await Promise.resolve();
+      active.delete(lane);
       seeded.add(index);
     },
   });
-  assert.equal(opened, 4);
-  assert.equal(closed, 4);
+  assert.equal(opened, 2);
+  assert.equal(closed, 2);
+  assert.equal(peak, 2);
   assert.equal(seeded.size, 5000);
 });
 
@@ -384,7 +393,7 @@ test('fleet setup waits for all connections to close before reporting a seed fai
   const seeded = [];
   await assert.rejects(
     seedCapacityFleetInLanes({
-      count: 5000,
+      tenants: ['a', 'b', 'a', 'b'],
       connect: async () => ({
         end: async () => {
           await new Promise(setImmediate);
@@ -399,8 +408,8 @@ test('fleet setup waits for all connections to close before reporting a seed fai
     }),
     { message: 'FIXTURE_FAILED' },
   );
-  assert.deepEqual(seeded, [0, 1, 2, 3]);
-  assert.equal(closed, 4);
+  assert.deepEqual(seeded, [0, 1]);
+  assert.equal(closed, 2);
 });
 
 test('5,000 Recovery sign-ins fit the dedicated fixture quota at 250 ms pacing', async () => {

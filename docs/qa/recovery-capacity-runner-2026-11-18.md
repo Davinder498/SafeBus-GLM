@@ -36,8 +36,10 @@ Record the original quota and restore it after the run. Leave public sign-ups
 disabled. The workflow does not change either setting.
 
 The runner creates 5,000 synthetic drivers split across two test school
-authorities. It sets up the trips and devices on four database connections,
-closes those connections, and rehearses cleanup while the Data API is
+authorities. It sets up the trips and devices on one database connection per
+district. Districts run in parallel, and each district sets up one bus at a
+time because bus inserts lock the district row to check its licensed bus count.
+The runner closes the connections and rehearses cleanup while the Data API is
 quarantined. It then signs the drivers in with at least 250 ms
 between attempts. Before opening the API it verifies that all access tokens
 have at least five minutes remaining. The test attempts 50,000 HTTPS uploads
@@ -51,7 +53,9 @@ successful sign-ins. It ended before GPS measurement and verified cleanup.
 The large workflow now gives setup and measurement up to 160 minutes and
 reserves the final 50 minutes of its 210-minute job limit for cleanup. It
 records completion times for accounts, devices, cleanup rehearsal, and
-sign-ins, and names deadline failures explicitly.
+sign-ins, and names deadline failures explicitly. Run 45063854811 stopped
+during bus setup with PostgreSQL lock error `55P03` before GPS measurement.
+Recovery returned to quarantine with zero accounts, sessions, and devices.
 
 The protected test rehearses cleanup before opening the API, restores the
 API quarantine after testing, and verifies removal of synthetic devices and
