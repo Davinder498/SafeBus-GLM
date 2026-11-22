@@ -14,6 +14,7 @@ import {
 import { RECOVERY_AUTH_URL, assertRecoveryAuthKeys } from './lib/recovery-auth.mjs';
 import {
   capacityTables,
+  capacityAccountCount,
   capacityQuarantine,
   cleanupCapacity,
   assertCapacityScope,
@@ -48,13 +49,15 @@ const { createClient } = createRequire(new URL('../apps/web/package.json', impor
 const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? 'combined';
 const nativeGpsOnly = workload === 'android_gps';
+const largeNativeRun = nativeGpsOnly && buses === 5000;
+const loginIntervalMs = largeNativeRun ? 250 : 2100;
 const run = `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
 const scope = {
   run,
   buses,
   tenantIds: [randomUUID(), randomUUID()],
   emails: Array.from(
-    { length: Number.isInteger(buses) && buses <= 500 ? buses + 51 : 0 },
+    { length: capacityAccountCount(buses) },
     (_, i) => `capacity-load-${run}-${i}@example.test`,
   ),
 };
@@ -68,7 +71,7 @@ const evidence = {
   stages: [],
   workers: [],
   cleanupVerified: false,
-  authSetup: { rateLimitRetries: 0, retryWaitMs: 0, minimumLoginIntervalMs: 2100 },
+  authSetup: { rateLimitRetries: 0, retryWaitMs: 0, minimumLoginIntervalMs: loginIntervalMs },
   capacityQualified: false,
   limitations: nativeGpsOnly
     ? ['Android GPS API only; guardian maps, alerts and physical devices are outside this probe.']
@@ -96,10 +99,11 @@ const accounts = [],
   channels = [];
 let hintCount = 0;
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => stop.abort());
-const deadline = setTimeout(() => stop.abort(), 35 * 60 * 1000);
+const deadline = setTimeout(() => stop.abort(), (largeNativeRun ? 110 : 35) * 60 * 1000);
 const checked = checkedCapacityAuth;
 const loginAccount = createCapacityLogin({
   signal: stop.signal,
+  minimumIntervalMs: loginIntervalMs,
   onRetry: ({ backoffMs }) => {
     evidence.authSetup.rateLimitRetries++;
     evidence.authSetup.retryWaitMs += backoffMs;
@@ -124,12 +128,16 @@ const safeCode = (e) =>
       : 'UNCLASSIFIED_FAILURE';
 try {
   assertCapacityScope(scope);
-  if (!['combined', 'android_gps'].includes(workload) || (nativeGpsOnly && buses !== 10))
+  if (
+    !['combined', 'android_gps'].includes(workload) ||
+    (nativeGpsOnly ? ![10, 5000].includes(buses) : buses === 5000)
+  )
     throw Error('CAPACITY_WORKLOAD_INVALID');
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
     process.env.GITHUB_REF !== 'refs/heads/main' ||
-    process.env.SAFEBUS_CAPACITY_CONFIRM !== 'RUN_RECOVERY_CAPACITY'
+    process.env.SAFEBUS_CAPACITY_CONFIRM !==
+      (largeNativeRun ? 'RUN_RECOVERY_CAPACITY_5000' : 'RUN_RECOVERY_CAPACITY')
   )
     throw Error('CAPACITY_WORKFLOW_REQUIRED');
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -251,8 +259,9 @@ try {
       }),
     ).user;
     if (!user?.id) throw Error('CAPACITY_AUTH_FAILED');
-    const role = i < buses ? 'driver' : 'guardian',
-      tenant = scope.tenantIds[i === scope.emails.length - 1 ? 1 : 0];
+    const role = i < buses ? 'driver' : 'guardian';
+    const tenantIndex = largeNativeRun ? i % 2 : Number(i === scope.emails.length - 1);
+    const tenant = scope.tenantIds[tenantIndex];
     stage = `account-profile-${i}`;
     await db.query(
       "insert into public.profiles(id,tenant_id,full_name,first_name,last_name,email,role,status) values($1,$2,'Capacity Synthetic','Capacity','Synthetic',$3,$4,'active')",
@@ -265,30 +274,31 @@ try {
     const a = { id: user.id, email, client, tenant };
     accounts.push(a);
     stage = `account-login-${i}`;
-    const login = await loginAccount(() => client.auth.signInWithPassword({ email, password }));
-    if (login.user?.id !== user.id || !login.session?.access_token)
-      throw Error('CAPACITY_LOGIN_MISMATCH');
-    a.token = login.session.access_token;
+    if (largeNativeRun) a.password = password;
+    else await signInAccount(a, password);
   }
   stage = 'fixtures';
-  for (let i = 0; i < 2; i++) await seedCapacityTenant(db, scope, i, accounts[0].id);
+  for (let i = 0; i < 2; i++)
+    await seedCapacityTenant(db, scope, i, accounts[largeNativeRun ? i : 0].id);
   for (let i = 0; i < buses; i++) {
     assertRunning();
     stage = `fixture-bus-${i}`;
-    fleet.push(await seedCapacityBus(db, scope.tenantIds[0], accounts[i].id, i));
+    fleet.push(await seedCapacityBus(db, accounts[i].tenant, accounts[i].id, i));
   }
-  for (let i = 0; i < 50; i++) {
-    stage = `fixture-guardian-${i}`;
-    const a = accounts[buses + i];
-    Object.assign(a, await seedCapacityGuardian(db, fleet[0], a, i));
-    viewers.push(a);
+  if (!largeNativeRun) {
+    for (let i = 0; i < 50; i++) {
+      stage = `fixture-guardian-${i}`;
+      const a = accounts[buses + i];
+      Object.assign(a, await seedCapacityGuardian(db, fleet[0], a, i));
+      viewers.push(a);
+    }
+    stage = 'fixture-unlinked-guardian';
+    const outsider = accounts.at(-1);
+    await db.query(
+      "insert into public.guardians(tenant_id,profile_id,full_name,first_name,last_name,email) values($1,$2,'Capacity Unlinked','Capacity','Unlinked',$3)",
+      [outsider.tenant, outsider.id, outsider.email],
+    );
   }
-  stage = 'fixture-unlinked-guardian';
-  const outsider = accounts.at(-1);
-  await db.query(
-    "insert into public.guardians(tenant_id,profile_id,full_name,first_name,last_name,email) values($1,$2,'Capacity Unlinked','Capacity','Unlinked',$3)",
-    [outsider.tenant, outsider.id, outsider.email],
-  );
   const nativeDrivers = [];
   if (nativeGpsOnly) {
     stage = 'android-device-fixtures';
@@ -299,6 +309,22 @@ try {
   }
   stage = 'cleanup-rehearsal';
   await cleanupCapacity(db, scope, true);
+  if (largeNativeRun) {
+    for (const [index, account] of accounts.entries()) {
+      stage = `account-login-${index}`;
+      await signInAccount(account, account.password);
+      delete account.password;
+      nativeDrivers[index].accessToken = account.token;
+    }
+    stage = 'android-session-window';
+    const expiresAfter = Date.now() + 300000;
+    if (
+      accounts.some(
+        (account) => !Number.isFinite(account.expiresAt) || account.expiresAt < expiresAfter,
+      )
+    )
+      throw Error('CAPACITY_AUTH_SESSION_WINDOW');
+  }
   await db.query('grant usage on schema public,safebus_private to authenticated');
   if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
@@ -355,6 +381,15 @@ try {
     '.safebus-release/recovery-capacity/evidence.json',
     JSON.stringify(evidence, null, 2),
   );
+}
+async function signInAccount(account, password) {
+  const login = await loginAccount(() =>
+    account.client.auth.signInWithPassword({ email: account.email, password }),
+  );
+  if (login.user?.id !== account.id || !login.session?.access_token)
+    throw Error('CAPACITY_LOGIN_MISMATCH');
+  account.token = login.session.access_token;
+  account.expiresAt = login.session.expires_at * 1000;
 }
 async function runNativeGps(drivers) {
   const upload = createNativeGpsUpload(process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY);

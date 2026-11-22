@@ -44,11 +44,15 @@ export const capacityGuards = [
   ].map((t) => [t, 'retention_source_guard']),
   ['profiles', 'protect_final_tenant_admin_delete'],
 ];
+export function capacityAccountCount(buses) {
+  if (buses === 5000) return buses;
+  return [10, 100, 500].includes(buses) ? buses + 51 : 0;
+}
 export function assertCapacityScope(s) {
   if (
     !/^\d+-\d+$/.test(s.run) ||
-    ![10, 100, 500].includes(s.buses) ||
-    s.emails.length !== s.buses + 51 ||
+    !capacityAccountCount(s.buses) ||
+    s.emails.length !== capacityAccountCount(s.buses) ||
     s.tenantIds.length !== 2 ||
     new Set(s.tenantIds).size !== 2 ||
     s.tenantIds.some((id) => !/^[0-9a-f-]{36}$/.test(id)) ||

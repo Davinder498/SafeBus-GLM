@@ -25,14 +25,31 @@ is busy is counted separately and fails the same three-second acceptance
 criterion. Results also log recognized rejection reasons without response bodies.
 
 The probe leaves maps and delivery workers idle. It records HTTP timing,
-failed or unsent requests, and the position check. It qualifies only this
-small Android upload workload. Larger runs need their own device provisioning
-and Auth setup. The local generator test covers two 10,000-request waves against
-a simulated endpoint.
+failed or unsent requests, and the position check. The local generator test
+covers two 10,000-request waves against a simulated endpoint.
+
+For the 5,000-driver GPS-only run use workload `android_gps`, `buses=5000`,
+and confirmation `RUN_RECOVERY_CAPACITY_5000`. Use only the isolated Recovery
+project. Before dispatch, set its Auth token endpoint quota to at least
+1,500 requests per five minutes and use a one-hour Auth token lifetime.
+Record the original quota and restore it after the run. Leave public sign-ups
+disabled. The workflow does not change either setting.
+
+The runner creates 5,000 synthetic drivers split across two test school
+authorities. It sets up the trips and devices and rehearses cleanup while the
+Data API is quarantined. It then signs the drivers in with at least 250 ms
+between attempts. Before opening the API it verifies that all access tokens
+have at least five minutes remaining. The test attempts 50,000 HTTPS uploads
+per stage if the three-second target holds. Any missed slot or failed saved
+position check fails the stage. This measures 5,000 simulated GPS uploaders
+on Recovery. It leaves guardian maps, alert delivery, and production outside
+the test.
 
 The protected test rehearses cleanup before opening the API, restores the
 API quarantine after testing, and verifies removal of synthetic devices and
 their dependent cursors. It does not disable any additional triggers.
+The cleanup workflow also accepts a partially provisioned 5,000-driver run
+if both test tenants and every remaining account match that run's identifiers.
 
 ## What this first test measures
 

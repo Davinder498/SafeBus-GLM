@@ -4,6 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import {
   capacityTables,
   capacityGuards,
+  capacityAccountCount,
   cleanupCapacity,
   assertCapacityScope,
 } from '../../scripts/lib/recovery-capacity-cleanup.mjs';
@@ -351,6 +352,33 @@ test('capacity setup sustains 551 sign-ins without exhausting a 150/5-minute tok
   assert.equal(rejections, 0);
   assert.equal(starts.length, 551);
   assert.ok(starts.slice(1).every((time, i) => time - starts[i] >= 2100));
+});
+
+test('5,000 Recovery sign-ins fit the dedicated fixture quota at 250 ms pacing', async () => {
+  let now = 0;
+  let last = 0;
+  let tokens = 30;
+  const login = createCapacityLogin({
+    minimumIntervalMs: 250,
+    clock: () => now,
+    wait: async (ms) => {
+      now += ms;
+    },
+  });
+  for (let i = 0; i < 5000; i++) {
+    await login(async () => {
+      tokens = Math.min(30, tokens + (now - last) / 200);
+      last = now;
+      assert.ok(tokens >= 1);
+      tokens--;
+      return { data: {} };
+    });
+  }
+  assert.equal(now, 4999 * 250);
+  assert.equal(capacityAccountCount(5000), 5000);
+  assert.equal(capacityAccountCount(10), 61);
+  assert.equal(capacityAccountCount(10000), 0);
+  assert.throws(() => createCapacityLogin({ minimumIntervalMs: 249 }));
 });
 
 test('setup retries only rejected logins and caps retries without exposing responses', async () => {
