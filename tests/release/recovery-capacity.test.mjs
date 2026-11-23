@@ -733,3 +733,79 @@ test('arrivals do not issue a request when cancelled during scheduled wait', asy
   assert.equal(requests, 1);
   assert.equal(result.passed, false);
 });
+
+test('sustained native GPS queues a cooldown-blocked fix, keeps its collection timestamp and enforces latency', async () => {
+  for (const delayedSecond of [false, true]) {
+    let now = 0;
+    const sent = [];
+    const result = await measureNativeGps({
+      drivers: nativeDrivers(1),
+      rounds: 2,
+      pattern: 'synchronized',
+      queueBusySlots: true,
+      upload: async (_driver, sequence, recordedAt) => {
+        sent.push({ sequence, recordedAt, sentAt: now });
+        if (sequence === 1) now += 2700;
+        if (sequence === 2 && delayedSecond) now += 3000;
+      },
+      verifyPositions: async latest => latest.get('trip-0')?.sequence === 2,
+      clock: () => now,
+      wallClock: () => 1_800_000_000_000,
+      wait: async ms => {
+        const due = now + ms;
+        await new Promise(setImmediate);
+        now = Math.max(now, due);
+      },
+      waitForUpload: async ms => { now += ms; },
+    });
+    assert.deepEqual(sent.map(x => x.sequence), [1, 2]);
+    assert.equal(Date.parse(sent[1].recordedAt) - Date.parse(sent[0].recordedAt), 3000);
+    assert.equal(sent[1].sentAt, 3450);
+    assert.equal(result.accepted, 2);
+    assert.equal(result.deviceBackpressure, 1);
+    assert.equal(result.busyCooldown, 1);
+    assert.equal(result.maxQueueDelayMs, 450);
+    assert.equal(result.late, delayedSecond ? 1 : 0);
+    assert.equal(result.passed, !delayedSecond);
+  }
+});
+
+test('sustained native GPS queues behind an in-flight request without overlap', async () => {
+  let now = 0;
+  let finish;
+  let busy = false;
+  const sent = [];
+  const result = await measureNativeGps({
+    drivers: nativeDrivers(1),
+    rounds: 3,
+    pattern: 'synchronized',
+    queueBusySlots: true,
+    upload: async (_driver, sequence) => {
+      assert.equal(busy, false);
+      busy = true;
+      sent.push(sequence);
+      if (sequence === 1) await new Promise(resolve => { finish = resolve; });
+      busy = false;
+    },
+    verifyPositions: async latest => latest.get('trip-0')?.sequence === 3,
+    clock: () => now,
+    wallClock: () => 1_800_000_000_000,
+    wait: async ms => {
+      const due = now + ms;
+      await new Promise(setImmediate);
+      if (now === 3000) {
+        now = 3100;
+        finish();
+        await new Promise(setImmediate);
+      }
+      now = Math.max(now, due);
+    },
+    waitForUpload: async ms => { now += ms; },
+  });
+  assert.deepEqual(sent, [1, 2, 3]);
+  assert.equal(result.busyInFlight, 1);
+  assert.equal(result.maxDeviceQueueDepth, 2);
+  assert.equal(result.accepted, 3);
+  assert.equal(result.late, 1);
+  assert.equal(result.passed, false);
+});
