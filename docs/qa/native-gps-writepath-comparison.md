@@ -26,3 +26,21 @@ It also records each phase's mean, median and p95 observed in the embedded engin
 Recovery's Supabase-owned Realtime partitions were behind the current date. The combined workload is blocked by a preflight check until the provider restores managed partitions. The Android GPS-only workload can still isolate HTTP ingestion, but **must not be reported as complete map/notification certification**.
 
 A 10,000 active-bus fleet at three-second GPS intervals requests approximately 3,333 ingestions/second before guardian reads and worker dispatch; reducing speculative writes alone does not prove that throughput.
+
+## Guarded Recovery HTTPS A–B–A (prepared 2026-11-23)
+
+The existing protected GitHub Actions **Run isolated recovery capacity** workflow now has a third workload, `android_gps_compare`. This mode accepts **only 10 buses** and confirmation `RUN_RECOVERY_GPS_COMPARE`; it retains the exact reviewed `main` SHA and Recovery-only credentials and environment identity guards.
+
+The runner uses the same ten synthetic drivers, trips and device credentials for all three real authenticated HTTPS phases, each with staggered and synchronized three-second GPS updates:
+
+1. **Original function**: device sequences 1–20.
+2. **Optimized function**: atomically apply heartbeat and fast-path SQL to isolated Recovery only; sequences 21–40.
+3. **Original restored**: verify that the function definition, owner and grants exactly match the previously captured baseline; sequences 41–60.
+
+The comparison checks all planned/attempted/accepted GPS sends, latency p50/p95/p99, errors and position/sequence reconciliation. It records only sanitized aggregate evidence and hashes, never credentials, coordinates, student details or device identifiers. If any phase fails, the runner attempts to restore the exact baseline in its `finally` **before** quarantining the Data API, removing synthetic fixtures or verifying the schema fingerprint. The final evidence must show both `nativeGpsComparison.restored=true` and `cleanupVerified=true`. The runner refuses an unfamiliar function digest or unexpected grants.
+
+**Recovery on interrupted runs:** The same protected workflow also offers `android_gps_restore`, exactly **10 buses**, and confirmation `RESTORE_RECOVERY_GPS_BASELINE`. It does **not** generate GPS traffic or create accounts. On the Recovery project alone it accepts only the independently verified original checksum `a567e385b73bf59ef71a9fc8d47597ad` or the optimized checksum `cc339d880a35380907eab09b456739c2`. It replays the original source from the reviewed `20261109214533_remove_gps_history.sql` file, revokes authenticated schema access to quarantine Recovery, and verifies unchanged function ownership and grants. Both source and optimized checksum were confirmed in rollback-only transactions against Recovery PostgreSQL 17.
+
+An abrupt host termination can still bypass in-process restoration and synthetic cleanup. If so, first run the protected `android_gps_restore` option, then run the separately reviewed **Recovery synthetic cleanup** for the interrupted run and verify the environment is empty, quarantined, and schema-consistent. Restoration alone does **not** delete synthetic users, trips or queues. Do not retry the A–B–A workload until both checks are complete.
+
+**Interpretation:** This is a ten-bus HTTP comparison on Recovery; it is not a 100-, 500-, 5,000- or 10,000-bus capacity certificate, does not exercise guardian maps or push/email, and does not install any SQL on production. Broader fleet tests require new explicit approval after ten-bus correctness and cleanup are confirmed. Missing Supabase-managed Realtime partitions continue to block **combined** worker/guardian tests, not this Android GPS-only comparison.

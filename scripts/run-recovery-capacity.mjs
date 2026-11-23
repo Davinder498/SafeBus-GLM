@@ -61,12 +61,14 @@ import {
 import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
 import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
+import { createRecoveryGpsComparison } from "./lib/recovery-native-gps-comparison.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
 const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
-const nativeGpsOnly = workload === "android_gps";
+const gpsCompare = workload === "android_gps_compare";
+const nativeGpsOnly = workload === "android_gps" || gpsCompare;
 const largeNativeRun = nativeGpsOnly && buses === 5000;
 const loginIntervalMs = largeNativeRun ? 250 : 2100;
 const run = `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
@@ -117,7 +119,8 @@ let db,
   workers = [],
   workerTasks = [],
   workerStop = false,
-  workerError = null;
+  workerError = null,
+  gpsComparison = null;
 const accounts = [],
   fleet = [],
   viewers = [],
@@ -173,15 +176,17 @@ function phaseComplete(name) {
 try {
   assertCapacityScope(scope);
   if (
-    !["combined", "android_gps"].includes(workload) ||
-    (!nativeGpsOnly && buses === 5000)
+    !["combined", "android_gps", "android_gps_compare"].includes(workload) ||
+    (!nativeGpsOnly && buses === 5000) ||
+    (gpsCompare && buses !== 10)
   )
     throw Error("CAPACITY_WORKLOAD_INVALID");
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
     process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==
-      (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" : "RUN_RECOVERY_CAPACITY")
+      (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" :
+        gpsCompare ? "RUN_RECOVERY_GPS_COMPARE" : "RUN_RECOVERY_CAPACITY")
   )
     throw Error("CAPACITY_WORKFLOW_REQUIRED");
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -431,7 +436,21 @@ try {
   await db.query(
     "grant usage on schema public,safebus_private to authenticated",
   );
-  if (nativeGpsOnly) await runNativeGps(nativeDrivers);
+  if (gpsCompare) {
+    stage = "gps-comparison-preflight";
+    gpsComparison = await createRecoveryGpsComparison(db);
+    evidence.nativeGpsComparison = { ...gpsComparison.evidence, restored: false };
+    await runNativeGps(nativeDrivers, { phase: "baseline_before", sequenceOffset: 0 });
+    stage = "gps-comparison-install";
+    evidence.nativeGpsComparison.optimized = await gpsComparison.install();
+    await delay(3000, undefined, { signal: stop.signal });
+    await runNativeGps(nativeDrivers, { phase: "optimized", sequenceOffset: 20 });
+    stage = "gps-comparison-restore";
+    await gpsComparison.restore();
+    evidence.nativeGpsComparison.restored = true;
+    await delay(3000, undefined, { signal: stop.signal });
+    await runNativeGps(nativeDrivers, { phase: "baseline_after", sequenceOffset: 40 });
+  } else if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
   evidence.exploratoryPassed = true;
 } catch (e) {
@@ -449,6 +468,19 @@ try {
 } finally {
   workerStop = true;
   stop.abort();
+  // Restore the original function before synthetic cleanup and schema checks,
+  // including if an HTTPS measurement failed. This is Recovery ONLY.
+  if (connected && gpsComparison) {
+    try {
+      await db.query('rollback').catch(() => {});
+      await gpsComparison.restore();
+      evidence.nativeGpsComparison.restored = true;
+    } catch {
+      evidence.nativeGpsComparison.restoreFailureCode = 'CAPACITY_GPS_RESTORE_FAILED';
+      process.exitCode = 1;
+      console.error('Recovery GPS restoration failed; isolated target requires review.');
+    }
+  }
   await disconnectCapacityClients(accounts);
   await Promise.allSettled(workerTasks);
   for (const w of workers) await w.end().catch(() => {});
@@ -499,7 +531,7 @@ async function signInAccount(account, password) {
   account.token = login.session.access_token;
   account.expiresAt = login.session.expires_at * 1000;
 }
-async function runNativeGps(drivers) {
+async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) {
   const transport = createNativeGpsTransport();
   try {
     const upload = createNativeGpsUpload(
@@ -521,16 +553,16 @@ async function runNativeGps(drivers) {
       if (error.message !== "NATIVE_GPS_HTTP_403") throw error;
     }
     transport.takeMetrics();
-    evidence.nativeGpsStages = [];
+    evidence.nativeGpsStages ??= [];
     const rounds = 10;
     for (const [index, pattern] of ["staggered", "synchronized"].entries()) {
-      stage = "android-gps-" + pattern;
+      stage = "android-gps-" + (phase ?? "default") + "-" + pattern;
       // Start the second wave on a fresh collection interval for every device.
       if (index) await delay(3000, undefined, { signal: stop.signal });
       const result = await measureNativeGps({
         drivers: drivers.map((driver) => ({
           ...driver,
-          lastSequence: index * rounds,
+          lastSequence: sequenceOffset + index * rounds,
         })),
         rounds,
         pattern,
@@ -540,6 +572,7 @@ async function runNativeGps(drivers) {
         maxInFlight: buses * 2,
       });
       result.transport = transport.takeMetrics();
+      if (phase) result.phase = phase;
       evidence.nativeGpsStages.push(result);
       console.log(
         `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
