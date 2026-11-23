@@ -91,32 +91,17 @@ test('GPS produces one delayed shared marker, never personal location fan-out', 
   assert.equal(topics.filter(x=>x.startsWith('safebus:guardian:')).length,0);
 });
 
-test('16-shard activation is blocked without explicit capacity approval', async (t) => {
+test('retired direct 16-shard activation is never permitted', async (t) => {
   const db = await prepare(t);
-  await assert.rejects(db.exec(activation), /protected qualification gate/);
+  await assert.rejects(db.exec(activation), /Direct 16-worker activation retired/);
   assert.equal(
     await scalar(db, "select count(*)::int as value from cron.job where jobname like 'safebus-shared-tracking-%' and active"),
     1,
   );
-});
-
-test('approved activation restores independent bounded workers without broadening ACLs', async (t) => {
-  const db = await prepare(t);
   await db.exec("set safebus.tracking_capacity_approved = 'true'");
-  await db.exec(activation);
+  await assert.rejects(db.exec(activation), /Direct 16-worker activation retired/);
   assert.equal(
     await scalar(db, "select count(*)::int as value from cron.job where jobname like 'safebus-shared-tracking-%' and active"),
-    16,
+    1,
   );
-  assert.equal(
-    await scalar(db, "select count(*)::int as value from cron.job where jobname like 'safebus-shared-tracking-%' and command like '%dispatch_shared_tracking(%'"),
-    16,
-  );
-  for (const role of ['anon','authenticated','service_role']) {
-    assert.equal(
-      await scalar(db, `select has_function_privilege('${role}',
-      'safebus_private.dispatch_shared_tracking(integer,integer)', 'EXECUTE') as value`),
-      false,
-    );
-  }
 });
