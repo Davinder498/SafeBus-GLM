@@ -12,7 +12,7 @@ on:
         default: '10'
         required: true
       workload:
-        description: Android GPS uses 10 or 5000 buses
+        description: Android GPS supports 10, 100, 500, or 5000 buses
         type: choice
         options: [combined, android_gps]
         default: combined

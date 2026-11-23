@@ -1,55 +1,71 @@
-import fs from 'node:fs/promises';
-import { randomUUID, randomBytes } from 'node:crypto';
-import { createRequire } from 'node:module';
-import { setTimeout as delay } from 'node:timers/promises';
-import { performance } from 'node:perf_hooks';
+import fs from "node:fs/promises";
+import { randomUUID, randomBytes } from "node:crypto";
+import { createRequire } from "node:module";
+import { setTimeout as delay } from "node:timers/promises";
+import { performance } from "node:perf_hooks";
 import {
   verifiedDatabaseClient,
   assertReviewedCheckout,
-} from './lib/security-workflow-evidence.mjs';
+} from "./lib/security-workflow-evidence.mjs";
 import {
   createEnvironmentBinding,
   assertEnvironmentIdentity,
-} from './lib/environment-identity.mjs';
-import { RECOVERY_AUTH_URL, assertRecoveryAuthKeys } from './lib/recovery-auth.mjs';
+} from "./lib/environment-identity.mjs";
+import {
+  RECOVERY_AUTH_URL,
+  assertRecoveryAuthKeys,
+} from "./lib/recovery-auth.mjs";
 import {
   capacityTables,
   capacityAccountCount,
   capacityQuarantine,
   cleanupCapacity,
   assertCapacityScope,
-} from './lib/recovery-capacity-cleanup.mjs';
+} from "./lib/recovery-capacity-cleanup.mjs";
 import {
   seedCapacityTenant,
   seedCapacityBus,
   seedCapacityGuardian,
   seedCapacityNativeDevice,
   seedCapacityFleetInLanes,
-} from './lib/recovery-capacity-fixtures.mjs';
+} from "./lib/recovery-capacity-fixtures.mjs";
 import {
   quarantineCapacity,
   disconnectCapacityClients,
   capacityFetch,
-} from './lib/recovery-capacity-lifecycle.mjs';
-import { runArrivals } from './lib/recovery-capacity-scheduler.mjs';
-import { capacityGpsLatitude, assertCapacityGpsAck } from './lib/recovery-capacity-gps.mjs';
+} from "./lib/recovery-capacity-lifecycle.mjs";
+import { runArrivals } from "./lib/recovery-capacity-scheduler.mjs";
 import {
+  capacityGpsLatitude,
+  assertCapacityGpsAck,
+} from "./lib/recovery-capacity-gps.mjs";
+import {
+  createNativeGpsTransport,
   createNativeGpsUpload,
   measureNativeGps,
   verifyNativeGpsPositions,
-} from './lib/recovery-native-gps-load.mjs';
-import { capacityWorkerPlan, dispatchCapacityRound } from './lib/recovery-capacity-workers.mjs';
-import { checkedCapacityAuth, createCapacityLogin } from './lib/recovery-capacity-auth.mjs';
-import { sendRecoveryProbe } from './lib/recovery-broadcast-readiness.mjs';
-import { channelFailureCode, withRealtimeStartupRetry } from './lib/recovery-api-diagnostics.mjs';
-import { calculateSchemaFingerprint } from './lib/schema-fingerprint.mjs';
-import { recoveryPolicyQuery } from './lib/recovery-runtime-catalog.mjs';
-const { createClient } = createRequire(new URL('../apps/web/package.json', import.meta.url))(
-  '@supabase/supabase-js',
-);
+} from "./lib/recovery-native-gps-load.mjs";
+import {
+  capacityWorkerPlan,
+  dispatchCapacityRound,
+} from "./lib/recovery-capacity-workers.mjs";
+import {
+  checkedCapacityAuth,
+  createCapacityLogin,
+} from "./lib/recovery-capacity-auth.mjs";
+import { sendRecoveryProbe } from "./lib/recovery-broadcast-readiness.mjs";
+import {
+  channelFailureCode,
+  withRealtimeStartupRetry,
+} from "./lib/recovery-api-diagnostics.mjs";
+import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
+import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
+const { createClient } = createRequire(
+  new URL("../apps/web/package.json", import.meta.url),
+)("@supabase/supabase-js");
 const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
-const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? 'combined';
-const nativeGpsOnly = workload === 'android_gps';
+const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
+const nativeGpsOnly = workload === "android_gps";
 const largeNativeRun = nativeGpsOnly && buses === 5000;
 const loginIntervalMs = largeNativeRun ? 250 : 2100;
 const run = `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
@@ -65,23 +81,29 @@ const scope = {
 const evidence = {
   releaseSha: process.env.SAFEBUS_RELEASE_SHA,
   runId: run,
-  target: 'deladookciebwvqojhkv',
+  target: "deladookciebwvqojhkv",
   requestedBuses: buses,
   workload,
   startedAt: new Date().toISOString(),
   stages: [],
   workers: [],
   cleanupVerified: false,
-  authSetup: { rateLimitRetries: 0, retryWaitMs: 0, minimumLoginIntervalMs: loginIntervalMs },
+  authSetup: {
+    rateLimitRetries: 0,
+    retryWaitMs: 0,
+    minimumLoginIntervalMs: loginIntervalMs,
+  },
   capacityQualified: false,
   limitations: nativeGpsOnly
-    ? ['Android GPS API only; guardian maps, alerts and physical devices are outside this probe.']
+    ? [
+        "Android GPS API only; guardian maps, alerts and physical devices are outside this probe.",
+      ]
     : [
-        'Exploratory browser-session GPS; native device ingestion and offline replay not exercised.',
-        '50 eligible guardians on one bus only; not 50 guardians per fleet bus.',
-        'Internal notification audience/inbox only; no push or email provider delivery.',
-        'Node workers invoke installed functions; not a pg_cron scheduler qualification.',
-        'No eight-hour soak, fleet-wide viewer load, or commercial launch certification.',
+        "Exploratory browser-session GPS; native device ingestion and offline replay not exercised.",
+        "50 eligible guardians on one bus only; not 50 guardians per fleet bus.",
+        "Internal notification audience/inbox only; no push or email provider delivery.",
+        "Node workers invoke installed functions; not a pg_cron scheduler qualification.",
+        "No eight-hour soak, fleet-wide viewer load, or commercial launch certification.",
       ],
 };
 const stop = new AbortController();
@@ -90,7 +112,7 @@ let db,
   admin,
   connected = false,
   armed = false,
-  stage = 'preflight',
+  stage = "preflight",
   workers = [],
   workerTasks = [],
   workerStop = false,
@@ -100,7 +122,8 @@ const accounts = [],
   viewers = [],
   channels = [];
 let hintCount = 0;
-for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => stop.abort());
+for (const signal of ["SIGTERM", "SIGINT"])
+  process.on(signal, () => stop.abort());
 const deadline = setTimeout(
   () => {
     deadlineReached = true;
@@ -117,23 +140,31 @@ const loginAccount = createCapacityLogin({
     evidence.authSetup.retryWaitMs += backoffMs;
   },
 });
-const safeFetch = (input, init) => capacityFetch(input, init, { origin: RECOVERY_AUTH_URL });
+const safeFetch = (input, init) =>
+  capacityFetch(input, init, { origin: RECOVERY_AUTH_URL });
 const workloadFetch = (input, init) =>
-  capacityFetch(input, init, { origin: RECOVERY_AUTH_URL, signal: stop.signal });
+  capacityFetch(input, init, {
+    origin: RECOVERY_AUTH_URL,
+    signal: stop.signal,
+  });
 const options = {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
   global: { fetch: safeFetch },
 };
 const assertRunning = () => {
   if (workerError) throw workerError;
-  if (stop.signal.aborted) throw Error('CAPACITY_STOP_REQUESTED');
+  if (stop.signal.aborted) throw Error("CAPACITY_STOP_REQUESTED");
 };
 const safeCode = (e) =>
-  /^[A-Z][A-Z0-9_]{3,65}$/.test(e?.message ?? '')
+  /^[A-Z][A-Z0-9_]{3,65}$/.test(e?.message ?? "")
     ? e.message
-    : /^[A-Z0-9]{5}$/.test(e?.code ?? '')
+    : /^[A-Z0-9]{5}$/.test(e?.code ?? "")
       ? e.code
-      : 'UNCLASSIFIED_FAILURE';
+      : "UNCLASSIFIED_FAILURE";
 function phaseComplete(name) {
   (evidence.setupMilestones ??= {})[name] = new Date().toISOString();
   console.log(`Recovery setup complete: ${name}.`);
@@ -141,32 +172,32 @@ function phaseComplete(name) {
 try {
   assertCapacityScope(scope);
   if (
-    !['combined', 'android_gps'].includes(workload) ||
-    (nativeGpsOnly ? ![10, 5000].includes(buses) : buses === 5000)
+    !["combined", "android_gps"].includes(workload) ||
+    (!nativeGpsOnly && buses === 5000)
   )
-    throw Error('CAPACITY_WORKLOAD_INVALID');
+    throw Error("CAPACITY_WORKLOAD_INVALID");
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
-    process.env.GITHUB_REF !== 'refs/heads/main' ||
+    process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==
-      (largeNativeRun ? 'RUN_RECOVERY_CAPACITY_5000' : 'RUN_RECOVERY_CAPACITY')
+      (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" : "RUN_RECOVERY_CAPACITY")
   )
-    throw Error('CAPACITY_WORKFLOW_REQUIRED');
+    throw Error("CAPACITY_WORKFLOW_REQUIRED");
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
   if (
-    url.pathname !== '/postgres' ||
-    (url.port || '5432') !== '5432' ||
+    url.pathname !== "/postgres" ||
+    (url.port || "5432") !== "5432" ||
     url.search ||
     url.hash ||
     !url.password
   )
-    throw Error('CAPACITY_SESSION_CONNECTION_REQUIRED');
+    throw Error("CAPACITY_SESSION_CONNECTION_REQUIRED");
   assertRecoveryAuthKeys(
     process.env.SAFEBUS_CAPACITY_AUTH_SECRET,
     process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
   );
   const binding = createEnvironmentBinding({
-    environment: 'staging',
+    environment: "staging",
     databaseUrl: url.toString(),
     supabaseUrl: RECOVERY_AUTH_URL,
   });
@@ -185,7 +216,7 @@ try {
       throw error;
     }
   };
-  db = await connect('safebus-capacity-control');
+  db = await connect("safebus-capacity-control");
   connected = true;
   await assertEnvironmentIdentity(db, binding);
   if (
@@ -195,21 +226,21 @@ try {
       )
     ).rows[0].locked
   )
-    throw Error('CAPACITY_DEPLOYMENT_BUSY');
+    throw Error("CAPACITY_DEPLOYMENT_BUSY");
   await capacityQuarantine(db);
   for (const table of [
-    'auth.users',
-    'auth.sessions',
-    'cron.job',
-    'vault.secrets',
-    'storage.objects',
-    'public.tenants',
-    ...capacityTables.map((t) => 'public.' + t),
-    'safebus_private.notification_audience_queue',
-    'safebus_private.driver_tracking_state',
+    "auth.users",
+    "auth.sessions",
+    "cron.job",
+    "vault.secrets",
+    "storage.objects",
+    "public.tenants",
+    ...capacityTables.map((t) => "public." + t),
+    "safebus_private.notification_audience_queue",
+    "safebus_private.driver_tracking_state",
   ])
     if ((await db.query(`select 1 from ${table} limit 1`)).rowCount)
-      throw Error('CAPACITY_NONEMPTY_BASELINE');
+      throw Error("CAPACITY_NONEMPTY_BASELINE");
   if (
     (
       await db.query(
@@ -217,15 +248,20 @@ try {
       )
     ).rowCount
   )
-    throw Error('CAPACITY_AUTH_TRIGGER_DRIFT');
-  await db.query('set search_path=pg_catalog');
+    throw Error("CAPACITY_AUTH_TRIGGER_DRIFT");
+  await db.query("set search_path=pg_catalog");
   if (
     JSON.stringify((await db.query(recoveryPolicyQuery)).rows) !==
     JSON.stringify(
-      JSON.parse(await fs.readFile('tests/capacity/recovery-runtime-policies.json', 'utf8')),
+      JSON.parse(
+        await fs.readFile(
+          "tests/capacity/recovery-runtime-policies.json",
+          "utf8",
+        ),
+      ),
     )
   )
-    throw Error('CAPACITY_POLICY_DRIFT');
+    throw Error("CAPACITY_POLICY_DRIFT");
   const hook = (
     await db.query(
       "select setting from pg_db_role_setting s join pg_roles r on r.oid=s.setrole cross join lateral unnest(s.setconfig) setting where r.rolname='authenticator' and setting like 'pgrst.db_pre_request=%'",
@@ -233,40 +269,45 @@ try {
   ).rows;
   if (
     hook.length !== 1 ||
-    hook[0].setting !== 'pgrst.db_pre_request=safebus_private.enforce_active_api_session'
+    hook[0].setting !==
+      "pgrst.db_pre_request=safebus_private.enforce_active_api_session"
   )
-    throw Error('CAPACITY_HOOK_DRIFT');
-  const settings = await safeFetch(RECOVERY_AUTH_URL + '/auth/v1/settings', {
+    throw Error("CAPACITY_HOOK_DRIFT");
+  const settings = await safeFetch(RECOVERY_AUTH_URL + "/auth/v1/settings", {
     headers: { apikey: process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY },
   });
-  if (!settings.ok) throw Error('CAPACITY_SETTINGS_FAILED');
+  if (!settings.ok) throw Error("CAPACITY_SETTINGS_FAILED");
   const config = await settings.json();
   if (
     config.disable_signup !== true ||
     config.external?.email !== true ||
     config.external?.phone === true
   )
-    throw Error('CAPACITY_AUTH_NOT_ISOLATED');
+    throw Error("CAPACITY_AUTH_NOT_ISOLATED");
   evidence.schemaFingerprint = await calculateSchemaFingerprint(db);
   evidence.database = (
     await db.query(
       "select version() version,current_setting('max_connections')::int max_connections,pg_database_size(current_database()) bytes",
     )
   ).rows[0];
-  admin = createClient(RECOVERY_AUTH_URL, process.env.SAFEBUS_CAPACITY_AUTH_SECRET, options);
+  admin = createClient(
+    RECOVERY_AUTH_URL,
+    process.env.SAFEBUS_CAPACITY_AUTH_SECRET,
+    options,
+  );
   checked(await admin.auth.admin.listUsers({ page: 1, perPage: 1 }));
   armed = true;
   for (let i = 0; i < 2; i++)
-    await db.query("insert into public.tenants(id,name,type) values($1,$2,'demo')", [
-      scope.tenantIds[i],
-      `Capacity Load ${run} ${i + 1}`,
-    ]);
-  stage = 'accounts';
+    await db.query(
+      "insert into public.tenants(id,name,type) values($1,$2,'demo')",
+      [scope.tenantIds[i], `Capacity Load ${run} ${i + 1}`],
+    );
+  stage = "accounts";
   for (let i = 0; i < scope.emails.length; i++) {
     assertRunning();
     stage = `account-create-${i}`;
     const email = scope.emails[i],
-      password = `Ca9!${randomBytes(32).toString('base64url')}`;
+      password = `Ca9!${randomBytes(32).toString("base64url")}`;
     const user = checked(
       await admin.auth.admin.createUser({
         email,
@@ -275,27 +316,33 @@ try {
         app_metadata: { safebus_capacity_run: run },
       }),
     ).user;
-    if (!user?.id) throw Error('CAPACITY_AUTH_FAILED');
-    const role = i < buses ? 'driver' : 'guardian';
-    const tenantIndex = largeNativeRun ? i % 2 : Number(i === scope.emails.length - 1);
+    if (!user?.id) throw Error("CAPACITY_AUTH_FAILED");
+    const role = i < buses ? "driver" : "guardian";
+    const tenantIndex = largeNativeRun
+      ? i % 2
+      : Number(i === scope.emails.length - 1);
     const tenant = scope.tenantIds[tenantIndex];
     stage = `account-profile-${i}`;
     await db.query(
       "insert into public.profiles(id,tenant_id,full_name,first_name,last_name,email,role,status) values($1,$2,'Capacity Synthetic','Capacity','Synthetic',$3,$4,'active')",
       [user.id, tenant, email, role],
     );
-    const client = createClient(RECOVERY_AUTH_URL, process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY, {
-      ...options,
-      global: { fetch: workloadFetch },
-    });
+    const client = createClient(
+      RECOVERY_AUTH_URL,
+      process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
+      {
+        ...options,
+        global: { fetch: workloadFetch },
+      },
+    );
     const a = { id: user.id, email, client, tenant };
     accounts.push(a);
     stage = `account-login-${i}`;
     if (largeNativeRun) a.password = password;
     else await signInAccount(a, password);
   }
-  if (largeNativeRun) phaseComplete('accounts-created');
-  stage = 'fixtures';
+  if (largeNativeRun) phaseComplete("accounts-created");
+  stage = "fixtures";
   for (let i = 0; i < 2; i++)
     await seedCapacityTenant(db, scope, i, accounts[largeNativeRun ? i : 0].id);
   const nativeDrivers = [];
@@ -306,16 +353,27 @@ try {
       assertRunning,
       seed: async (connection, i) => {
         const account = accounts[i];
-        const bus = await seedCapacityBus(connection, account.tenant, account.id, i);
-        nativeDrivers[i] = await seedCapacityNativeDevice(connection, bus, account);
+        const bus = await seedCapacityBus(
+          connection,
+          account.tenant,
+          account.id,
+          i,
+        );
+        nativeDrivers[i] = await seedCapacityNativeDevice(
+          connection,
+          bus,
+          account,
+        );
       },
     });
-    phaseComplete('buses-and-devices-created');
+    phaseComplete("buses-and-devices-created");
   } else {
     for (let i = 0; i < buses; i++) {
       assertRunning();
       stage = `fixture-bus-${i}`;
-      fleet.push(await seedCapacityBus(db, accounts[i].tenant, accounts[i].id, i));
+      fleet.push(
+        await seedCapacityBus(db, accounts[i].tenant, accounts[i].id, i),
+      );
     }
   }
   if (!largeNativeRun) {
@@ -325,7 +383,7 @@ try {
       Object.assign(a, await seedCapacityGuardian(db, fleet[0], a, i));
       viewers.push(a);
     }
-    stage = 'fixture-unlinked-guardian';
+    stage = "fixture-unlinked-guardian";
     const outsider = accounts.at(-1);
     await db.query(
       "insert into public.guardians(tenant_id,profile_id,full_name,first_name,last_name,email) values($1,$2,'Capacity Unlinked','Capacity','Unlinked',$3)",
@@ -333,41 +391,50 @@ try {
     );
   }
   if (nativeGpsOnly && !largeNativeRun) {
-    stage = 'android-device-fixtures';
+    stage = "android-device-fixtures";
     for (let i = 0; i < buses; i++) {
       assertRunning();
-      nativeDrivers.push(await seedCapacityNativeDevice(db, fleet[i], accounts[i]));
+      nativeDrivers.push(
+        await seedCapacityNativeDevice(db, fleet[i], accounts[i]),
+      );
     }
   }
-  stage = 'cleanup-rehearsal';
+  stage = "cleanup-rehearsal";
   await cleanupCapacity(db, scope, true);
   if (largeNativeRun) {
-    phaseComplete('cleanup-rehearsed');
+    phaseComplete("cleanup-rehearsed");
     for (const [index, account] of accounts.entries()) {
       stage = `account-login-${index}`;
       await signInAccount(account, account.password);
       delete account.password;
       nativeDrivers[index].accessToken = account.token;
     }
-    phaseComplete('driver-sign-ins-complete');
-    stage = 'android-session-window';
+    phaseComplete("driver-sign-ins-complete");
+    stage = "android-session-window";
     const expiresAfter = Date.now() + 300000;
     if (
       accounts.some(
-        (account) => !Number.isFinite(account.expiresAt) || account.expiresAt < expiresAfter,
+        (account) =>
+          !Number.isFinite(account.expiresAt) ||
+          account.expiresAt < expiresAfter,
       )
     )
-      throw Error('CAPACITY_AUTH_SESSION_WINDOW');
+      throw Error("CAPACITY_AUTH_SESSION_WINDOW");
   }
-  await db.query('grant usage on schema public,safebus_private to authenticated');
+  await db.query(
+    "grant usage on schema public,safebus_private to authenticated",
+  );
   if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
   evidence.exploratoryPassed = true;
 } catch (e) {
   evidence.exploratoryPassed = false;
   evidence.failedStage = stage;
-  evidence.failureCode = deadlineReached ? 'CAPACITY_SETUP_OR_WORKLOAD_DEADLINE' : safeCode(e);
-  if (/^[a-z_][a-z0-9_]{0,79}$/.test(e.constraint ?? '')) evidence.failedConstraint = e.constraint;
+  evidence.failureCode = deadlineReached
+    ? "CAPACITY_SETUP_OR_WORKLOAD_DEADLINE"
+    : safeCode(e);
+  if (/^[a-z_][a-z0-9_]{0,79}$/.test(e.constraint ?? ""))
+    evidence.failedConstraint = e.constraint;
   process.exitCode = 1;
   console.error(
     `Recovery capacity stopped at stage=${stage}; code=${evidence.failureCode}; provider details omitted.`,
@@ -390,13 +457,13 @@ try {
       ).rows;
       for (const a of owned) checked(await admin.auth.admin.deleteUser(a.id));
       if (
-        (await db.query('select 1 from auth.users limit 1')).rowCount ||
-        (await db.query('select 1 from auth.sessions limit 1')).rowCount
+        (await db.query("select 1 from auth.users limit 1")).rowCount ||
+        (await db.query("select 1 from auth.sessions limit 1")).rowCount
       )
-        throw Error('CAPACITY_AUTH_CLEANUP');
+        throw Error("CAPACITY_AUTH_CLEANUP");
       await capacityQuarantine(db);
       if ((await calculateSchemaFingerprint(db)) !== evidence.schemaFingerprint)
-        throw Error('CAPACITY_SCHEMA_CHANGED');
+        throw Error("CAPACITY_SCHEMA_CHANGED");
       evidence.cleanupVerified = true;
     } catch (e) {
       evidence.cleanupFailure = safeCode(e);
@@ -410,9 +477,9 @@ try {
   for (const a of accounts) a.client.auth.stopAutoRefresh();
   clearTimeout(deadline);
   evidence.finishedAt = new Date().toISOString();
-  await fs.mkdir('.safebus-release/recovery-capacity', { recursive: true });
+  await fs.mkdir(".safebus-release/recovery-capacity", { recursive: true });
   await fs.writeFile(
-    '.safebus-release/recovery-capacity/evidence.json',
+    ".safebus-release/recovery-capacity/evidence.json",
     JSON.stringify(evidence, null, 2),
   );
 }
@@ -421,65 +488,87 @@ async function signInAccount(account, password) {
     account.client.auth.signInWithPassword({ email: account.email, password }),
   );
   if (login.user?.id !== account.id || !login.session?.access_token)
-    throw Error('CAPACITY_LOGIN_MISMATCH');
+    throw Error("CAPACITY_LOGIN_MISMATCH");
   account.token = login.session.access_token;
   account.expiresAt = login.session.expires_at * 1000;
 }
 async function runNativeGps(drivers) {
-  const upload = createNativeGpsUpload(process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY);
-  stage = 'android-driver-scope';
-  const wrongDriver = { ...drivers[0], accessToken: drivers[1].accessToken };
+  const transport = createNativeGpsTransport();
   try {
-    await upload(wrongDriver, 1, new Date().toISOString(), capacityGpsLatitude(1), stop.signal);
-    throw Error('CAPACITY_DRIVER_SCOPE');
-  } catch (error) {
-    if (error.message !== 'NATIVE_GPS_HTTP_403') throw error;
-  }
-  evidence.nativeGpsStages = [];
-  const rounds = 10;
-  for (const [index, pattern] of ['staggered', 'synchronized'].entries()) {
-    stage = 'android-gps-' + pattern;
-    // Start the second wave on a fresh collection interval for every device.
-    if (index) await delay(3000, undefined, { signal: stop.signal });
-    const result = await measureNativeGps({
-      drivers: drivers.map((driver) => ({ ...driver, lastSequence: index * rounds })),
-      rounds,
-      pattern,
-      upload,
-      verifyPositions: (latest) => verifyNativeGpsPositions(db, latest),
-      signal: stop.signal,
-      maxInFlight: buses * 2,
-    });
-    evidence.nativeGpsStages.push(result);
-    console.log(
-      `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? 'unavailable'}; final_positions_matched=${result.reconciled}; errors=${JSON.stringify(result.errors)}`,
+    const upload = createNativeGpsUpload(
+      process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
+      transport.fetch,
     );
-    if (!result.passed) throw Error('CAPACITY_ANDROID_GPS_FAILED');
+    stage = "android-driver-scope";
+    const wrongDriver = { ...drivers[0], accessToken: drivers[1].accessToken };
+    try {
+      await upload(
+        wrongDriver,
+        1,
+        new Date().toISOString(),
+        capacityGpsLatitude(1),
+        stop.signal,
+      );
+      throw Error("CAPACITY_DRIVER_SCOPE");
+    } catch (error) {
+      if (error.message !== "NATIVE_GPS_HTTP_403") throw error;
+    }
+    transport.takeMetrics();
+    evidence.nativeGpsStages = [];
+    const rounds = 10;
+    for (const [index, pattern] of ["staggered", "synchronized"].entries()) {
+      stage = "android-gps-" + pattern;
+      // Start the second wave on a fresh collection interval for every device.
+      if (index) await delay(3000, undefined, { signal: stop.signal });
+      const result = await measureNativeGps({
+        drivers: drivers.map((driver) => ({
+          ...driver,
+          lastSequence: index * rounds,
+        })),
+        rounds,
+        pattern,
+        upload,
+        verifyPositions: (latest) => verifyNativeGpsPositions(db, latest),
+        signal: stop.signal,
+        maxInFlight: buses * 2,
+      });
+      result.transport = transport.takeMetrics();
+      evidence.nativeGpsStages.push(result);
+      console.log(
+        `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
+      );
+      if (!result.passed) throw Error("CAPACITY_ANDROID_GPS_FAILED");
+    }
+  } finally {
+    transport.close();
   }
 }
 async function runCombined(connect) {
-  stage = 'shared-bus-correctness';
+  stage = "shared-bus-correctness";
   await gps(0, 0);
   await readMap(viewers[0], 0);
   const foreign = checked(
     await accounts
       .at(-1)
-      .client.rpc('get_guardian_bus_service_lines', { p_bus_number: fleet[0].busNumber }),
+      .client.rpc("get_guardian_bus_service_lines", {
+        p_bus_number: fleet[0].busNumber,
+      }),
   );
-  if (!Array.isArray(foreign) || foreign.length !== 0) throw Error('CAPACITY_SCOPE_DISCLOSURE');
-  const wrong = await accounts[1].client.rpc('update_bus_tracking_location', {
+  if (!Array.isArray(foreign) || foreign.length !== 0)
+    throw Error("CAPACITY_SCOPE_DISCLOSURE");
+  const wrong = await accounts[1].client.rpc("update_bus_tracking_location", {
     p_tracking_token: fleet[0].token,
     p_latitude: 52.26,
     p_longitude: -113.81,
   });
-  if (wrong.error?.code !== '42501') throw Error('CAPACITY_DRIVER_SCOPE');
+  if (wrong.error?.code !== "42501") throw Error("CAPACITY_DRIVER_SCOPE");
   // Initialize managed replication and confirm real receipt before timing load.
   const probeNonce = randomUUID();
   let probeReceived = false;
   const probe = await join(
     viewers[0],
     `safebus:notifications:${viewers[0].id}`,
-    'capacity_probe',
+    "capacity_probe",
     (p) => {
       if (p?.nonce === probeNonce) probeReceived = true;
     },
@@ -489,17 +578,18 @@ async function runCombined(connect) {
     topic: `safebus:notifications:${viewers[0].id}`,
   });
   for (let i = 0; i < 40 && !probeReceived; i++) await delay(200);
-  if (!probeReceived) throw Error('CAPACITY_PROBE_DELIVERY');
+  if (!probeReceived) throw Error("CAPACITY_PROBE_DELIVERY");
   await viewers[0].client.removeChannel(probe);
-  stage = 'workers';
-  for (let i = 0; i < 6; i++) workers.push(await connect('safebus-capacity-worker'));
+  stage = "workers";
+  for (let i = 0; i < 6; i++)
+    workers.push(await connect("safebus-capacity-worker"));
   // Requeue the real trip-start source after guardian assignments exist.
   await db.query(
     "select safebus_private.notify_trip_audience($1,$2,$3,'trip_started','trip_status','info','driver_trip',$2,now())",
     [fleet[0].tenant, fleet[0].trip, fleet[0].route],
   );
   workerTasks = workers.map((w, index) => workerLoop(w, index));
-  stage = 'notification-only';
+  stage = "notification-only";
   await measure(10, 30000, false);
   for (let i = 0; i < 60; i++) {
     assertRunning();
@@ -515,38 +605,39 @@ async function runCombined(connect) {
     }
     await delay(500);
   }
-  if (evidence.notificationRecipientsWithoutMaps !== 50) throw Error('CAPACITY_NOTIFICATION_LOSS');
-  stage = 'map-viewers';
+  if (evidence.notificationRecipientsWithoutMaps !== 50)
+    throw Error("CAPACITY_NOTIFICATION_LOSS");
+  stage = "map-viewers";
   for (const a of viewers)
-    await join(a, fleet[0].topic, 'tracking_changed', () => {
+    await join(a, fleet[0].topic, "tracking_changed", () => {
       hintCount++;
       a.hints = (a.hints ?? 0) + 1;
     });
   await measure(10, 30000, true);
-  if (viewers.some((a) => !a.hints)) throw Error('CAPACITY_TRACKING_DELIVERY');
+  if (viewers.some((a) => !a.hints)) throw Error("CAPACITY_TRACKING_DELIVERY");
   evidence.sharedTrackingHintsReceived = hintCount;
   // One deliberately disconnected viewer must rejoin and read a fresh snapshot.
   const reconnectStarted = performance.now();
   await viewers[0].client.removeAllChannels();
   let rejoinedHint = false;
-  await join(viewers[0], fleet[0].topic, 'tracking_changed', () => {
+  await join(viewers[0], fleet[0].topic, "tracking_changed", () => {
     rejoinedHint = true;
   });
   await gps(0, 100);
   for (let i = 0; i < 40 && !rejoinedHint; i++) await delay(200);
-  if (!rejoinedHint) throw Error('CAPACITY_REJOIN_DELIVERY');
+  if (!rejoinedHint) throw Error("CAPACITY_REJOIN_DELIVERY");
   await readMap(viewers[0], 0);
   evidence.rejoinMs = performance.now() - reconnectStarted;
   for (const a of viewers) await a.client.removeAllChannels();
   if (buses >= 100) {
-    stage = 'ramp-100';
+    stage = "ramp-100";
     await measure(100, 60000, false);
   }
   if (buses === 500) {
-    stage = 'ramp-500';
+    stage = "ramp-500";
     await measure(500, 300000, false);
   }
-  stage = 'drain';
+  stage = "drain";
   let drained = false;
   for (let i = 0; i < 180; i++) {
     assertRunning();
@@ -557,29 +648,29 @@ async function runCombined(connect) {
     }
     await delay(500);
   }
-  if (!drained) throw Error('CAPACITY_DRAIN_TIMEOUT');
+  if (!drained) throw Error("CAPACITY_DRAIN_TIMEOUT");
 }
 async function gps(i, sequence) {
   assertRunning();
   const latitude = capacityGpsLatitude(sequence);
-  const r = await accounts[i].client.rpc('update_bus_tracking_location', {
+  const r = await accounts[i].client.rpc("update_bus_tracking_location", {
     p_tracking_token: fleet[i].token,
     p_latitude: latitude,
     p_longitude: -113.81,
     p_accuracy_m: 5,
     p_speed_mps: 5,
   });
-  if (r.error) throw Error('CAPACITY_GPS_REJECTED');
+  if (r.error) throw Error("CAPACITY_GPS_REJECTED");
   assertCapacityGpsAck(r.data, fleet[i].trip, latitude);
   fleet[i].lastLatitude = latitude;
 }
 async function readMap(a, sequence) {
-  const r = await a.client.rpc('get_guardian_bus_visibility_v2');
+  const r = await a.client.rpc("get_guardian_bus_visibility_v2");
   if (r.error) {
-    evidence.mapErrorCode = /^[A-Z0-9]{5}$/.test(r.error.code ?? '')
+    evidence.mapErrorCode = /^[A-Z0-9]{5}$/.test(r.error.code ?? "")
       ? r.error.code
-      : 'UNCLASSIFIED_FAILURE';
-    throw Error('CAPACITY_MAP_REJECTED');
+      : "UNCLASSIFIED_FAILURE";
+    throw Error("CAPACITY_MAP_REJECTED");
   }
   if (
     !Array.isArray(r.data) ||
@@ -587,11 +678,11 @@ async function readMap(a, sequence) {
     r.data[0].student_id !== a.student ||
     r.data[0].bus_number !== fleet[0].busNumber
   )
-    throw Error('CAPACITY_SCOPE_DISCLOSURE');
-  if (!r.data[0].has_active_trip || r.data[0].location_state !== 'fresh')
-    throw Error('CAPACITY_STALE_MAP');
+    throw Error("CAPACITY_SCOPE_DISCLOSURE");
+  if (!r.data[0].has_active_trip || r.data[0].location_state !== "fresh")
+    throw Error("CAPACITY_STALE_MAP");
   if (sequence % 5 === 0) {
-    const detail = await a.client.rpc('get_guardian_bus_service_lines', {
+    const detail = await a.client.rpc("get_guardian_bus_service_lines", {
       p_bus_number: fleet[0].busNumber,
     });
     if (
@@ -599,7 +690,7 @@ async function readMap(a, sequence) {
       detail.data?.length !== 1 ||
       detail.data[0].trackingTopic !== fleet[0].topic
     )
-      throw Error('CAPACITY_SHARED_READ');
+      throw Error("CAPACITY_SHARED_READ");
   }
 }
 async function join(a, topic, event, onPayload) {
@@ -607,15 +698,19 @@ async function join(a, topic, event, onPayload) {
   return withRealtimeStartupRetry(async () => {
     const ch = a.client
       .channel(topic, { config: { private: true } })
-      .on('broadcast', { event }, ({ payload }) => onPayload(payload));
+      .on("broadcast", { event }, ({ payload }) => onPayload(payload));
     let timer;
     try {
       await new Promise((resolve, reject) => {
-        timer = setTimeout(() => reject(Error('CAPACITY_CHANNEL_TIMEOUT')), 12000);
+        timer = setTimeout(
+          () => reject(Error("CAPACITY_CHANNEL_TIMEOUT")),
+          12000,
+        );
         ch.subscribe((status, error) => {
-          if (status === 'SUBSCRIBED') resolve();
-          if (status === 'CHANNEL_ERROR') reject(Error(channelFailureCode(error)));
-          if (status === 'TIMED_OUT') reject(Error('CAPACITY_CHANNEL_TIMEOUT'));
+          if (status === "SUBSCRIBED") resolve();
+          if (status === "CHANNEL_ERROR")
+            reject(Error(channelFailureCode(error)));
+          if (status === "TIMED_OUT") reject(Error("CAPACITY_CHANNEL_TIMEOUT"));
         });
       });
       channels.push(ch);
@@ -656,13 +751,23 @@ async function workerLoop(w, index) {
       const elapsed = performance.now() - start;
       metrics.rounds++;
       metrics.dispatches += result.dispatches;
-      metrics.maxClientElapsedMs = Math.max(metrics.maxClientElapsedMs, elapsed);
-      metrics.maxServerElapsedMs = Math.max(metrics.maxServerElapsedMs, result.serverElapsedMs);
+      metrics.maxClientElapsedMs = Math.max(
+        metrics.maxClientElapsedMs,
+        elapsed,
+      );
+      metrics.maxServerElapsedMs = Math.max(
+        metrics.maxServerElapsedMs,
+        result.serverElapsedMs,
+      );
       if (elapsed > plan.periodMs) {
         metrics.overruns++;
-        throw Error('CAPACITY_WORKER_SCHEDULER_LIMIT');
+        throw Error("CAPACITY_WORKER_SCHEDULER_LIMIT");
       }
-      while (!workerStop && !stop.signal.aborted && performance.now() - start < plan.periodMs)
+      while (
+        !workerStop &&
+        !stop.signal.aborted &&
+        performance.now() - start < plan.periodMs
+      )
         await delay(Math.min(250, plan.periodMs - (performance.now() - start)));
     }
   } catch (e) {
@@ -708,7 +813,7 @@ async function measure(count, durationMs, maps) {
           q.legacyageseconds > 120 ||
           q.connections > evidence.database.max_connections * 0.8
         )
-          throw Error('CAPACITY_RESOURCE_STOP');
+          throw Error("CAPACITY_RESOURCE_STOP");
         await delay(1000);
       }
     } catch (e) {
@@ -759,20 +864,22 @@ async function measure(count, durationMs, maps) {
     });
   }
   assertRunning();
-  if (result.some((r) => !r.passed)) throw Error('CAPACITY_LOAD_THRESHOLD');
+  if (result.some((r) => !r.passed)) throw Error("CAPACITY_LOAD_THRESHOLD");
   const locations = (
     await db.query(
-      'select driver_trip_id,latitude from public.driver_trip_current_locations where driver_trip_id=any($1::uuid[])',
+      "select driver_trip_id,latitude from public.driver_trip_current_locations where driver_trip_id=any($1::uuid[])",
       [fleet.slice(0, count).map((b) => b.trip)],
     )
   ).rows;
   if (
     locations.length !== count ||
     locations.some(
-      (row) => fleet.find((b) => b.trip === row.driver_trip_id)?.lastLatitude !== row.latitude,
+      (row) =>
+        fleet.find((b) => b.trip === row.driver_trip_id)?.lastLatitude !==
+        row.latitude,
     )
   )
-    throw Error('CAPACITY_ACK_RECONCILIATION');
+    throw Error("CAPACITY_ACK_RECONCILIATION");
   console.log(
     `Capacity stage completed: buses=${count}; map_viewers=${maps ? 50 : 0}; gps_p99_ms=${result[0].latencyMs.p99.toFixed(1)}`,
   );
