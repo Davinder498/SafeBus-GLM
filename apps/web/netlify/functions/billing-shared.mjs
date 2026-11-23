@@ -68,6 +68,11 @@ export function createStripeClient() {
   const config = serverConfig();
   if (!config.stripeSecret) throw new Error('billing_stripe_not_configured');
   return new Stripe(config.stripeSecret, {
+    // Preserve the billing API contract while updating stripe-node.
+    // stripe-node 23.2.0 otherwise silently changes the default from
+    // 2026-10-28.endive to 2026-11-18.endive.
+    // An API-version migration requires a separate, reviewed billing release.
+    apiVersion: '2026-10-28.endive',
     maxNetworkRetries: 2,
     timeout: STRIPE_TIMEOUT_MS,
     appInfo: { name: 'SafeBus', version: '1.0.0' },
