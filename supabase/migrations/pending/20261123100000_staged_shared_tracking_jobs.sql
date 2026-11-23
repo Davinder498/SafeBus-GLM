@@ -10,7 +10,7 @@ set local statement_timeout = '10s';
 -- Each worker owns a disjoint congruence class of the same sixteen queue shards.
 -- A 2-worker stage covers even/odd shards; 4 workers cover four groups, etc.
 -- Every stage covers ALL 16 shards; no inactive range is abandoned.
-create function safebus_private.dispatch_grouped_shared_tracking(
+create or replace function safebus_private.dispatch_grouped_shared_tracking(
   p_worker integer, p_workers integer
 ) returns jsonb language plpgsql security definer set search_path = ''
 as $group$
@@ -23,7 +23,7 @@ declare
   started timestamptz := pg_catalog.clock_timestamp();
   per_shard_limit integer;
 begin
-  if p_workers not in (1,2,4,8,16)
+  if p_workers is null or p_workers not in (1,2,4,8,16)
      or p_worker is null or p_worker < 0 or p_worker >= p_workers then
     raise exception 'Invalid grouped tracking worker bounds.' using errcode='22023';
   end if;

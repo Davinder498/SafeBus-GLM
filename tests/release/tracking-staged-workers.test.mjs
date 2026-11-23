@@ -41,7 +41,7 @@ test('progressive 1-2-4-8-16 stages preserve total shard coverage and private gr
   const db=await fixture(t);
   await db.exec("select set_config('safebus.tracking_capacity_approved','true',false)");
   for(const workers of [2,4,8,16]){
-    await db.exec("select set_config('safebus.tracking_capacity_target',$1,false)".replace('$1',String(workers)));
+    await db.exec("select set_config('safebus.tracking_capacity_target','" + workers + "',false)");
     await db.exec(stage);
     assert.equal(await active(db),workers);
     const actual=(await db.query("select jobname,active,command from cron.job where jobname like 'safebus-shared-tracking-%' order by jobname")).rows;
