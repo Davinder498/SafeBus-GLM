@@ -12,13 +12,13 @@ on:
         default: '10'
         required: true
       workload:
-        description: Android GPS supports 10, 100, 500, or 5000 buses
+        description: Normal Android GPS or Recovery-only HTTPS A-B-A comparison (10 buses)
         type: choice
-        options: [combined, android_gps]
+        options: [combined, android_gps, android_gps_compare]
         default: combined
         required: true
       confirmation:
-        description: Type RUN_RECOVERY_CAPACITY or RUN_RECOVERY_CAPACITY_5000
+        description: RUN_RECOVERY_GPS_COMPARE for comparison; other modes retain previous confirmations
         required: true
 permissions:
   contents: read
@@ -29,7 +29,8 @@ jobs:
   validate:
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((inputs.buses != '5000' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      (inputs.buses == '10' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE') ||
       (inputs.buses == '5000' && inputs.workload == 'android_gps' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY_5000'))
     uses: ./.github/workflows/validate-security-install.yml
     with:
