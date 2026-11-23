@@ -67,16 +67,16 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@electric-sql/pglite": "0.5.16",
-    "@electric-sql/pglite-postgis": "0.2.16",
+    "@electric-sql/pglite": "0.5.17",
+    "@electric-sql/pglite-postgis": "0.2.17",
     "@playwright/test": "^1.65.1",
-    "netlify-cli": "^27.19.0",
+    "netlify-cli": "^27.20.1",
     "pg": "^8.23.1",
     "prettier": "^3.10.1",
-    "read-excel-file": "9.3.17",
+    "read-excel-file": "9.3.20",
     "rimraf": "^6.1.4",
-    "supabase": "3.1.0",
-    "turbo": "^2.11.11",
+    "supabase": "3.2.0",
+    "turbo": "^2.11.13",
     "typescript": "^5.6.3"
   },
   "engines": {
