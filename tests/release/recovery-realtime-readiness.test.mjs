@@ -5,7 +5,7 @@ import { assertRecoveryRealtimePartitions } from '../../scripts/lib/recovery-rea
 function client(today, tomorrow, partitionCount = 7) {
   return {
     query: async (sql) => {
-      assert.match(sql, /realtime\\.messages/);
+      assert.match(sql, /realtime\.messages/);
       assert.match(sql, /pg_inherits/);
       assert.match(sql, /clock_timestamp/);
       assert.match(sql, /pg_get_expr/);
