@@ -213,6 +213,8 @@ export async function measureNativeGps({
   verifyPositions,
   signal,
   maxInFlight = 10_000,
+  queueBusySlots = false,
+  waitForUpload = (ms, abortSignal) => delay(ms, undefined, { signal: abortSignal }),
   clock = () => performance.now(),
   wallClock = Date.now,
   wait = delay,
@@ -229,6 +231,8 @@ export async function measureNativeGps({
     !Number.isInteger(maxInFlight) ||
     maxInFlight < 1 ||
     maxInFlight > 10_000 ||
+    typeof queueBusySlots !== "boolean" ||
+    typeof waitForUpload !== "function" ||
     typeof upload !== "function" ||
     typeof verifyPositions !== "function" ||
     drivers.some(
@@ -255,11 +259,17 @@ export async function measureNativeGps({
   const pending = new Set();
   const uploading = new Set();
   const nextUploadAt = new Map();
+  const tails = new Map();
+  const depths = new Map();
   const errors = {};
   let offered = 0;
   let accepted = 0;
   let late = 0;
   let deviceBackpressure = 0;
+  let busyInFlight = 0;
+  let busyCooldown = 0;
+  let maxQueueDelayMs = 0;
+  let maxDeviceQueueDepth = 0;
   let maxDispatchLagMs = 0;
   const fail = (code) => {
     errors[code] = (errors[code] ?? 0) + 1;
@@ -284,14 +294,22 @@ export async function measureNativeGps({
       break;
     }
     const driver = drivers[index];
-    // Android uploads serially, with at least a 500 ms pause after success.
-    // A blocked slot still counts against the offered workload's passing target.
-    if (
-      uploading.has(driver.tripId) ||
-      dispatchedAt < (nextUploadAt.get(driver.tripId) ?? 0)
-    ) {
+    // In the sustained profile, emulate Android's FIFO rather than losing a
+    // collected fix when an earlier send or its post-success pause is pending.
+    // Keep absolute collection times, and count queue time toward the same
+    // three-second acceptance deadline. Short diagnostic profiles stay strict.
+    const previous = queueBusySlots ? tails.get(driver.tripId) : null;
+    const busy = Boolean(previous) || uploading.has(driver.tripId);
+    const cooling = dispatchedAt < (nextUploadAt.get(driver.tripId) ?? 0);
+    if (busy || cooling) {
       deviceBackpressure++;
-      continue;
+      if (busy) busyInFlight++;
+      else busyCooldown++;
+      if (!queueBusySlots) continue;
+    }
+    if (queueBusySlots && (depths.get(driver.tripId) ?? 0) >= 2) {
+      fail("NATIVE_GPS_DEVICE_QUEUE_LIMIT");
+      break;
     }
     if (pending.size >= maxInFlight) {
       fail("NATIVE_GPS_IN_FLIGHT_LIMIT");
@@ -301,15 +319,33 @@ export async function measureNativeGps({
     const sequence = driver.lastSequence + round + 1;
     const recordedAt = new Date(beganAt + Math.floor(offset)).toISOString();
     const latitude = capacityGpsLatitude(sequence);
-    offered++;
-    uploading.add(driver.tripId);
-    const request = Promise.resolve()
-      .then(() => upload(driver, sequence, recordedAt, latitude, signal))
+    if (queueBusySlots) {
+      const depth = (depths.get(driver.tripId) ?? 0) + 1;
+      depths.set(driver.tripId, depth);
+      maxDeviceQueueDepth = Math.max(maxDeviceQueueDepth, depth);
+    } else {
+      offered++;
+      uploading.add(driver.tripId);
+    }
+    const request = Promise.resolve(previous)
+      .then(async () => {
+        if (queueBusySlots) {
+          const pauseRemaining = (nextUploadAt.get(driver.tripId) ?? 0) - clock();
+          if (pauseRemaining > 0) await waitForUpload(pauseRemaining, signal);
+          if (signal?.aborted || Object.keys(errors).length)
+            throw Error("NATIVE_GPS_CANCELLED");
+          maxQueueDelayMs = Math.max(maxQueueDelayMs, clock() - dispatchedAt);
+          offered++;
+          uploading.add(driver.tripId);
+        }
+        return upload(driver, sequence, recordedAt, latitude, signal);
+      })
       .then(
         () => {
           const elapsed = clock() - due;
           latency.push(elapsed);
-          nextUploadAt.set(driver.tripId, clock() + minimumUploadPauseMs);
+          // Use the real Android pause range upper bound for reproducible A-B-A.
+          nextUploadAt.set(driver.tripId, clock() + (queueBusySlots ? 750 : minimumUploadPauseMs));
           if (elapsed > periodMs) late++;
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
@@ -328,8 +364,15 @@ export async function measureNativeGps({
       )
       .finally(() => {
         uploading.delete(driver.tripId);
+        if (queueBusySlots) {
+          const depth = (depths.get(driver.tripId) ?? 1) - 1;
+          if (depth) depths.set(driver.tripId, depth);
+          else depths.delete(driver.tripId);
+          if (tails.get(driver.tripId) === request) tails.delete(driver.tripId);
+        }
         pending.delete(request);
       });
+    if (queueBusySlots) tails.set(driver.tripId, request);
     pending.add(request);
   }
   await Promise.all(pending);
@@ -351,6 +394,11 @@ export async function measureNativeGps({
     accepted,
     late,
     deviceBackpressure,
+    busyInFlight,
+    busyCooldown,
+    maxQueueDelayMs,
+    maxDeviceQueueDepth,
+    queueBusySlots,
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
     errors,
