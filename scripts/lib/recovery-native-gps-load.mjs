@@ -1,20 +1,22 @@
-import { randomUUID } from 'node:crypto';
-import { setTimeout as delay } from 'node:timers/promises';
-import { performance } from 'node:perf_hooks';
-import { RECOVERY_AUTH_URL } from './recovery-auth.mjs';
-import { capacityFetch } from './recovery-capacity-lifecycle.mjs';
-import { capacityGpsLatitude } from './recovery-capacity-gps.mjs';
-import { percentiles } from './recovery-capacity-scheduler.mjs';
+import { randomUUID } from "node:crypto";
+import { Agent, request } from "node:https";
+import { setTimeout as delay } from "node:timers/promises";
+import { performance } from "node:perf_hooks";
+import { RECOVERY_AUTH_URL } from "./recovery-auth.mjs";
+import { capacityFetch } from "./recovery-capacity-lifecycle.mjs";
+import { capacityGpsLatitude } from "./recovery-capacity-gps.mjs";
+import { percentiles } from "./recovery-capacity-scheduler.mjs";
 
-const endpoint = RECOVERY_AUTH_URL + '/rest/v1/rpc/ingest_driver_location_event';
+const endpoint =
+  RECOVERY_AUTH_URL + "/rest/v1/rpc/ingest_driver_location_event";
 const periodMs = 3000;
 const minimumUploadPauseMs = 500;
 const rejectedFixReasons = new Set([
-  'out_of_order',
-  'trip_not_active',
-  'stale_fix',
-  'invalid_fix',
-  'impossible_jump',
+  "out_of_order",
+  "trip_not_active",
+  "stale_fix",
+  "invalid_fix",
+  "impossible_jump",
 ]);
 
 export async function verifyNativeGpsPositions(db, latest) {
@@ -46,27 +48,119 @@ export async function verifyNativeGpsPositions(db, latest) {
   return verified.size === latest.size;
 }
 
+// One shared HTTPS pool for the Recovery probe. Each simulated phone still sends
+// its own authenticated request, and time spent waiting for a socket counts.
+export function createNativeGpsTransport() {
+  const agent = new Agent({ keepAlive: true, maxSockets: 256 });
+  let writes = 0;
+  let responses = 0;
+  let failures = {};
+  const knownCodes = new Set([
+    "ABORT_ERR",
+    "ECONNRESET",
+    "ECONNREFUSED",
+    "ETIMEDOUT",
+    "EPIPE",
+    "ENOBUFS",
+    "EMFILE",
+    "EADDRNOTAVAIL",
+    "ENOTFOUND",
+    "EAI_AGAIN",
+    "ERR_TLS_CERT_ALTNAME_INVALID",
+    "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+    "DEPTH_ZERO_SELF_SIGNED_CERT",
+    "NATIVE_GPS_RESPONSE_TOO_LARGE",
+  ]);
+  return {
+    fetch: async (url, init) => {
+      if (url !== endpoint) throw Error("CAPACITY_ORIGIN_REJECTED");
+      try {
+        return await new Promise((resolve, reject) => {
+          const req = request(
+            url,
+            {
+              method: init.method,
+              headers: {
+                ...init.headers,
+                "content-length": Buffer.byteLength(init.body),
+              },
+              signal: init.signal,
+              agent,
+            },
+            async (res) => {
+              responses++;
+              try {
+                const chunks = [];
+                let bytes = 0;
+                for await (const chunk of res) {
+                  bytes += chunk.length;
+                  if (bytes > 65536)
+                    throw Error("NATIVE_GPS_RESPONSE_TOO_LARGE");
+                  chunks.push(chunk);
+                }
+                const status = res.statusCode;
+                const body = [204, 205, 304].includes(status)
+                  ? null
+                  : Buffer.concat(chunks);
+                resolve(new Response(body, { status }));
+              } catch (error) {
+                reject(error);
+              }
+            },
+          );
+          req.once("error", reject);
+          req.once("finish", () => writes++);
+          req.end(init.body);
+        });
+      } catch (error) {
+        const code = error.code ?? error.message;
+        const category =
+          init.signal?.reason?.name === "TimeoutError"
+            ? "REQUEST_DEADLINE"
+            : knownCodes.has(code)
+              ? code
+              : "OTHER";
+        failures[category] = (failures[category] ?? 0) + 1;
+        throw error;
+      }
+    },
+    takeMetrics() {
+      const metrics = { writes, responses, failures };
+      writes = 0;
+      responses = 0;
+      failures = {};
+      return metrics;
+    },
+    close: () => agent.destroy(),
+  };
+}
+
 export function createNativeGpsUpload(publishableKey, fetchImpl = fetch) {
-  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publishableKey ?? '')) {
+  if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publishableKey ?? "")) {
     // Legacy public keys are usable here only if their claims name Recovery.
     let claims;
     try {
-      claims = JSON.parse(Buffer.from(publishableKey.split('.')[1], 'base64url').toString());
+      claims = JSON.parse(
+        Buffer.from(publishableKey.split(".")[1], "base64url").toString(),
+      );
     } catch {
-      throw Error('NATIVE_GPS_PUBLIC_KEY_REQUIRED');
+      throw Error("NATIVE_GPS_PUBLIC_KEY_REQUIRED");
     }
-    if (claims.role !== 'anon' || `https://${claims.ref}.supabase.co` !== RECOVERY_AUTH_URL)
-      throw Error('NATIVE_GPS_PUBLIC_KEY_REQUIRED');
+    if (
+      claims.role !== "anon" ||
+      `https://${claims.ref}.supabase.co` !== RECOVERY_AUTH_URL
+    )
+      throw Error("NATIVE_GPS_PUBLIC_KEY_REQUIRED");
   }
   return async (driver, sequence, recordedAt, latitude, signal) => {
     const response = await capacityFetch(
       endpoint,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
           apikey: publishableKey,
           authorization: `Bearer ${driver.accessToken}`,
-          'content-type': 'application/json',
+          "content-type": "application/json",
         },
         body: JSON.stringify({
           p_tracking_token: driver.trackingToken,
@@ -80,7 +174,7 @@ export function createNativeGpsUpload(publishableKey, fetchImpl = fetch) {
           p_heading_deg: null,
           p_speed_mps: 5,
           p_battery_percent: 80,
-          p_connectivity: 'cellular',
+          p_connectivity: "cellular",
         }),
       },
       { origin: RECOVERY_AUTH_URL, fetchImpl, signal },
@@ -88,19 +182,23 @@ export function createNativeGpsUpload(publishableKey, fetchImpl = fetch) {
     if (!response.ok) {
       await response.body?.cancel();
       const status = response.status;
-      throw Error(status >= 400 && status <= 599 ? `NATIVE_GPS_HTTP_${status}` : 'NATIVE_GPS_HTTP');
+      throw Error(
+        status >= 400 && status <= 599
+          ? `NATIVE_GPS_HTTP_${status}`
+          : "NATIVE_GPS_HTTP",
+      );
     }
     const ack = await response.json();
     if (ack?.accepted === false && rejectedFixReasons.has(ack.rejectionReason))
-      throw Error('NATIVE_GPS_REJECTED_' + ack.rejectionReason.toUpperCase());
+      throw Error("NATIVE_GPS_REJECTED_" + ack.rejectionReason.toUpperCase());
     if (
       ack?.accepted !== true ||
       ack.duplicate !== false ||
       ack.stopTracking !== false ||
-      ack.tripState !== 'active' ||
+      ack.tripState !== "active" ||
       Date.parse(ack.recordedAt) !== Date.parse(recordedAt)
     )
-      throw Error('NATIVE_GPS_ACK_MISMATCH');
+      throw Error("NATIVE_GPS_ACK_MISMATCH");
   };
 }
 
@@ -127,12 +225,12 @@ export async function measureNativeGps({
     !Number.isInteger(rounds) ||
     rounds < 1 ||
     rounds > 200 ||
-    !['staggered', 'synchronized'].includes(pattern) ||
+    !["staggered", "synchronized"].includes(pattern) ||
     !Number.isInteger(maxInFlight) ||
     maxInFlight < 1 ||
     maxInFlight > 10_000 ||
-    typeof upload !== 'function' ||
-    typeof verifyPositions !== 'function' ||
+    typeof upload !== "function" ||
+    typeof verifyPositions !== "function" ||
     drivers.some(
       (d) =>
         !d.tripId ||
@@ -143,9 +241,11 @@ export async function measureNativeGps({
         d.lastSequence < 0 ||
         d.lastSequence > Number.MAX_SAFE_INTEGER - rounds,
     ) ||
-    !['tripId', 'accessToken', 'trackingToken', 'deviceCredential'].every(distinct)
+    !["tripId", "accessToken", "trackingToken", "deviceCredential"].every(
+      distinct,
+    )
   )
-    throw Error('NATIVE_GPS_LOAD_BOUNDS');
+    throw Error("NATIVE_GPS_LOAD_BOUNDS");
 
   const started = clock();
   const beganAt = wallClock();
@@ -170,26 +270,31 @@ export async function measureNativeGps({
     const index = slot % drivers.length;
     const round = Math.floor(slot / drivers.length);
     const offset =
-      round * periodMs + (pattern === 'staggered' ? (index * periodMs) / drivers.length : 0);
+      round * periodMs +
+      (pattern === "staggered" ? (index * periodMs) / drivers.length : 0);
     const due = started + offset;
-    if (clock() < due) await wait(due - clock());
+    const waitMs = due - clock();
+    if (waitMs > 0) await wait(waitMs);
     if (signal?.aborted || Object.keys(errors).length) break;
     const dispatchedAt = clock();
     const lag = dispatchedAt - due;
     maxDispatchLagMs = Math.max(maxDispatchLagMs, lag);
     if (lag > 1000) {
-      fail('NATIVE_GPS_GENERATOR_LAG');
+      fail("NATIVE_GPS_GENERATOR_LAG");
       break;
     }
     const driver = drivers[index];
     // Android uploads serially, with at least a 500 ms pause after success.
     // A blocked slot still counts against the offered workload's passing target.
-    if (uploading.has(driver.tripId) || dispatchedAt < (nextUploadAt.get(driver.tripId) ?? 0)) {
+    if (
+      uploading.has(driver.tripId) ||
+      dispatchedAt < (nextUploadAt.get(driver.tripId) ?? 0)
+    ) {
       deviceBackpressure++;
       continue;
     }
     if (pending.size >= maxInFlight) {
-      fail('NATIVE_GPS_IN_FLIGHT_LIMIT');
+      fail("NATIVE_GPS_IN_FLIGHT_LIMIT");
       break;
     }
 
@@ -217,7 +322,7 @@ export async function measureNativeGps({
               code,
             )
               ? code
-              : 'NATIVE_GPS_TRANSPORT',
+              : "NATIVE_GPS_TRANSPORT",
           );
         },
       )
@@ -228,13 +333,13 @@ export async function measureNativeGps({
     pending.add(request);
   }
   await Promise.all(pending);
-  if (signal?.aborted) fail('NATIVE_GPS_CANCELLED');
+  if (signal?.aborted) fail("NATIVE_GPS_CANCELLED");
   let reconciled = false;
   if (latest.size === drivers.length) {
     try {
       reconciled = (await verifyPositions(latest)) === true;
     } catch {
-      fail('NATIVE_GPS_VERIFY_FAILED');
+      fail("NATIVE_GPS_VERIFY_FAILED");
     }
   }
   return {
@@ -250,6 +355,10 @@ export async function measureNativeGps({
     latencyMs: percentiles(latency),
     errors,
     reconciled,
-    passed: accepted === slots && late === 0 && Object.keys(errors).length === 0 && reconciled,
+    passed:
+      accepted === slots &&
+      late === 0 &&
+      Object.keys(errors).length === 0 &&
+      reconciled,
   };
 }

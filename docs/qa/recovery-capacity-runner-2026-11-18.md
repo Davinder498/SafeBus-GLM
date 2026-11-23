@@ -28,6 +28,23 @@ The probe leaves maps and delivery workers idle. It records HTTP timing,
 failed or unsent requests, and the position check. The local generator test
 covers two 10,000-request waves against a simulated endpoint.
 
+Use the Recovery-only Android GPS workload at 10, 100, and 500 buses to
+measure where requests begin to queue or fail before launching the 5,000-driver
+run. Each run still measures both staggered and synchronized GPS updates on
+the same three-second interval.
+
+The Android GPS runner reuses up to 256 HTTPS connections and preserves each
+phone's own request and credentials. Its evidence reports scheduled requests,
+requests written by the runner, HTTP responses received, and sanitized
+transport errors. Time waiting for a connection counts toward the original
+three-second limit. Written requests are not proof of receipt by Supabase.
+Compare the counts against Recovery gateway logs and saved positions.
+
+Run 45071684079 set up all 5,000 drivers but failed during staggered uploads.
+It confirmed 16 updates and reported scheduler lag and 2,290 transport errors.
+Recovery contained 37 saved positions before cleanup. The failure left the
+5,000-bus GPS capacity result unverified.
+
 For the 5,000-driver GPS-only run use workload `android_gps`, `buses=5000`,
 and confirmation `RUN_RECOVERY_CAPACITY_5000`. Use only the isolated Recovery
 project. Before dispatch, set its Auth token endpoint quota to at least
