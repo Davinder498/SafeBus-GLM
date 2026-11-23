@@ -105,3 +105,34 @@ export async function createRecoveryGpsComparison(db, {
     get restored() { return restored; },
   };
 }
+
+/** Fixed, bounded A-B-A profiles; no caller-controlled duration or arbitrary fleet. */
+export function recoveryGpsComparisonPlan(buses) {
+  if (buses !== 10 && buses !== 100) throw Error('CAPACITY_WORKLOAD_INVALID');
+  const rounds = buses === 100 ? 100 : 10;
+  const phaseSequenceSpan = rounds * 2;
+  return {
+    rounds,
+    phaseSequenceSpan,
+    phaseDurationMs: phaseSequenceSpan * 3000,
+    plannedUpdates: buses * phaseSequenceSpan * 3,
+    confirmation: buses === 100 ? 'RUN_RECOVERY_GPS_COMPARE_100' : 'RUN_RECOVERY_GPS_COMPARE',
+  };
+}
+
+/** Read-only aggregate database observations; counters are cumulative, never reset. */
+export async function sampleRecoveryGpsDatabase(db) {
+  const { rows } = await db.query(`
+    select clock_timestamp() as sampled_at, stats_reset,
+      numbackends, xact_commit::text, xact_rollback::text,
+      blks_read::text, blks_hit::text, tup_inserted::text,
+      tup_updated::text, tup_deleted::text, temp_bytes::text, deadlocks::text,
+      (select count(*)::int from pg_stat_activity
+        where datname=current_database() and state='active') as active_connections,
+      (select count(*)::int from pg_stat_activity
+        where datname=current_database() and wait_event_type='Lock') as lock_waiters
+    from pg_stat_database where datname=current_database()
+  `);
+  if (rows.length !== 1) throw Error('CAPACITY_GPS_DATABASE_STATS');
+  return rows[0];
+}

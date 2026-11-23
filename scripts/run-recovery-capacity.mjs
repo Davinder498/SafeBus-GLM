@@ -61,7 +61,7 @@ import {
 import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
 import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
-import { createRecoveryGpsComparison } from "./lib/recovery-native-gps-comparison.mjs";
+import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase } from "./lib/recovery-native-gps-comparison.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
@@ -69,6 +69,8 @@ const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
 const gpsCompare = workload === "android_gps_compare";
 const nativeGpsOnly = workload === "android_gps" || gpsCompare;
+const sustainedGpsCompare = gpsCompare && buses === 100;
+const comparisonPlan = gpsCompare && [10, 100].includes(buses) ? recoveryGpsComparisonPlan(buses) : null;
 const largeNativeRun = nativeGpsOnly && buses === 5000;
 const loginIntervalMs = largeNativeRun ? 250 : 2100;
 const run = `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
@@ -133,7 +135,7 @@ const deadline = setTimeout(
     deadlineReached = true;
     stop.abort();
   },
-  (largeNativeRun ? 160 : 35) * 60 * 1000,
+  (largeNativeRun ? 160 : sustainedGpsCompare ? 55 : 35) * 60 * 1000,
 );
 const checked = checkedCapacityAuth;
 const loginAccount = createCapacityLogin({
@@ -178,7 +180,7 @@ try {
   if (
     !["combined", "android_gps", "android_gps_compare"].includes(workload) ||
     (!nativeGpsOnly && buses === 5000) ||
-    (gpsCompare && buses !== 10)
+    (gpsCompare && !comparisonPlan)
   )
     throw Error("CAPACITY_WORKLOAD_INVALID");
   assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
@@ -186,7 +188,7 @@ try {
     process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==
       (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" :
-        gpsCompare ? "RUN_RECOVERY_GPS_COMPARE" : "RUN_RECOVERY_CAPACITY")
+        gpsCompare ? comparisonPlan.confirmation : "RUN_RECOVERY_CAPACITY")
   )
     throw Error("CAPACITY_WORKFLOW_REQUIRED");
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -438,18 +440,25 @@ try {
   );
   if (gpsCompare) {
     stage = "gps-comparison-preflight";
+    if (sustainedGpsCompare) {
+      // No JWT renewal during measured traffic; allow the entire A-B-A plus margin.
+      const expiresAfter = Date.now() + comparisonPlan.phaseDurationMs * 3 + 180000;
+      if (accounts.slice(0, buses).some(account =>
+        !Number.isFinite(account.expiresAt) || account.expiresAt < expiresAfter))
+        throw Error("CAPACITY_AUTH_SESSION_WINDOW");
+    }
     gpsComparison = await createRecoveryGpsComparison(db);
-    evidence.nativeGpsComparison = { ...gpsComparison.evidence, restored: false };
+    evidence.nativeGpsComparison = { ...gpsComparison.evidence, plan: comparisonPlan, restored: false };
     await runNativeGps(nativeDrivers, { phase: "baseline_before", sequenceOffset: 0 });
     stage = "gps-comparison-install";
     evidence.nativeGpsComparison.optimized = await gpsComparison.install();
     await delay(3000, undefined, { signal: stop.signal });
-    await runNativeGps(nativeDrivers, { phase: "optimized", sequenceOffset: 20 });
+    await runNativeGps(nativeDrivers, { phase: "optimized", sequenceOffset: comparisonPlan.phaseSequenceSpan });
     stage = "gps-comparison-restore";
     await gpsComparison.restore();
     evidence.nativeGpsComparison.restored = true;
     await delay(3000, undefined, { signal: stop.signal });
-    await runNativeGps(nativeDrivers, { phase: "baseline_after", sequenceOffset: 40 });
+    await runNativeGps(nativeDrivers, { phase: "baseline_after", sequenceOffset: comparisonPlan.phaseSequenceSpan * 2 });
   } else if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
   evidence.exploratoryPassed = true;
@@ -554,12 +563,29 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
     }
     transport.takeMetrics();
     evidence.nativeGpsStages ??= [];
-    const rounds = 10;
+    const rounds = phase ? comparisonPlan.rounds : 10;
     for (const [index, pattern] of ["staggered", "synchronized"].entries()) {
       stage = "android-gps-" + (phase ?? "default") + "-" + pattern;
       // Start the second wave on a fresh collection interval for every device.
       if (index) await delay(3000, undefined, { signal: stop.signal });
-      const result = await measureNativeGps({
+      const databaseSamples = [];
+      let sampleTask = null;
+      let sampleTimer = null;
+      let sampleErrors = 0;
+      const sample = async () => {
+        try { databaseSamples.push(await sampleRecoveryGpsDatabase(db)); }
+        catch { sampleErrors++; }
+      };
+      if (sustainedGpsCompare) {
+        await sample();
+        sampleTimer = setInterval(() => {
+          if (!sampleTask) sampleTask = sample().finally(() => { sampleTask = null; });
+        }, 30000);
+      }
+      let result;
+      const measuredAt = performance.now();
+      try {
+        result = await measureNativeGps({
         drivers: drivers.map((driver) => ({
           ...driver,
           lastSequence: sequenceOffset + index * rounds,
@@ -570,7 +596,17 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
         verifyPositions: (latest) => verifyNativeGpsPositions(db, latest),
         signal: stop.signal,
         maxInFlight: buses * 2,
-      });
+        });
+      } finally {
+        if (sampleTimer) clearInterval(sampleTimer);
+        if (sampleTask) await sampleTask;
+        if (sustainedGpsCompare) await sample();
+      }
+      result.elapsedMs = performance.now() - measuredAt;
+      if (sustainedGpsCompare) {
+        result.databaseSamples = databaseSamples;
+        result.databaseSampleErrors = sampleErrors;
+      }
       result.transport = transport.takeMetrics();
       if (phase) result.phase = phase;
       evidence.nativeGpsStages.push(result);
@@ -578,6 +614,8 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
         `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
       );
       if (!result.passed) throw Error("CAPACITY_ANDROID_GPS_FAILED");
+      if (sustainedGpsCompare && (sampleErrors || databaseSamples.length < 2))
+        throw Error("CAPACITY_GPS_DATABASE_STATS");
     }
   } finally {
     transport.close();
