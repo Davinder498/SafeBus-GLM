@@ -60,6 +60,7 @@ import {
 } from "./lib/recovery-api-diagnostics.mjs";
 import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
+import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
@@ -284,6 +285,7 @@ try {
     config.external?.phone === true
   )
     throw Error("CAPACITY_AUTH_NOT_ISOLATED");
+  evidence.realtimePartitionReadiness = await assertRecoveryRealtimePartitions(db);
   evidence.schemaFingerprint = await calculateSchemaFingerprint(db);
   evidence.database = (
     await db.query(
