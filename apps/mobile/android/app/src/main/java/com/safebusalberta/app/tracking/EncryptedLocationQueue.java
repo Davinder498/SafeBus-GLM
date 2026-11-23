@@ -26,7 +26,7 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
     private final TrackingCryptoStore crypto;
 
     EncryptedLocationQueue(Context context, TrackingCryptoStore crypto) {
-        super(context, "safebus_tracking_queue.db", null, 2);
+        super(context, "safebus_tracking_queue.db", null, 3);
         this.crypto = crypto;
     }
 
@@ -38,18 +38,22 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE queued_locations (" +
-            "sequence INTEGER PRIMARY KEY, event_id TEXT NOT NULL UNIQUE, payload_ciphertext TEXT NOT NULL, received_at INTEGER NOT NULL)");
+            "sequence INTEGER PRIMARY KEY, event_id TEXT NOT NULL UNIQUE, payload_ciphertext TEXT NOT NULL, received_at INTEGER NOT NULL, session_tag TEXT)");
+        db.execSQL("CREATE INDEX queued_locations_session_sequence_idx ON queued_locations(session_tag, sequence DESC)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion == 1 && newVersion == 2) {
-            // SQLite uses the constant default for all legacy rows without rewriting the FIFO.
+        if (newVersion != 3 || oldVersion < 1 || oldVersion > 2)
+            throw new IllegalStateException("Tracking queue migration is required");
+        if (oldVersion == 1) {
+            // Retain all legacy encrypted rows and sequence identities.
             db.execSQL("ALTER TABLE queued_locations ADD COLUMN received_at INTEGER NOT NULL DEFAULT "
                 + System.currentTimeMillis());
-            return;
         }
-        throw new IllegalStateException("Tracking queue migration is required");
+        // Legacy v1/v2 rows remain untagged and are replayed under existing rules.
+        db.execSQL("ALTER TABLE queued_locations ADD COLUMN session_tag TEXT");
+        db.execSQL("CREATE INDEX queued_locations_session_sequence_idx ON queued_locations(session_tag, sequence DESC)");
     }
 
     synchronized long nextSequence() throws Exception {
@@ -68,12 +72,35 @@ final class EncryptedLocationQueue extends SQLiteOpenHelper {
     }
 
     synchronized void enqueue(long sequence, String eventId, JSONObject payload) throws Exception {
+        // Server keeps one current fix per trip and no raw GPS trail. Retain the
+        // newest three unacknowledged fixes for this *same* tracking session;
+        // older locations cannot help a live map after an extended outage.
+        // The opaque session tag is a SHA-256 digest of an unguessable token,
+        // never a plaintext credential or coordinate.
+        String sessionTag = TrackingQueueCompaction.sessionTag(payload.optString("p_tracking_token", null));
         ContentValues values = new ContentValues();
         values.put("received_at", System.currentTimeMillis());
         values.put("sequence", sequence);
         values.put("event_id", eventId);
         values.put("payload_ciphertext", crypto.encrypt(payload.toString()));
-        getWritableDatabase().insertOrThrow("queued_locations", null, values);
+        values.put("session_tag", sessionTag);
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.insertOrThrow("queued_locations", null, values);
+            if (sessionTag != null) {
+                // Indexed per-session trim. Never remove another trip's queue or
+                // unknown legacy rows, and never re-use a deleted sequence.
+                db.execSQL("DELETE FROM queued_locations WHERE session_tag = ? AND sequence < " +
+                    "(SELECT sequence FROM queued_locations WHERE session_tag = ? " +
+                    "ORDER BY sequence DESC LIMIT 1 OFFSET " +
+                    (TrackingQueueCompaction.FIXES_PER_SESSION - 1) + ")",
+                    new Object[]{sessionTag, sessionTag});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     synchronized Entry peek() throws Exception {
