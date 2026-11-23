@@ -29,7 +29,7 @@ jobs:
   validate:
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
       (inputs.buses == '10' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE') ||
       (inputs.buses == '10' && inputs.workload == 'android_gps_restore' && inputs.confirmation == 'RESTORE_RECOVERY_GPS_BASELINE') ||
       (inputs.buses == '5000' && inputs.workload == 'android_gps' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY_5000'))
