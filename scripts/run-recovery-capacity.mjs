@@ -285,7 +285,12 @@ try {
     config.external?.phone === true
   )
     throw Error("CAPACITY_AUTH_NOT_ISOLATED");
-  evidence.realtimePartitionReadiness = await assertRecoveryRealtimePartitions(db);
+  // Android GPS-only does not run Realtime dispatch workers; keep it available
+  // for isolating ingestion bottlenecks even when managed partitions are stale.
+  // The combined workload must have live provider partitions before setup.
+  if (!nativeGpsOnly) {
+    evidence.realtimePartitionReadiness = await assertRecoveryRealtimePartitions(db);
+  }
   evidence.schemaFingerprint = await calculateSchemaFingerprint(db);
   evidence.database = (
     await db.query(
