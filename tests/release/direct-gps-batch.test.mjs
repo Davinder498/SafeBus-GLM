@@ -93,3 +93,21 @@ test('hosted direct comparison is bounded and compares identical 100-bus pattern
   ]);
   for(const size of DIRECT_GPS_PLAN.batchSizes)assert.deepEqual(windows.filter(w=>w.batchSize===size).map(w=>w.pattern),['staggered','synchronized']);
 });
+
+test('500-bus qualification fixes batch size 50 and keeps four DB connections, without a baseline replay',async()=>{
+  const {DIRECT_GPS_SCALE_PLAN,directGpsPlan,directGpsComparisonWindows}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  assert.equal(directGpsPlan(500),DIRECT_GPS_SCALE_PLAN);
+  const plan=directGpsPlan(500);
+  assert.equal(plan.rounds,100);
+  assert.equal(plan.dbConnections,4);
+  assert.equal(plan.batchWaitMs,50);
+  assert.equal(plan.p99TargetMs,1000);
+  assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
+  assert.deepEqual(directGpsComparisonWindows(plan),[
+    {batchSize:50,pattern:'staggered',path:'direct_batch'},
+    {batchSize:50,pattern:'synchronized',path:'direct_batch'},
+  ]);
+  assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
+  for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
+  assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
+});

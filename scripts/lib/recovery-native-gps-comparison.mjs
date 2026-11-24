@@ -166,7 +166,7 @@ export function classifyRecoveryGpsStage(result) {
  * drain all HTTP work and quarantine the Data API first. No trigger bypass. */
 export async function resetRecoveryGpsWindow(db, scope, tripIds) {
   assertCapacityScope(scope);
-  if (scope.buses !== 100 || tripIds.length !== 100 || new Set(tripIds).size !== 100)
+  if (![100,500].includes(scope.buses) || tripIds.length !== scope.buses || new Set(tripIds).size !== scope.buses)
     throw Error('CAPACITY_GPS_WINDOW_SCOPE');
   await capacityQuarantine(db);
   await db.query('begin');
@@ -186,7 +186,7 @@ export async function resetRecoveryGpsWindow(db, scope, tripIds) {
           and a.name='Capacity Load '||$3||' '||array_position($2::uuid[],a.id)::text
           and u.raw_app_meta_data->>'safebus_capacity_run'=$3 and u.email=any($4::text[])) as owned
     `, [tripIds, scope.tenantIds, scope.run, scope.emails]);
-    if (!rows[0]?.identity || rows[0].trips !== 100 || rows[0].owned !== 100)
+    if (!rows[0]?.identity || rows[0].trips !== scope.buses || rows[0].owned !== scope.buses)
       throw Error('CAPACITY_GPS_WINDOW_SCOPE');
     for (const relation of ['public.driver_trip_current_locations', 'safebus_private.tracking_invalidation_queue',
       'safebus_private.shared_tracking_queue', 'safebus_private.live_bus_progress_cache']) {
@@ -204,7 +204,7 @@ export async function resetRecoveryGpsWindow(db, scope, tripIds) {
       and s.driver_trip_id=any($1::uuid[]) and s.tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
     const sessions = await db.query(`update public.bus_tracking_sessions set last_seen_at=null
       where driver_trip_id=any($1::uuid[]) and tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
-    if (devices.rowCount !== 100 || sessions.rowCount !== 100)
+    if (devices.rowCount !== scope.buses || sessions.rowCount !== scope.buses)
       throw Error('CAPACITY_GPS_WINDOW_SCOPE');
     await db.query('commit');
   } catch (error) {

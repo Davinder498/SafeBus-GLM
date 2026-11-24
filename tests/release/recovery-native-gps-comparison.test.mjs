@@ -185,3 +185,16 @@ test('SQL counters are read-only aggregates restricted to authenticated REST cal
     return {rows:[row]};
   }}),row);
 });
+
+test('500-bus reset requires all 500 owned trips and rejects any partial fleet',async()=>{
+  const scope={run:'123-1',buses:500,tenantIds:['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'],
+    emails:Array.from({length:551},(_,i)=>'capacity-load-123-1-'+i+'@example.test')};
+  const trips=Array.from({length:500},(_,i)=>'00000000-0000-4000-8000-'+String(i).padStart(12,'0'));
+  const calls=[];
+  const db={query:async sql=>{calls.push(sql);return {rows:sql.includes('as identity')?[{identity:true,trips:500,owned:499}]:[]};}};
+  await assert.rejects(resetRecoveryGpsWindow(db,scope,trips.slice(0,499)),/CAPACITY_GPS_WINDOW_SCOPE/);
+  assert.equal(calls.length,0);
+  await assert.rejects(resetRecoveryGpsWindow(db,scope,trips),/CAPACITY_GPS_WINDOW_SCOPE/);
+  assert.equal(calls.at(-1),'rollback');
+  assert.equal(calls.some(sql=>/^delete|^update/i.test(sql)),false);
+});

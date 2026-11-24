@@ -54,3 +54,25 @@ writes stop the run. Remove the wrapper and verify original function and cleanup
 A failed baseline is not permission to claim capacity; the direct candidates
 must pass independently. The runner-local HTTP path lacks the deployed gateway's
 network latency; no sustained 10,000-bus or guardian capacity claim follows.
+
+## 500-bus sustained direct GPS qualification
+
+Observed Recovery run 45321238007 passed all 10,000 events in ten windows, with
+no late events or errors and final positions reconciled. Batch 50 recorded
+staggered/synchronized p99 of 742.1/736.4 ms, 249/20 transactions for 1,000
+events in each pattern; individual HTTPS p99 was 2105.8/1906.8 ms. The hosted
+gateway was runner-local, not a deployed production gateway. All fixture rows
+and the temporary wrapper were verified removed.
+
+The next protected profile uses 500 distinct drivers across two synthetic
+districts, batch size 50, 50 ms collection window, four worker connections,
+100 rounds at three seconds per pattern, totaling 100,000 fixes over ten minutes.
+No repeat of individual or other batch-size measurements. Require both complete
+windows, no late events, exact committed transaction reconciliation, final
+location reconciliation, existing authorization/replay proofs and p99 <= 1s in
+both patterns. Keep the device-local retry contract. The reset checks all 500
+run-owned trips, and outstanding SQL writes drain before cleanup even if HTTP
+clients disconnect. Defer driver login until fixtures and cleanup rehearsal
+complete, with existing provider-respecting pacing; guardian accounts are not
+signed in during GPS-only load. The test remains isolated; no permanent gateway
+deployment, production changes, queue purchases or fleet-wide qualification.
