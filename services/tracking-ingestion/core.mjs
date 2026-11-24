@@ -52,7 +52,7 @@ function validateGrant(grant, now) {
     grant.expiresAt > now && grant.expiresAt <= now + 60_000;
 }
 
-function validEnvelope(envelope) {
+export function validEnvelope(envelope) {
   if (!exact(envelope,['version','scope','fix','groupId','eventKey']) || envelope.version !== 2 ||
       !exact(envelope.scope,[...SCOPE,'authorizationVersion']) ||
       !SCOPE.every(k => uuid(envelope.scope[k])) ||

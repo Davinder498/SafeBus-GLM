@@ -3,6 +3,9 @@ import test from 'node:test';
 import {submitGpsRequests,createFifoBatchPublisher,processGpsDeliveries}
   from '../../services/tracking-ingestion/core.mjs';
 
+import {createPgmqBatchPublisher,processPgmqShard,gpsQueueShard}
+  from '../../services/tracking-ingestion/pgmq.mjs';
+
 const now=Date.parse('2026-11-24T02:00:00.000Z');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const request=(n=1,seq=1)=>({
@@ -109,4 +112,61 @@ test('consumer accepts persistent duplicate outcome but rejects tampered envelop
   assert.equal(summary.duplicate,1);assert.equal(summary.acknowledged,1);
   await assert.rejects(processGpsDeliveries([{envelope:{...envelope,scope:{...envelope.scope,tenantId:id(9)}},receiptHandle:'h'}],{
     commit:async()=>{throw Error('must not commit');},ack:async()=>true}),/INVALID_DELIVERY/);
+});
+
+function pgPool(handler) {
+  const calls=[];
+  return {calls,pool:{connect:async()=>({query:async(sql,args)=>{
+    calls.push({sql,args}); return handler(sql,args) ?? {rows:[]};
+  },release:()=>calls.push({sql:'release'})})}};
+}
+test('pgmq batch publisher emits receipts only after successful commit',async()=>{
+  const {envelope}=await capture();
+  const db=pgPool((sql,args)=>{
+    if(sql.includes('pgmq.send_batch')) {
+      assert.equal(args[0],'safebus_gps_v2_'+String(gpsQueueShard(envelope.groupId)).padStart(2,'0'));
+      assert.deepEqual(JSON.parse(args[1][0]),envelope);
+      return {rows:[{msg_id:'9223372036854775800'}]};
+    }
+  });
+  assert.deepEqual(await createPgmqBatchPublisher({pool:db.pool})([envelope]),new Set([envelope.eventKey]));
+  assert.deepEqual(db.calls.slice(-2).map(c=>c.sql),['commit','release']);
+  const failure=pgPool(sql=>{if(sql==='commit')throw Error('ambiguous');if(sql.includes('pgmq.send_batch'))return {rows:[{msg_id:'1'}]};});
+  await assert.rejects(createPgmqBatchPublisher({pool:failure.pool})([envelope]),/QUEUE_TRANSACTION_FAILED/);
+  assert.ok(failure.calls.some(c=>c.sql==='rollback'));
+});
+test('pgmq shard worker commits receipts and deletes in one transaction, using a cross-worker lock',async()=>{
+  const {envelope}=await capture();
+  const shard=gpsQueueShard(envelope.groupId);
+  const db=pgPool((sql,args)=>{
+    if(sql.includes('pg_try_advisory'))return {rows:[{acquired:true}]};
+    if(sql.includes('pgmq.read'))return {rows:[{msg_id:'1',message:envelope}]};
+    if(sql.includes('pgmq.delete')){assert.deepEqual(args[1],['1']);return {rows:[{msg_id:'1'}]};}
+  });
+  const result=await processPgmqShard({pool:db.pool,shard,commitBatch:async(client,events)=>{
+    assert.deepEqual(events,[envelope]);
+    await client.query('test authoritative commit operation');
+    return [{eventKey:envelope.eventKey,durable:true,status:'committed'}];
+  }});
+  assert.deepEqual(result,{state:'processed',processed:1});
+  assert.ok(db.calls.findIndex(c=>c.sql.includes('test authoritative'))<db.calls.findIndex(c=>c.sql.includes('pgmq.delete')));
+  assert.equal(db.calls.at(-2).sql,'commit');
+});
+test('pgmq refuses busy shards and rolls back any unconfirmed authoritative outcome or deletion',async()=>{
+  const {envelope}=await capture();
+  const shard=gpsQueueShard(envelope.groupId);
+  const busy=pgPool(sql=>sql.includes('pg_try_advisory')?{rows:[{acquired:false}]}:undefined);
+  assert.deepEqual(await processPgmqShard({pool:busy.pool,shard,commitBatch:async()=>{throw Error('must not run');}}),{state:'busy',processed:0});
+  assert.ok(!busy.calls.some(c=>c.sql.includes('pgmq.read')));
+  for(const valid of [false,true]){
+    const db=pgPool(sql=>{
+      if(sql.includes('pg_try_advisory'))return {rows:[{acquired:true}]};
+      if(sql.includes('pgmq.read'))return {rows:[{msg_id:'1',message:envelope}]};
+      if(sql.includes('pgmq.delete'))return {rows:[]};
+    });
+    await assert.rejects(processPgmqShard({pool:db.pool,shard,commitBatch:async()=>[{eventKey:envelope.eventKey,durable:valid,status:'committed'}]}),/QUEUE_TRANSACTION_FAILED/);
+    assert.ok(db.calls.some(c=>c.sql==='rollback'));
+    assert.ok(!db.calls.some(c=>c.sql==='commit'));
+    assert.equal(db.calls.some(c=>c.sql.includes('pgmq.delete')),valid);
+  }
 });
