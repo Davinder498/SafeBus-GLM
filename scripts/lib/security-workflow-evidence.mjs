@@ -16,7 +16,7 @@ export function verifiedDatabaseClient(databaseUrl, ca, applicationName) {
   });
 }
 
-export function assertReviewedCheckout(releaseSha) {
+function assertExactCheckout(releaseSha) {
   if (process.env.GITHUB_ACTIONS !== 'true' || !/^[0-9a-f]{40}$/.test(releaseSha ?? ''))
     throw new Error('Exact reviewed SHA in protected GitHub Actions is required.');
   if (
@@ -26,7 +26,34 @@ export function assertReviewedCheckout(releaseSha) {
     }).trim()
   )
     throw new Error('Reviewed checkout is not exact and clean.');
+}
+
+export function assertReviewedCheckout(releaseSha) {
+  assertExactCheckout(releaseSha);
   execFileSync('git', ['merge-base', '--is-ancestor', releaseSha, 'origin/main'], {
+    stdio: 'pipe',
+  });
+}
+
+export function assertRecoveryCapacityCheckout(releaseSha) {
+  if (process.env.SAFEBUS_RECOVERY_CANDIDATE !== 'true') {
+    assertReviewedCheckout(releaseSha);
+    return;
+  }
+
+  const workflow = 'Davinder498/SafeBus-GLM/.github/workflows/run-recovery-candidate.yml@refs/heads/main';
+  const dispatcherSha = process.env.GITHUB_SHA;
+  if (
+    !['workflow_dispatch', 'workflow_run'].includes(process.env.GITHUB_EVENT_NAME) ||
+    process.env.GITHUB_REF !== 'refs/heads/main' ||
+    process.env.GITHUB_WORKFLOW_REF !== workflow ||
+    !/^[0-9a-f]{40}$/.test(dispatcherSha ?? '') ||
+    dispatcherSha === releaseSha
+  )
+    throw new Error('Recovery candidates require the protected main-branch dispatcher.');
+
+  assertExactCheckout(releaseSha);
+  execFileSync('git', ['merge-base', '--is-ancestor', dispatcherSha, releaseSha], {
     stdio: 'pipe',
   });
 }

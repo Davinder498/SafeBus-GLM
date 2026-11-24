@@ -67,11 +67,17 @@ repeat the standard notification privacy approval already given.
 - Do not implement future milestones early.
 - Do not push directly to `main`.
 - Use feature branches.
-- Open a pull request for review.
-- Do not merge without human approval.
-- GLM may build.
-- Codex reviews.
-- Human approves final merge.
+- For owner-authorized engineering work, Codex builds, tests, reviews the final
+  diff and owns the merge of the exact reviewed commit after required checks pass.
+- Open a pull request for the milestone. If a check fails, diagnose it, fix
+  the branch and review the new head before merging.
+- Request the owner's intervention when a human review, merge approval or
+  deployment approval is needed. Continue independently once it is recorded.
+  Use the normal GitHub merge route with branch protections enforced.
+- Keep production changes on the protected release and rollback workflows.
+  Treat merge, release and launch approval as distinct actions.
+- Keep the owner updated on meaningful milestones, verification and concrete
+  blockers. Never purchase, upgrade or enable paid overages on any account.
 
 ### Standing service authorization — owner direction, 2026-10-28
 
@@ -82,9 +88,10 @@ repeat the standard notification privacy approval already given.
 - Use the actual permissions of the connected accounts. Report a concrete access
   or credential problem if it prevents the requested work; do not claim access
   that has not been verified.
-- Continue the feature-branch, human merge review, recovery, and protected
-  production release workflow. This authorization does not remove account
-  security, required deployment reviewers, recipient consent, or data boundaries.
+- Continue the feature-branch, human approval, recovery and protected release
+  workflow. The November 24, 2026 owner direction delegates engineering work to
+  Codex. Account security, review protections, recipient consent and data
+  boundaries still apply.
 
 ## Current Development Setup
 
@@ -166,7 +173,7 @@ This supersedes the isolated-target requirement for this security milestone.
 - Prepare and review the hosted-schema reconciliation before applying changes.
 - Rehearse schema changes in a bounded rollback-only transaction first.
 - Persistent changes still require verified recovery evidence and the protected,
-  approved workflow. GitHub environment protection and human merge review remain.
+  approved workflow and applicable GitHub environment protection.
 - Inspect fixtures and triggers before test writes; use scoped synthetic accounts.
 - Do not reset the database, replay all migrations, alter existing identities as
   fixtures, send notifications as QA, or perform uncontrolled load testing.

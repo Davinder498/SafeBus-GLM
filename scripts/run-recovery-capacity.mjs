@@ -5,7 +5,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { performance } from "node:perf_hooks";
 import {
   verifiedDatabaseClient,
-  assertReviewedCheckout,
+  assertRecoveryCapacityCheckout,
 } from "./lib/security-workflow-evidence.mjs";
 import {
   createEnvironmentBinding,
@@ -89,6 +89,9 @@ const scope = {
 };
 const evidence = {
   releaseSha: process.env.SAFEBUS_RELEASE_SHA,
+  ...(process.env.SAFEBUS_RECOVERY_CANDIDATE === "true"
+    ? { preMergeCandidate: true, dispatcherSha: process.env.GITHUB_SHA }
+    : {}),
   runId: run,
   target: "deladookciebwvqojhkv",
   requestedBuses: buses,
@@ -189,7 +192,7 @@ try {
     (gpsCompare && !comparisonPlan)
   )
     throw Error("CAPACITY_WORKLOAD_INVALID");
-  assertReviewedCheckout(process.env.SAFEBUS_RELEASE_SHA);
+  assertRecoveryCapacityCheckout(process.env.SAFEBUS_RELEASE_SHA);
   if (
     process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==

@@ -1,0 +1,20 @@
+name: Request Recovery candidate test
+
+on:
+  push:
+    branches: ['capacity/recovery-*-run-*']
+
+permissions:
+  contents: read
+
+jobs:
+  request:
+    if: github.repository == 'Davinder498/SafeBus-GLM' && !github.event.deleted
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm bounded workload request
+        shell: bash
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^capacity/recovery-[a-z0-9][a-z0-9-]{0,44}-run-(10|100|500)$ ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
