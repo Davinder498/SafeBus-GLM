@@ -95,6 +95,7 @@ jobs:
             tests/release/recovery-candidate-workflow.test.mjs \
             tests/release/recovery-capacity.test.mjs \
             tests/release/recovery-capacity-lifecycle.test.mjs \
+            tests/release/security-config.test.mjs \
             tests/release/direct-gps-batch.test.mjs
 
   measure:
@@ -166,7 +167,7 @@ jobs:
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           git merge-base --is-ancestor "$GITHUB_SHA" "$CANDIDATE_SHA"
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0d762115 # v6.1.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
