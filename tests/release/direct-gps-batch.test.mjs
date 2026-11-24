@@ -78,3 +78,18 @@ test('ambiguous commit cannot return a final acknowledgement',async()=>{
   await assert.rejects(createDirectBatchWriter({pool})([{id:'x'}]),/BATCH_UNAVAILABLE/);
   assert.ok(seen.includes('rollback'));
 });
+
+test('hosted direct comparison is bounded and compares identical 100-bus patterns',async()=>{
+  const {DIRECT_GPS_PLAN,directGpsComparisonWindows}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  assert.equal(DIRECT_GPS_PLAN.buses,100);
+  assert.equal(DIRECT_GPS_PLAN.rounds,10);
+  assert.equal(DIRECT_GPS_PLAN.capacityQualified,false);
+  assert.deepEqual(DIRECT_GPS_PLAN.batchSizes,[10,25,50,100]);
+  const windows=directGpsComparisonWindows();
+  assert.equal(windows.length,10);
+  assert.deepEqual(windows.slice(-2),[
+    {batchSize:0,pattern:'staggered',path:'individual_https'},
+    {batchSize:0,pattern:'synchronized',path:'individual_https'},
+  ]);
+  for(const size of DIRECT_GPS_PLAN.batchSizes)assert.deepEqual(windows.filter(w=>w.batchSize===size).map(w=>w.pattern),['staggered','synchronized']);
+});

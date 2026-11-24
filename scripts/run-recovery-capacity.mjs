@@ -62,13 +62,15 @@ import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
 import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
 import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase, sampleRecoveryGpsSql, classifyRecoveryGpsStage, resetRecoveryGpsWindow } from "./lib/recovery-native-gps-comparison.mjs";
+import { runRecoveryDirectGpsComparison, DIRECT_GPS_PLAN } from "./lib/recovery-direct-gps-comparison.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
 const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
 const gpsCompare = workload === "android_gps_compare";
-const nativeGpsOnly = workload === "android_gps" || gpsCompare;
+const directCompare = workload === "android_gps_direct_compare";
+const nativeGpsOnly = workload === "android_gps" || gpsCompare || directCompare;
 const sustainedGpsCompare = gpsCompare && buses === 100;
 const comparisonPlan = gpsCompare && [10, 100].includes(buses) ? recoveryGpsComparisonPlan(buses) : null;
 const largeNativeRun = nativeGpsOnly && buses === 5000;
@@ -179,7 +181,8 @@ function phaseComplete(name) {
 try {
   assertCapacityScope(scope);
   if (
-    !["combined", "android_gps", "android_gps_compare"].includes(workload) ||
+    !["combined", "android_gps", "android_gps_compare", "android_gps_direct_compare"].includes(workload) ||
+    (directCompare && buses !== 100) ||
     (!nativeGpsOnly && buses === 5000) ||
     (gpsCompare && !comparisonPlan)
   )
@@ -189,7 +192,7 @@ try {
     process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==
       (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" :
-        gpsCompare ? comparisonPlan.confirmation : "RUN_RECOVERY_CAPACITY")
+        gpsCompare ? comparisonPlan.confirmation : directCompare ? DIRECT_GPS_PLAN.confirmation : "RUN_RECOVERY_CAPACITY")
   )
     throw Error("CAPACITY_WORKFLOW_REQUIRED");
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -333,7 +336,7 @@ try {
     ).user;
     if (!user?.id) throw Error("CAPACITY_AUTH_FAILED");
     const role = i < buses ? "driver" : "guardian";
-    const tenantIndex = largeNativeRun
+    const tenantIndex = largeNativeRun || (directCompare && i < buses)
       ? i % 2
       : Number(i === scope.emails.length - 1);
     const tenant = scope.tenantIds[tenantIndex];
@@ -359,7 +362,7 @@ try {
   if (largeNativeRun) phaseComplete("accounts-created");
   stage = "fixtures";
   for (let i = 0; i < 2; i++)
-    await seedCapacityTenant(db, scope, i, accounts[largeNativeRun ? i : 0].id);
+    await seedCapacityTenant(db, scope, i, accounts[largeNativeRun || directCompare ? i : 0].id);
   const nativeDrivers = [];
   if (largeNativeRun) {
     await seedCapacityFleetInLanes({
@@ -473,6 +476,23 @@ try {
         throw Error("CAPACITY_GPS_COMPARISON_PERFORMANCE");
       }
     }
+  } else if (directCompare) {
+    stage = "direct-gps-comparison";
+    if (accounts.slice(0,buses).some(a => a.expiresAt < Date.now() + 15*60*1000))
+      throw Error("CAPACITY_AUTH_SESSION_WINDOW");
+    evidence.directGpsComparison = { plan: DIRECT_GPS_PLAN, windows: [], restored: false, capacityQualified: false };
+    await runRecoveryDirectGpsComparison({
+      db, scope, drivers: nativeDrivers, evidence: evidence.directGpsComparison,
+      connect: async name => {
+        const c = await connect(name);
+        try { await assertEnvironmentIdentity(c,binding); return c; }
+        catch(e) { await c.end().catch(()=>{}); throw e; }
+      },
+      auth: createClient(RECOVERY_AUTH_URL,process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
+        {...options,global:{fetch:workloadFetch}}).auth,
+      publishableKey: process.env.SAFEBUS_CAPACITY_PUBLISHABLE_KEY,
+      signal: stop.signal,
+    });
   } else if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
   evidence.exploratoryPassed = true;
