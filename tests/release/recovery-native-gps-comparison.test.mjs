@@ -154,7 +154,8 @@ test('performance-only failures can continue, while correctness, auth, transport
     late:100, deviceBackpressure:101, cancelledBeforeSend:100,
     transport:{writes:1300,responses:1300,failures:{}}, errors:{NATIVE_GPS_DEVICE_QUEUE_LIMIT:1} };
   assert.equal(classifyRecoveryGpsStage(result), 'performance_failed');
-  assert.equal(classifyRecoveryGpsStage({...result,passed:true}), 'passed');
+  assert.equal(classifyRecoveryGpsStage({...result,passed:true,planned:1300,late:0,errors:{}}), 'passed');
+  assert.equal(classifyRecoveryGpsStage({...result,passed:true}), 'fatal');
   assert.equal(classifyRecoveryGpsStage({...result,errors:{}}), 'performance_failed');
   for (const bad of [
     {reconciled:false},{accepted:1299},{transport:{writes:1300,responses:1299,failures:{}}},

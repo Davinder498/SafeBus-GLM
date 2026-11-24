@@ -148,7 +148,6 @@ export async function sampleRecoveryGpsDatabase(db) {
  * may continue to the next diagnostic stage. No auth/transport/correctness
  * failures are tolerated, even if an earlier result had high latency. */
 export function classifyRecoveryGpsStage(result) {
-  if (result.passed) return 'passed';
   const t = result.transport;
   const errors = Object.keys(result.errors ?? {});
   if (result.reconciled !== true || result.offered !== result.accepted ||
@@ -156,6 +155,7 @@ export function classifyRecoveryGpsStage(result) {
       t.responses !== result.offered || Object.keys(t.failures ?? {}).length ||
       errors.some(code => !['NATIVE_GPS_DEVICE_QUEUE_LIMIT', 'NATIVE_GPS_IN_FLIGHT_LIMIT'].includes(code)))
     return 'fatal';
+  if (result.passed) return result.accepted === result.planned && !errors.length && !result.late ? 'passed' : 'fatal';
   if (result.late > 0 || errors.length || result.deviceBackpressure > 0)
     return 'performance_failed';
   return 'fatal';
@@ -163,7 +163,7 @@ export function classifyRecoveryGpsStage(result) {
 
 /** Reset only run-owned GPS state, not accounts/entitlements/route fixtures.
  * All six windows start from equivalent empty tracking state. Caller must
- * close HTTP transport and quarantine the Data API first. No trigger bypass. */
+ * drain all HTTP work and quarantine the Data API first. No trigger bypass. */
 export async function resetRecoveryGpsWindow(db, scope, tripIds) {
   assertCapacityScope(scope);
   if (scope.buses !== 100 || tripIds.length !== 100 || new Set(tripIds).size !== 100)

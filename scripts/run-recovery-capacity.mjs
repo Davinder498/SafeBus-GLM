@@ -643,10 +643,12 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
       if (sustainedGpsCompare) result.classification = classifyRecoveryGpsStage(result);
       evidence.nativeGpsStages.push(result);
       console.log(
-        `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; busy_in_flight=${result.busyInFlight}; busy_cooldown=${result.busyCooldown}; max_queue_delay_ms=${result.maxQueueDelayMs.toFixed(1)}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
+        `Android GPS stage: phase=${phase ?? "default"}; pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; busy_in_flight=${result.busyInFlight}; busy_cooldown=${result.busyCooldown}; unsent_cancelled=${result.cancelledBeforeSend}; max_queue_delay_ms=${result.maxQueueDelayMs.toFixed(1)}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
       );
       if (sustainedGpsCompare && (sampleErrors || databaseSamples.length < 2))
         throw Error("CAPACITY_GPS_DATABASE_STATS");
+      if (sustainedGpsCompare && result.classification === "fatal")
+        throw Error("CAPACITY_ANDROID_GPS_FAILED");
       if (!result.passed) {
         if (!sustainedGpsCompare || result.classification !== "performance_failed")
           throw Error("CAPACITY_ANDROID_GPS_FAILED");
