@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
+import { performance } from 'node:perf_hooks';
+
+// Telemetry is numeric and cannot change authorization or acknowledgement.
+const report=(observe,stage,ms,count=1)=>{try{observe?.(stage,ms,count);}catch{/* metrics never break ingestion */}};
+export const BATCH_TRANSACTION_SETUP="begin; set local statement_timeout='2s'; set local lock_timeout='250ms'; set local idle_in_transaction_session_timeout='3s'";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const fields=['p_tracking_token','p_device_credential','p_event_id','p_sequence','p_recorded_at',
@@ -47,17 +52,23 @@ export function createSupabaseClaimsVerifier({auth,issuer,clock=Date.now}={}) {
  * Only a dedicated trusted gateway role may get EXECUTE on the private function.
  * The query is parameterized and never logs payloads, bearer tokens or errors.
  */
-export function createDirectBatchWriter({pool}={}) {
+export function createDirectBatchWriter({pool,observe}={}) {
   if(typeof pool?.connect!=='function')throw Error('DATABASE_CONFIGURATION');
   return async items=>{
+    const acquiredAt=performance.now();
     const client=await pool.connect();
+    report(observe,'pool_acquire',performance.now()-acquiredAt,items.length);
     let broken;
+    const query=async(stage,...args)=>{
+      const start=performance.now();
+      try{return await client.query(...args);}
+      finally{report(observe,stage,performance.now()-start,items.length);}
+    };
     try{
-      await client.query('begin');
-      await client.query("set local statement_timeout='2s'");
-      await client.query("set local lock_timeout='250ms'");
-      await client.query("set local idle_in_transaction_session_timeout='3s'");
-      const {rows}=await client.query('select safebus_private.ingest_verified_driver_location_batch($1::jsonb) as result',
+      // Constant SQL only. PostgreSQL simple protocol supports multiple statements;
+      // never interpolate request data here. Keep the batch query parameterized.
+      await query('transaction_setup',BATCH_TRANSACTION_SETUP);
+      const {rows}=await query('sql_round_trip','select safebus_private.ingest_verified_driver_location_batch($1::jsonb) as result',
         [JSON.stringify(items)]);
       const outcomes=rows[0]?.result;
       if(!Array.isArray(outcomes)||outcomes.length!==items.length||
@@ -65,7 +76,7 @@ export function createDirectBatchWriter({pool}={}) {
         outcomes.some(o=>!items.some(i=>i.id===o?.id)||![200,401,403].includes(o.status)||
           (o.status===200&&(typeof o.body?.accepted!=='boolean'||typeof o.body?.stopTracking!=='boolean'))))
         throw Error('INCOMPLETE_BATCH');
-      await client.query('commit');
+      await query('commit_round_trip','commit');
       return new Map(outcomes.map(o=>[o.id,o.status===200?{status:200,body:o.body}:fail(o.status)]));
     }catch{
       try{await client.query('rollback');}catch{broken=Error('CONNECTION_UNUSABLE');}
@@ -79,7 +90,7 @@ export function createDirectBatchWriter({pool}={}) {
  * At most one outstanding fix per device credential and principal. Global
  * deployment rate limiting and multi-instance admission are separate gates.
  */
-export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,maxInFlight=4,maxPending=500}={}){
+export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,maxInFlight=4,maxPending=500,observe}={}){
   if(typeof verify!=='function'||typeof write!=='function'||
     !Number.isInteger(batchSize)||batchSize<1||batchSize>100||
     !Number.isInteger(maxWaitMs)||maxWaitMs<1||maxWaitMs>100||
@@ -89,12 +100,17 @@ export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,m
   const waiting=[],devices=new Set(),principals=new Set();
   function schedule(){
     if(timer!==null||closed||!waiting.length||active>=maxInFlight)return;
-    timer=setTimeout(()=>{timer=null;flush();},maxWaitMs);
+    // The collection deadline is measured from the oldest queued fix, not
+    // restarted whenever a busy worker finishes.
+    const remaining=Math.max(0,maxWaitMs-(performance.now()-waiting[0].queuedAt));
+    timer=setTimeout(()=>{timer=null;flush();},remaining);
   }
   function flush(){
     if(active>=maxInFlight||!waiting.length)return;
     if(timer!==null){clearTimeout(timer);timer=null;}
     const batch=waiting.splice(0,batchSize);active++;
+    const now=performance.now();
+    for(const e of batch)report(observe,'batch_wait',now-e.queuedAt);
     void Promise.resolve().then(()=>write(batch.map(e=>e.item))).then(
       results=>{for(const e of batch)e.resolve(results instanceof Map?results.get(e.item.id)??fail(503):fail(503));},
       ()=>{for(const e of batch)e.resolve(fail(503));}
@@ -113,14 +129,17 @@ export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,m
       const device=fix.p_device_credential;
       let principal,ownsDevice=false,ownsPrincipal=false;
       try{
-        const claims=await verify(bearer.slice(7));
+        const authStart=performance.now();
+        let claims;
+        try{claims=await verify(bearer.slice(7));}
+        finally{report(observe,'auth_verify',performance.now()-authStart);}
         if(!claims)return fail(401);
         if(closed||devices.has(device)||principals.has(claims.sub))return fail(503);
         devices.add(device);ownsDevice=true;
         principal=claims.sub;principals.add(principal);ownsPrincipal=true;
         const item={id:randomUUID(),claims,fix:Object.fromEntries(fields.map(k=>[k,fix[k]]))};
         return await new Promise(resolve=>{
-          waiting.push({item,resolve});
+          waiting.push({item,resolve,queuedAt:performance.now()});
           if(waiting.length>=batchSize)flush();else schedule();
         });
       }catch{return fail(503);}
