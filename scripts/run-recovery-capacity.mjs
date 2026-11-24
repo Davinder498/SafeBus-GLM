@@ -61,7 +61,7 @@ import {
 import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
 import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
-import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase } from "./lib/recovery-native-gps-comparison.mjs";
+import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase, sampleRecoveryGpsSql, classifyRecoveryGpsStage, resetRecoveryGpsWindow } from "./lib/recovery-native-gps-comparison.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
@@ -114,6 +114,7 @@ const evidence = {
 const stop = new AbortController();
 let deadlineReached = false;
 let db,
+  monitorDb,
   admin,
   connected = false,
   armed = false,
@@ -447,6 +448,10 @@ try {
         !Number.isFinite(account.expiresAt) || account.expiresAt < expiresAfter))
         throw Error("CAPACITY_AUTH_SESSION_WINDOW");
     }
+    if (sustainedGpsCompare) {
+      monitorDb = await connect("safebus-capacity-gps-monitor");
+      await assertEnvironmentIdentity(monitorDb, binding);
+    }
     gpsComparison = await createRecoveryGpsComparison(db);
     evidence.nativeGpsComparison = { ...gpsComparison.evidence, plan: comparisonPlan, restored: false };
     await runNativeGps(nativeDrivers, { phase: "baseline_before", sequenceOffset: 0 });
@@ -459,6 +464,15 @@ try {
     evidence.nativeGpsComparison.restored = true;
     await delay(3000, undefined, { signal: stop.signal });
     await runNativeGps(nativeDrivers, { phase: "baseline_after", sequenceOffset: comparisonPlan.phaseSequenceSpan * 2 });
+    if (sustainedGpsCompare) {
+      const measured = evidence.nativeGpsStages;
+      evidence.nativeGpsComparison.completedAllStages = measured.length === 6;
+      evidence.nativeGpsComparison.allStagesPassed = measured.length === 6 && measured.every(s => s.passed);
+      if (!evidence.nativeGpsComparison.allStagesPassed) {
+        stage = "gps-comparison-performance";
+        throw Error("CAPACITY_GPS_COMPARISON_PERFORMANCE");
+      }
+    }
   } else if (nativeGpsOnly) await runNativeGps(nativeDrivers);
   else await runCombined(connect);
   evidence.exploratoryPassed = true;
@@ -479,6 +493,7 @@ try {
   stop.abort();
   // Restore the original function before synthetic cleanup and schema checks,
   // including if an HTTPS measurement failed. This is Recovery ONLY.
+  if (monitorDb) await monitorDb.end().catch(() => {});
   if (connected && gpsComparison) {
     try {
       await db.query('rollback').catch(() => {});
@@ -568,19 +583,30 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
       stage = "android-gps-" + (phase ?? "default") + "-" + pattern;
       // Start the second wave on a fresh collection interval for every device.
       if (index) await delay(3000, undefined, { signal: stop.signal });
+      if (sustainedGpsCompare) {
+        // No measured request is in flight when resetting. Quarantine before
+        // touching synthetic state and keep all application triggers enabled.
+        await quarantineCapacity(db);
+        await resetRecoveryGpsWindow(db, scope, drivers.map(d => d.tripId));
+        await db.query("grant usage on schema public,safebus_private to authenticated");
+        assertRunning();
+      }
       const databaseSamples = [];
       let sampleTask = null;
       let sampleTimer = null;
       let sampleErrors = 0;
+      let sqlBefore = null;
+      let sqlAfter = null;
       const sample = async () => {
-        try { databaseSamples.push(await sampleRecoveryGpsDatabase(db)); }
+        try { databaseSamples.push(await sampleRecoveryGpsDatabase(monitorDb)); }
         catch { sampleErrors++; }
       };
       if (sustainedGpsCompare) {
+        sqlBefore = await sampleRecoveryGpsSql(monitorDb);
         await sample();
         sampleTimer = setInterval(() => {
           if (!sampleTask) sampleTask = sample().finally(() => { sampleTask = null; });
-        }, 30000);
+        }, 1000);
       }
       let result;
       const measuredAt = performance.now();
@@ -601,22 +627,33 @@ async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) 
       } finally {
         if (sampleTimer) clearInterval(sampleTimer);
         if (sampleTask) await sampleTask;
-        if (sustainedGpsCompare) await sample();
+        if (sustainedGpsCompare) {
+          await sample();
+          sqlAfter = await sampleRecoveryGpsSql(monitorDb);
+        }
       }
       result.elapsedMs = performance.now() - measuredAt;
       if (sustainedGpsCompare) {
         result.databaseSamples = databaseSamples;
         result.databaseSampleErrors = sampleErrors;
+        result.sqlCounters = { before: sqlBefore, after: sqlAfter };
       }
       result.transport = transport.takeMetrics();
       if (phase) result.phase = phase;
+      if (sustainedGpsCompare) result.classification = classifyRecoveryGpsStage(result);
       evidence.nativeGpsStages.push(result);
       console.log(
-        `Android GPS stage: pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; busy_in_flight=${result.busyInFlight}; busy_cooldown=${result.busyCooldown}; max_queue_delay_ms=${result.maxQueueDelayMs.toFixed(1)}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
+        `Android GPS stage: phase=${phase ?? "default"}; pattern=${pattern}; planned=${result.planned}; sent=${result.offered}; accepted=${result.accepted}; late=${result.late}; device_backpressure=${result.deviceBackpressure}; busy_in_flight=${result.busyInFlight}; busy_cooldown=${result.busyCooldown}; unsent_cancelled=${result.cancelledBeforeSend}; max_queue_delay_ms=${result.maxQueueDelayMs.toFixed(1)}; p99_ms=${result.latencyMs.p99?.toFixed(1) ?? "unavailable"}; final_positions_matched=${result.reconciled}; transport=${JSON.stringify(result.transport)}; errors=${JSON.stringify(result.errors)}`,
       );
-      if (!result.passed) throw Error("CAPACITY_ANDROID_GPS_FAILED");
       if (sustainedGpsCompare && (sampleErrors || databaseSamples.length < 2))
         throw Error("CAPACITY_GPS_DATABASE_STATS");
+      if (sustainedGpsCompare && result.classification === "fatal")
+        throw Error("CAPACITY_ANDROID_GPS_FAILED");
+      if (!result.passed) {
+        if (!sustainedGpsCompare || result.classification !== "performance_failed")
+          throw Error("CAPACITY_ANDROID_GPS_FAILED");
+        console.log("Recovery comparison records performance failure; drained and reconciled, continuing diagnostic only.");
+      }
     }
   } finally {
     transport.close();

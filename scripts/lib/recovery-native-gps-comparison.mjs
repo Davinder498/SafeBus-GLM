@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { assertCapacityScope, capacityQuarantine } from './recovery-capacity-cleanup.mjs';
 
 // Both environments' existing function catalogs were read-only verified on
 // 2026-11-23. A different base is a reason to stop, not to overwrite.
@@ -130,8 +131,103 @@ export async function sampleRecoveryGpsDatabase(db) {
       (select count(*)::int from pg_stat_activity
         where datname=current_database() and state='active') as active_connections,
       (select count(*)::int from pg_stat_activity
-        where datname=current_database() and wait_event_type='Lock') as lock_waiters
+        where datname=current_database() and wait_event_type='Lock') as lock_waiters,
+      (select coalesce(jsonb_object_agg(wait_name,n),'{}'::jsonb) from (
+        select coalesce(wait_event_type,'CPU_or_running')||':'||coalesce(wait_event,'none') as wait_name,
+          count(*) as n from pg_stat_activity
+        where datname=current_database() and state='active' and pid<>pg_backend_pid()
+        group by wait_event_type,wait_event
+      ) waits) as active_waits
     from pg_stat_database where datname=current_database()
+  `);
+  if (rows.length !== 1) throw Error('CAPACITY_GPS_DATABASE_STATS');
+  return rows[0];
+}
+
+/** A stopped stage remains a failure; only safely reconciled performance stops
+ * may continue to the next diagnostic stage. No auth/transport/correctness
+ * failures are tolerated, even if an earlier result had high latency. */
+export function classifyRecoveryGpsStage(result) {
+  const t = result.transport;
+  const errors = Object.keys(result.errors ?? {});
+  if (result.reconciled !== true || result.offered !== result.accepted ||
+      result.accepted <= 0 || !t || t.writes !== result.offered ||
+      t.responses !== result.offered || Object.keys(t.failures ?? {}).length ||
+      errors.some(code => !['NATIVE_GPS_DEVICE_QUEUE_LIMIT', 'NATIVE_GPS_IN_FLIGHT_LIMIT'].includes(code)))
+    return 'fatal';
+  if (result.passed) return result.accepted === result.planned && !errors.length && !result.late ? 'passed' : 'fatal';
+  if (result.late > 0 || errors.length || result.deviceBackpressure > 0)
+    return 'performance_failed';
+  return 'fatal';
+}
+
+/** Reset only run-owned GPS state, not accounts/entitlements/route fixtures.
+ * All six windows start from equivalent empty tracking state. Caller must
+ * drain all HTTP work and quarantine the Data API first. No trigger bypass. */
+export async function resetRecoveryGpsWindow(db, scope, tripIds) {
+  assertCapacityScope(scope);
+  if (scope.buses !== 100 || tripIds.length !== 100 || new Set(tripIds).size !== 100)
+    throw Error('CAPACITY_GPS_WINDOW_SCOPE');
+  await capacityQuarantine(db);
+  await db.query('begin');
+  try {
+    await db.query("set local lock_timeout='2s';set local statement_timeout='20s'");
+    const { rows } = await db.query(`
+      select
+        exists(select 1 from safebus_release.environment_identity where singleton
+          and environment='staging' and project_ref_hash=encode(sha256(convert_to('deladookciebwvqojhkv','UTF8')),'hex')) as identity,
+        (select count(*)::int from public.driver_trips) as trips,
+        (select count(*)::int from public.driver_trips t
+          join public.bus_tracking_sessions s on s.driver_trip_id=t.id and s.tenant_id=t.tenant_id and s.status='active'
+          join public.driver_tracking_devices d on d.id=s.device_id and d.tenant_id=t.tenant_id and d.status='active'
+          join auth.users u on u.id=d.profile_id
+          join public.tenants a on a.id=t.tenant_id and a.type='demo'
+          where t.id=any($1::uuid[]) and t.tenant_id=any($2::uuid[])
+          and a.name='Capacity Load '||$3||' '||array_position($2::uuid[],a.id)::text
+          and u.raw_app_meta_data->>'safebus_capacity_run'=$3 and u.email=any($4::text[])) as owned
+    `, [tripIds, scope.tenantIds, scope.run, scope.emails]);
+    if (!rows[0]?.identity || rows[0].trips !== 100 || rows[0].owned !== 100)
+      throw Error('CAPACITY_GPS_WINDOW_SCOPE');
+    for (const relation of ['public.driver_trip_current_locations', 'safebus_private.tracking_invalidation_queue',
+      'safebus_private.shared_tracking_queue', 'safebus_private.live_bus_progress_cache']) {
+      const foreign = await db.query(`select 1 from ${relation} where
+        not(driver_trip_id=any($1::uuid[])) or not(tenant_id=any($2::uuid[])) limit 1`, [tripIds, scope.tenantIds]);
+      if (foreign.rows.length) throw Error('CAPACITY_GPS_WINDOW_SCOPE');
+      await db.query(`delete from ${relation} where driver_trip_id=any($1::uuid[]) and tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
+    }
+    await db.query(`delete from safebus_private.driver_tracking_state x using public.bus_tracking_sessions s
+      where x.device_id=s.device_id and s.driver_trip_id=any($1::uuid[]) and s.tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
+    if ((await db.query('select 1 from safebus_private.driver_tracking_state limit 1')).rows.length)
+      throw Error('CAPACITY_GPS_WINDOW_SCOPE');
+    const devices = await db.query(`update public.driver_tracking_devices d set last_seen_at=null
+      from public.bus_tracking_sessions s where d.id=s.device_id and d.tenant_id=s.tenant_id
+      and s.driver_trip_id=any($1::uuid[]) and s.tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
+    const sessions = await db.query(`update public.bus_tracking_sessions set last_seen_at=null
+      where driver_trip_id=any($1::uuid[]) and tenant_id=any($2::uuid[])`, [tripIds, scope.tenantIds]);
+    if (devices.rowCount !== 100 || sessions.rowCount !== 100)
+      throw Error('CAPACITY_GPS_WINDOW_SCOPE');
+    await db.query('commit');
+  } catch (error) {
+    await db.query('rollback').catch(() => {});
+    throw error;
+  }
+}
+
+/** Cumulative authenticated REST SQL counters; read before/after each window.
+ * No query text, query identifiers, credentials or provider-wide reset. */
+export async function sampleRecoveryGpsSql(db) {
+  const { rows } = await db.query(`
+    select (select stats_reset from extensions.pg_stat_statements_info) as stats_reset,
+      (select dealloc from extensions.pg_stat_statements_info)::text as dealloc,
+      coalesce(sum(calls),0)::text as calls,
+      coalesce(sum(total_exec_time),0) as total_exec_ms,
+      coalesce(sum(wal_bytes),0)::text as wal_bytes,
+      coalesce(sum(shared_blks_hit),0)::text as shared_blks_hit,
+      coalesce(sum(shared_blks_read),0)::text as shared_blks_read
+    from extensions.pg_stat_statements
+    where dbid=(select oid from pg_database where datname=current_database())
+      and userid=(select oid from pg_roles where rolname='authenticated')
+      and toplevel and query ilike '%ingest_driver_location_event%'
   `);
   if (rows.length !== 1) throw Error('CAPACITY_GPS_DATABASE_STATS');
   return rows[0];
