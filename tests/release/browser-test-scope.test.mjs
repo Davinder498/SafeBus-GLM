@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { browserTestScope } from '../../scripts/lib/browser-test-scope.mjs';
+import { browserTestScope, isTestRegistrationOnly } from '../../scripts/lib/browser-test-scope.mjs';
 
 test('main and missing change evidence always require the full browser suite', () => {
   for (const event of ['push', 'workflow_dispatch', 'schedule', undefined])
@@ -51,7 +51,39 @@ test('CLI compares complete git history and falls back to full when evidence is 
     });
     return fs.readFileSync(output, 'utf8');
   };
-  assert.equal(run({ pull_request: { base: { sha: base }, head: { sha: head } } }), 'full=false\n');
-  assert.equal(run({ pull_request: { base: { sha: 'a'.repeat(40) }, head: { sha: head } } }), 'full=true\n');
-  assert.equal(run({}), 'full=true\n');
+  assert.equal(run({ pull_request: { base: { sha: base }, head: { sha: head } } }), 'full=false\nandroid=false\n');
+  assert.equal(run({ pull_request: { base: { sha: 'a'.repeat(40) }, head: { sha: head } } }), 'full=true\nandroid=true\n');
+  assert.equal(run({}), 'full=true\nandroid=true\n');
+});
+
+test('isolated GPS candidate changes do not rebuild either unchanged client',()=>{
+  const paths=['services/tracking-ingestion/direct-batch.mjs','services/tracking-ingestion/direct-batch.sql',
+    'tests/release/direct-gps-batch.test.mjs'];
+  assert.equal(browserTestScope('pull_request',paths).full,false);
+  assert.equal(browserTestScope('pull_request',paths).android,false);
+  for(const p of ['services/tracking-ingestion/server.mjs','supabase/functions/gps/index.ts',
+    'supabase/migrations/pending/new.sql','apps/mobile/android/build.gradle','packages/types/src/index.ts',
+    'netlify.toml','docs/../apps/mobile/main.ts']){
+    const result=browserTestScope('pull_request',[...paths,p]);
+    assert.equal(result.full,true,p);assert.equal(result.android,true,p);
+  }
+  assert.equal(browserTestScope('push',paths).android,true);
+});
+test('only additive, literal test registration may omit client suites for package.json',()=>{
+  const prefix='turbo run test && node --test --test-concurrency=2 ';
+  const before={scripts:{test:prefix+'tests/release/original.test.mjs',build:'turbo build'},dependencies:{a:'1'}};
+  const after=structuredClone(before);
+  after.scripts.test+=' tests/release/direct-gps-batch.test.mjs';
+  const paths=['package.json','tests/release/direct-gps-batch.test.mjs'];
+  assert.equal(isTestRegistrationOnly(before,after,paths),true);
+  assert.equal(browserTestScope('pull_request',paths,{testRegistrationOnly:true}).full,false);
+  assert.equal(browserTestScope('pull_request',paths).full,true);
+  for(const changed of [
+    {...after,dependencies:{a:'2'}},
+    {...after,scripts:{...after.scripts,build:'echo no'}},
+    {...after,scripts:{...after.scripts,test:prefix+'tests/release/direct-gps-batch.test.mjs'}},
+    {...after,scripts:{...after.scripts,test:after.scripts.test+' && echo unsafe'}},
+    {...after,scripts:{...after.scripts,test:after.scripts.test+' tests/release/unreviewed.test.mjs'}},
+  ]) assert.equal(isTestRegistrationOnly(before,changed,paths),false);
+  assert.equal(isTestRegistrationOnly(before,after,['package.json']),false);
 });
