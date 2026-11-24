@@ -12,7 +12,7 @@ on:
         default: '10'
         required: true
       workload:
-        description: Normal Android GPS or Recovery-only HTTPS A-B-A (10 or 100 buses)
+        description: Recovery-only combined, Android GPS, direct batch comparison, or restore
         type: choice
         options: [combined, android_gps, android_gps_compare, android_gps_restore, android_gps_direct_compare]
         default: combined
@@ -29,7 +29,7 @@ jobs:
   validate:
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.workload != 'android_gps_restore' && inputs.workload != 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.workload != 'android_gps_direct_compare' && inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
       (inputs.buses == '10' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE') ||
       (inputs.buses == '100' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE_100') ||
       (inputs.buses == '100' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_100') ||
