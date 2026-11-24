@@ -29,7 +29,9 @@ export const DIRECT_GPS_SCALE_PLAN=Object.freeze({
   patterns:DIRECT_GPS_PLAN.patterns,batchWaitMs:50,dbConnections:4,
   confirmation:'RUN_RECOVERY_DIRECT_GPS_500',capacityQualified:false,
   compareIndividual:false,p99TargetMs:1000,maxPending:1000,
-  workerCandidates:Object.freeze([4,8,16]),screenRounds:10,
+  // Recovery Supavisor rejected the previous 16-worker screen at its
+  // 15-client limit. Allow for control, monitor, and one spare session.
+  workerCandidates:Object.freeze([4,8,12]),screenRounds:10,
 });
 export function directGpsPlan(buses) {
   if(buses===100)return DIRECT_GPS_PLAN;
@@ -181,6 +183,36 @@ async function sqlCounters(db,batch) {
   return row;
 }
 
+export async function resizeDirectGpsWorkers({ db, connections, connect, count, plan, evidence }) {
+  if (plan !== directGpsPlan(plan.buses) || !(plan.workerCandidates ?? [plan.dbConnections]).includes(count)) {
+    throw Error('DIRECT_GPS_WORKER_BOUNDS');
+  }
+  while (connections.length) {
+    await connections.at(-1).end();
+    connections.pop();
+  }
+
+  const { rows: [budget] } = await db.query(
+    "select current_setting('max_connections')::int as maximum,(select count(*)::int from pg_stat_activity) as used",
+  );
+  if (!budget || budget.maximum - budget.used - count < 15) throw Error('DIRECT_GPS_CONNECTION_HEADROOM');
+
+  while (connections.length < count) {
+    try {
+      connections.push(await connect('safebus-direct-gps-worker'));
+    } catch (error) {
+      // PostgreSQL headroom cannot account for session pooler limits. Record
+      // where the refusal happened without including provider error text.
+      evidence.workerConnectionFailure = {
+        requestedWorkers: count,
+        openedWorkers: connections.length,
+        sqlState: /^[A-Z0-9]{5}$/.test(error?.code ?? '') ? error.code : null,
+      };
+      throw error;
+    }
+  }
+}
+
 export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,connect,auth,publishableKey,signal,plan=directGpsPlan(scope.buses)}) {
   if(plan!==directGpsPlan(scope.buses)||process.env.GITHUB_REF!=='refs/heads/main'||process.env.SAFEBUS_CAPACITY_CONFIRM!==plan.confirmation||
     drivers.length!==plan.buses||new Set(drivers.map(d=>d.tripId)).size!==drivers.length)
@@ -189,12 +221,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
   const connections=[];
   let installed=false,monitor,pool;
   async function resizePool(count){
-    if(![4,8,16].includes(count))throw Error('DIRECT_GPS_WORKER_BOUNDS');
-    if(connections.length===count)return;
-    for(const c of connections.splice(0))await c.end();
-    const {rows:[budget]}=await db.query("select current_setting('max_connections')::int as maximum,(select count(*)::int from pg_stat_activity) as used");
-    if(!budget||budget.maximum-budget.used-count<15)throw Error('DIRECT_GPS_CONNECTION_HEADROOM');
-    for(let i=0;i<count;i++)connections.push(await connect('safebus-direct-gps-worker'));
+    if (connections.length === count) return;
+    await resizeDirectGpsWorkers({ db, connections, connect, count, plan, evidence });
     pool=boundedPool(connections);
   }
   try{
