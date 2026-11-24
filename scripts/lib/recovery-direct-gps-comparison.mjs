@@ -167,7 +167,7 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
 
 async function sqlCounters(db,batch) {
   const {rows:[row]}=await db.query(`select
-    (select stats_reset from extensions.pg_stat_statements_info) as stats_reset,
+    (select stats_reset from extensions.pg_stat_statements_info)::text as stats_reset,
     (select dealloc from extensions.pg_stat_statements_info)::text as dealloc,
     coalesce(sum(calls),0)::text as calls,
     coalesce(sum(total_exec_time),0) as total_exec_ms,
@@ -181,6 +181,43 @@ async function sqlCounters(db,batch) {
       and userid=(select oid from pg_roles where rolname=$2)`,
     [batch?'%ingest_verified_driver_location_batch%':'%ingest_driver_location_event%',batch?'postgres':'authenticated']);
   return row;
+}
+
+// The counters are cumulative. A changed epoch, eviction, or unexpected call
+// count makes a window unsuitable for attributing database work to these fixes.
+export function summarizeDirectGpsSqlWindow(before, after, committedTransactions) {
+  const isCounter = value => typeof value === 'string' && /^\d+$/.test(value);
+  if (!Number.isSafeInteger(committedTransactions) || committedTransactions < 1 ||
+      ![before, after].every(snapshot => typeof snapshot?.stats_reset === 'string' &&
+        snapshot.stats_reset.length > 0 && isCounter(snapshot.dealloc))) return { status: 'unavailable' };
+  if (before.stats_reset !== after.stats_reset || before.dealloc !== after.dealloc)
+    return { status: 'counter_epoch_changed' };
+
+  const fields = ['calls', 'wal_bytes', 'shared_blks_hit', 'shared_blks_read'];
+  const deltas = {};
+  for (const field of fields) {
+    if (![before[field], after[field]].every(isCounter))
+      return { status: 'unavailable' };
+    const delta = BigInt(after[field]) - BigInt(before[field]);
+    if (delta < 0n) return { status: 'counter_regressed' };
+    deltas[field] = delta.toString();
+  }
+  if (deltas.calls !== String(committedTransactions))
+    return { status: 'call_count_mismatch', observedCalls: deltas.calls, committedTransactions };
+
+  if (![before.total_exec_ms, after.total_exec_ms].every(value => Number.isFinite(value) && value >= 0))
+    return { status: 'unavailable' };
+  const totalExecMs = after.total_exec_ms - before.total_exec_ms;
+  if (totalExecMs < 0) return { status: 'counter_regressed' };
+  return {
+    status: 'reconciled',
+    calls: committedTransactions,
+    totalExecMs,
+    meanExecMs: totalExecMs / committedTransactions,
+    walBytes: deltas.wal_bytes,
+    sharedBlocksHit: deltas.shared_blks_hit,
+    sharedBlocksRead: deltas.shared_blks_read,
+  };
 }
 
 export async function resizeDirectGpsWorkers({ db, connections, connect, count, plan, evidence }) {
@@ -297,6 +334,14 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       result.meetsLatencyTarget=plan.p99TargetMs===undefined ? null : Number.isFinite(result.latencyMs.p99)&&result.latencyMs.p99<=plan.p99TargetMs;
       result.batchTransactionsReconciled=!window.batchSize || (transport.metrics.attemptedItems===result.offered && transport.metrics.transactions===transport.metrics.committedTransactions);
       if(!result.batchTransactionsReconciled)result.classification='fatal';
+      if (window.batchSize) {
+        result.sqlCounters.window = result.classification === 'fatal'
+          ? { status: 'unreconciled_workload' }
+          : summarizeDirectGpsSqlWindow(before, after, transport.metrics.committedTransactions);
+        console.log('Direct GPS SQL counters: phase='+(window.phase??'comparison')+
+          '; db_connections='+dbConnections+'; pattern='+window.pattern+
+          '; window='+JSON.stringify(result.sqlCounters.window));
+      }
       evidence.windows.push(result);
       console.log('Direct GPS comparison: path='+window.path+'; batch='+window.batchSize+'; pattern='+window.pattern+
         '; phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+

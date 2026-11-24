@@ -179,3 +179,28 @@ test('Recovery worker resize stays within the session-pool budget and records an
   await Promise.all(connections.map(connection => connection.end()));
   assert.equal(activeWorkers, 0);
 });
+
+test('Recovery SQL window reconciles exact batch calls and preserves large counter deltas', async () => {
+  const { summarizeDirectGpsSqlWindow } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const before = {
+    stats_reset: '2026-11-10T13:34:48.046Z', dealloc: '0', calls: '4512', total_exec_ms: 503751,
+    wal_bytes: '90071992547409930', shared_blks_hit: '16157099', shared_blks_read: '0',
+  };
+  const after = {
+    ...before, calls: '4615', total_exec_ms: 537638, wal_bytes: '90071992562120760',
+    shared_blks_hit: '17311016',
+  };
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, after, 103), {
+    status: 'reconciled', calls: 103, totalExecMs: 33887, meanExecMs: 329,
+    walBytes: '14710830', sharedBlocksHit: '1153917', sharedBlocksRead: '0',
+  });
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, after, 102), {
+    status: 'call_count_mismatch', observedCalls: '103', committedTransactions: 102,
+  });
+  for (const counters of [{ ...after, dealloc: '1' }, { ...after, stats_reset: '2026-11-24T00:00:00Z' }]) {
+    assert.deepEqual(summarizeDirectGpsSqlWindow(before, counters, 103), { status: 'counter_epoch_changed' });
+  }
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, { ...after, wal_bytes: '1' }, 103), { status: 'counter_regressed' });
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, { ...after, total_exec_ms: null }, 103), { status: 'unavailable' });
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, after, 0), { status: 'unavailable' });
+});
