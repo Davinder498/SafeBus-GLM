@@ -115,3 +115,23 @@ No claim of production readiness or proof of 10,000-bus capacity; no new
 database privileges, paid services or production changes. Any further
 per-fix SQL rewrite should follow observed timing and preserve all security
 and correctness checks.
+
+### PostgreSQL work inside the synchronized screens
+
+The [run 45346804074 artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45346804074/artifacts/14934127108)
+recorded 103 committed batches and 103 additional PostgreSQL statement calls
+in each complete screen. The stats reset timestamp and eviction counter stayed
+stable. Four workers used 33.95 seconds of summed PostgreSQL statement execution
+(329.6 ms per batch) and generated 14,710,830 bytes of statement WAL. Eight
+workers used 68.43 seconds (664.4 ms per batch) and generated 11,670,603 bytes.
+The gateway's mean SQL round trips were 433.0 and 768.0 ms respectively.
+The gateway's batch-wait p99 fell from 1,217.6 to 997.5 ms. Summed execution
+overlaps across workers. The measurements show a trade-off between batch
+waiting and database execution under concurrency. They do not identify which
+part of the per-fix SQL accounts for the additional time.
+
+The runner reports these deltas for each safely reconciled direct GPS window,
+alongside the raw snapshots and gateway timings. A changed stats reset or
+eviction counter, regressing counters, or a call count that differs from
+committed batches prevents attribution. WAL and block deltas are statement
+counters. Project-wide resource and cost headroom still require hosted evidence.
