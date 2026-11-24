@@ -88,5 +88,6 @@ test('protected workflow offers separately confirmed restore without running a c
  assert.match(workflow,/inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY'/);
  assert.match(workflow,/inputs.workload != 'android_gps_direct_compare' && inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY'/);
  assert.match(workflow,/inputs.buses == '100' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_100'/);
+ assert.match(workflow,/inputs.buses == '500' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_500'/);
  assert.match(workflow,/run: node scripts\/restore-recovery-native-gps\.mjs/);
 });

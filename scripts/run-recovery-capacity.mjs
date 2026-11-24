@@ -62,7 +62,7 @@ import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
 import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
 import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase, sampleRecoveryGpsSql, classifyRecoveryGpsStage, resetRecoveryGpsWindow } from "./lib/recovery-native-gps-comparison.mjs";
-import { runRecoveryDirectGpsComparison, DIRECT_GPS_PLAN } from "./lib/recovery-direct-gps-comparison.mjs";
+import { runRecoveryDirectGpsComparison, directGpsPlan } from "./lib/recovery-direct-gps-comparison.mjs";
 const { createClient } = createRequire(
   new URL("../apps/web/package.json", import.meta.url),
 )("@supabase/supabase-js");
@@ -70,6 +70,8 @@ const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
 const gpsCompare = workload === "android_gps_compare";
 const directCompare = workload === "android_gps_direct_compare";
+const directPlan = directCompare && [100,500].includes(buses) ? directGpsPlan(buses) : null;
+const scaledDirectRun = directCompare && buses === 500;
 const nativeGpsOnly = workload === "android_gps" || gpsCompare || directCompare;
 const sustainedGpsCompare = gpsCompare && buses === 100;
 const comparisonPlan = gpsCompare && [10, 100].includes(buses) ? recoveryGpsComparisonPlan(buses) : null;
@@ -138,7 +140,7 @@ const deadline = setTimeout(
     deadlineReached = true;
     stop.abort();
   },
-  (largeNativeRun ? 160 : sustainedGpsCompare ? 55 : 35) * 60 * 1000,
+  (largeNativeRun ? 160 : scaledDirectRun ? 65 : sustainedGpsCompare ? 55 : 35) * 60 * 1000,
 );
 const checked = checkedCapacityAuth;
 const loginAccount = createCapacityLogin({
@@ -182,7 +184,7 @@ try {
   assertCapacityScope(scope);
   if (
     !["combined", "android_gps", "android_gps_compare", "android_gps_direct_compare"].includes(workload) ||
-    (directCompare && buses !== 100) ||
+    (directCompare && !directPlan) ||
     (!nativeGpsOnly && buses === 5000) ||
     (gpsCompare && !comparisonPlan)
   )
@@ -192,7 +194,7 @@ try {
     process.env.GITHUB_REF !== "refs/heads/main" ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !==
       (largeNativeRun ? "RUN_RECOVERY_CAPACITY_5000" :
-        gpsCompare ? comparisonPlan.confirmation : directCompare ? DIRECT_GPS_PLAN.confirmation : "RUN_RECOVERY_CAPACITY")
+        gpsCompare ? comparisonPlan.confirmation : directCompare ? directPlan.confirmation : "RUN_RECOVERY_CAPACITY")
   )
     throw Error("CAPACITY_WORKFLOW_REQUIRED");
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -356,15 +358,15 @@ try {
     const a = { id: user.id, email, client, tenant };
     accounts.push(a);
     stage = `account-login-${i}`;
-    if (largeNativeRun) a.password = password;
+    if (largeNativeRun || scaledDirectRun) a.password = password;
     else await signInAccount(a, password);
   }
-  if (largeNativeRun) phaseComplete("accounts-created");
+  if (largeNativeRun || scaledDirectRun) phaseComplete("accounts-created");
   stage = "fixtures";
   for (let i = 0; i < 2; i++)
     await seedCapacityTenant(db, scope, i, accounts[largeNativeRun || directCompare ? i : 0].id);
   const nativeDrivers = [];
-  if (largeNativeRun) {
+  if (largeNativeRun || scaledDirectRun) {
     await seedCapacityFleetInLanes({
       tenants: accounts.slice(0, buses).map((account) => account.tenant),
       connect,
@@ -377,6 +379,7 @@ try {
           account.id,
           i,
         );
+        if (scaledDirectRun) fleet[i] = bus;
         nativeDrivers[i] = await seedCapacityNativeDevice(
           connection,
           bus,
@@ -408,7 +411,7 @@ try {
       [outsider.tenant, outsider.id, outsider.email],
     );
   }
-  if (nativeGpsOnly && !largeNativeRun) {
+  if (nativeGpsOnly && !largeNativeRun && !scaledDirectRun) {
     stage = "android-device-fixtures";
     for (let i = 0; i < buses; i++) {
       assertRunning();
@@ -419,10 +422,11 @@ try {
   }
   stage = "cleanup-rehearsal";
   await cleanupCapacity(db, scope, true);
-  if (largeNativeRun) {
+  if (largeNativeRun || scaledDirectRun) {
     phaseComplete("cleanup-rehearsed");
     for (const [index, account] of accounts.entries()) {
       stage = `account-login-${index}`;
+      if (scaledDirectRun && index >= buses) { delete account.password; continue; }
       await signInAccount(account, account.password);
       delete account.password;
       nativeDrivers[index].accessToken = account.token;
@@ -431,7 +435,7 @@ try {
     stage = "android-session-window";
     const expiresAfter = Date.now() + 300000;
     if (
-      accounts.some(
+      accounts.slice(0,buses).some(
         (account) =>
           !Number.isFinite(account.expiresAt) ||
           account.expiresAt < expiresAfter,
@@ -439,7 +443,7 @@ try {
     )
       throw Error("CAPACITY_AUTH_SESSION_WINDOW");
   }
-  await db.query(
+  if (!scaledDirectRun) await db.query(
     "grant usage on schema public,safebus_private to authenticated",
   );
   if (gpsCompare) {
@@ -478,11 +482,11 @@ try {
     }
   } else if (directCompare) {
     stage = "direct-gps-comparison";
-    if (accounts.slice(0,buses).some(a => a.expiresAt < Date.now() + 15*60*1000))
+    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + 15*60*1000))
       throw Error("CAPACITY_AUTH_SESSION_WINDOW");
-    evidence.directGpsComparison = { plan: DIRECT_GPS_PLAN, windows: [], restored: false, capacityQualified: false };
+    evidence.directGpsComparison = { plan: directPlan, windows: [], restored: false, capacityQualified: false };
     await runRecoveryDirectGpsComparison({
-      db, scope, drivers: nativeDrivers, evidence: evidence.directGpsComparison,
+      db, scope, drivers: nativeDrivers, plan: directPlan, evidence: evidence.directGpsComparison,
       connect: async name => {
         const c = await connect(name);
         try { await assertEnvironmentIdentity(c,binding); return c; }
