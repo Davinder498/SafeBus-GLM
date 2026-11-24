@@ -3,7 +3,7 @@
 **Status:** Confirmed (codifies `AGENTS.md` + Phase 0 requirement)
 **Owner:** Engineering Lead
 **Phase:** 0 — Product and governance baseline
-**Last updated:** 2026-08-06
+**Last updated:** 2026-11-24
 
 ---
 
@@ -13,9 +13,8 @@ Phase 0 requires the development workflow to be **confirmed**:
 - Feature branches only
 - No direct changes to `main`
 - One milestone at a time
-- GLM may build
-- Codex reviews
-- Human approves merging
+- Codex builds, tests, reviews and merges owner-authorized engineering work
+- GitHub enforces required checks and configured review rules
 
 This document is the canonical statement; it mirrors and is enforced by
 `AGENTS.md`. Where any conflict exists, `AGENTS.md` repo rules win on repo
@@ -42,10 +41,15 @@ mechanics and this document wins on milestone/phasing governance.
 
 | Step | Who | Tooling |
 | --- | --- | --- |
-| Build | GLM (or an engineer) on a feature branch | Local dev + hosted Supabase DEV |
-| Review | Codex (automated review) + at least one human reviewer | Pull request |
-| Validate | Anyone — `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test` | Required validation in `AGENTS.md` |
-| Approve & merge | Human only — never GLM alone | Protected `main` |
+| Build | Codex on a feature branch | Local workspace and approved Recovery target when needed |
+| Review | Codex reviews the exact pull request head and records validation and risks | Pull request |
+| Validate | Codex runs focused tests while iterating and required checks before merging | Local tests and GitHub Actions |
+| Approve and merge | Codex merges the reviewed SHA after all required checks pass and GitHub allows it | Protected main branch |
+| Release | Codex prepares and verifies releases within the authorized milestone | Protected release workflow and environment settings |
+
+See [GitHub setup for autonomous engineering](autonomous-engineering.md) for
+the repository and Recovery settings. Business approvals, privacy/legal
+sign-off and commercial launch decisions remain the owner's responsibility.
 
 ## 5. Required validation before final report
 
@@ -119,8 +123,8 @@ A milestone is done when **all** of the following are true:
 3. Any RLS/SQL change remains blocked until an isolated validation target is
    explicitly approved; production is never used as that target.
 4. The relevant phase exit-gate items are satisfied and recorded.
-5. Codex/human review is complete.
-6. A human approves and merges to `main`.
+5. Codex reviews the final commit and the required checks pass.
+6. Codex verifies the resulting merge on the protected main branch.
 7. `docs/MILESTONE_STATUS.md` is updated.
 
 ## 11. Changes to this document

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -47,6 +47,7 @@ test('the candidate checkout requires the main dispatcher and its exact clean de
     });
 
   assert.doesNotThrow(run());
+  assert.doesNotThrow(run(head, { GITHUB_EVENT_NAME: 'workflow_run' }));
   assert.throws(run('b'.repeat(40)), /not exact and clean/);
   assert.throws(run(head, { GITHUB_SHA: head }), /protected main-branch dispatcher/);
   assert.throws(run(head, { GITHUB_WORKFLOW_REF: dispatcher.replace('candidate', 'capacity') }));
@@ -69,6 +70,9 @@ test('candidate credentials are restricted to the reviewed Recovery job', async 
   const [validation, measurement] = workflow.split('\n  measure:');
   assert.match(validation, /github\.ref == 'refs\/heads\/main'/);
   assert.match(validation, /required_reviewers[\s\S]*prevent_self_review == true/);
+  assert.match(validation, /head_repository\.id == github\.event\.repository\.id/);
+  assert.match(validation, /"\$source_actor" == "\$AUTOMATION_ACTOR_ID"/);
+  assert.match(validation, /git diff --quiet "\$GITHUB_SHA" "\$CANDIDATE_SHA" -- \.github\/workflows/);
   assert.match(validation, /branch_policies\[0\]\.name == "main"/);
   assert.match(validation, /git rev-parse HEAD\)" = "\$CANDIDATE_SHA"/);
   assert.match(validation, /git merge-base --is-ancestor "\$GITHUB_SHA" "\$CANDIDATE_SHA"/);
@@ -81,4 +85,56 @@ test('candidate credentials are restricted to the reviewed Recovery job', async 
     'SAFEBUS_RECOVERY_EXPERIMENT_AUTH_SECRET',
   ]));
   assert.match(measurement, /name: recovery-candidate-/);
+});
+
+test('only the configured actor can request an automatic bounded Recovery profile', async (t) => {
+  if (['bash', 'jq'].some((tool) => spawnSync(tool, ['--version']).status !== 0)) {
+    t.skip('The hosted Ubuntu runner provides Bash and jq.');
+    return;
+  }
+  const workflow = await readFile(
+    new URL('../../.github/workflows/run-recovery-candidate.yml', import.meta.url), 'utf8',
+  );
+  const profileStep = workflow.match(/id: profile\n[\s\S]*?run: \|\n([\s\S]*?)\n {6}- name:/);
+  assert.ok(profileStep);
+  const command = profileStep[1].split('\n').map((line) => line.slice(10)).join('\n');
+  const cwd = await mkdtemp(join(tmpdir(), 'safebus-recovery-request-'));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  const output = join(cwd, 'output');
+  const event = join(cwd, 'event.json');
+  const metadata = { actor: { id: 123 }, path: '.github/workflows/request-recovery-candidate.yml', run_attempt: 1 };
+  const run = async (overrides = {}, eventOverrides = {}) => {
+    await writeFile(output, '');
+    await writeFile(event, JSON.stringify({ workflow_run: { ...metadata, ...eventOverrides } }));
+    execFileSync('bash', ['-e', '-o', 'pipefail', '-c', command], {
+      cwd,
+      stdio: 'pipe',
+      env: {
+        ...process.env,
+        AUTOMATION_ACTOR_ID: '123',
+        CANDIDATE_BRANCH: 'capacity/recovery-diagnostic-run-500',
+        CANDIDATE_SHA: 'a'.repeat(40),
+        CAPACITY_PROFILE: 'combined-10',
+        GITHUB_ACTOR_ID: '123',
+        GITHUB_EVENT_NAME: 'workflow_run',
+        GITHUB_EVENT_PATH: event,
+        GITHUB_OUTPUT: output,
+        GITHUB_RUN_ATTEMPT: '1',
+        ...overrides,
+      },
+    });
+    return readFile(output, 'utf8');
+  };
+
+  assert.match(await run(), /^mode=automatic\nbuses=500\n/m);
+  assert.match(await run({ CANDIDATE_BRANCH: 'capacity/recovery-diagnostic-run-10' }),
+    /^mode=automatic\nbuses=10\n/m);
+  assert.match(await run({ GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_ACTOR_ID: '456' }),
+    /^mode=reviewer\nbuses=10\n/m);
+  await assert.rejects(run({ AUTOMATION_ACTOR_ID: '' }));
+  await assert.rejects(run({}, { actor: { id: 456 } }));
+  await assert.rejects(run({}, { path: '.github/workflows/unknown.yml' }));
+  await assert.rejects(run({}, { run_attempt: 2 }));
+  await assert.rejects(run({ GITHUB_RUN_ATTEMPT: '2' }));
+  await assert.rejects(run({ CANDIDATE_BRANCH: 'capacity/recovery-diagnostic-run-5000' }));
 });

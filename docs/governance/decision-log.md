@@ -557,3 +557,18 @@ When a Phase 0 document is signed off, add an entry here:
 - Status: Accepted for development; protected production deployment and role-isolation evidence are separately gated.
 - Supersedes: Earlier individual-school administrative permissions in the Phase 0 role matrix; historical migrations remain immutable.
 
+### DL-026 — Authorize autonomous engineering delivery
+
+- Date: 2026-11-24 (America/Edmonton).
+- Decision: Codex owns implementation, testing, technical review and the
+  merge of owner-authorized engineering pull requests. The owner changes
+  repository reviewer settings. Required checks and protected production
+  workflows continue to apply.
+- Recovery can run bounded synthetic profiles on exact branch commits
+  before merge. Automatic runs require an explicitly authorized GitHub
+  identity and an isolated, main-only environment with Recovery credentials.
+- Account upgrades, new subscriptions and paid overages require a separate
+  owner decision. Commercial launch and contractual approvals remain distinct.
+- Supersedes: The routine human engineering merge requirement in the
+  development workflow. [Setup](autonomous-engineering.md).
+

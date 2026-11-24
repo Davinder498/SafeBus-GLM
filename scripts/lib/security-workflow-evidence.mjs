@@ -44,7 +44,7 @@ export function assertRecoveryCapacityCheckout(releaseSha) {
   const workflow = 'Davinder498/SafeBus-GLM/.github/workflows/run-recovery-candidate.yml@refs/heads/main';
   const dispatcherSha = process.env.GITHUB_SHA;
   if (
-    process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch' ||
+    !['workflow_dispatch', 'workflow_run'].includes(process.env.GITHUB_EVENT_NAME) ||
     process.env.GITHUB_REF !== 'refs/heads/main' ||
     process.env.GITHUB_WORKFLOW_REF !== workflow ||
     !/^[0-9a-f]{40}$/.test(dispatcherSha ?? '') ||

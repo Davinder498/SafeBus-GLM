@@ -1,5 +1,5 @@
 name: Test Recovery capacity candidate
-run-name: Recovery candidate ${{ inputs.candidate_sha }} (${{ inputs.profile }})
+run-name: Recovery candidate ${{ inputs.candidate_sha || github.event.workflow_run.head_sha }}
 
 on:
   workflow_dispatch:
@@ -17,24 +17,30 @@ on:
         required: true
         type: choice
         options: [combined-10, direct-gps-100, direct-gps-500]
+  workflow_run:
+    workflows: [Request Recovery candidate test]
+    types: [completed]
+    branches: ['capacity/recovery-*-run-*']
 
 permissions:
   contents: read
 
-# Share the lock with the existing Recovery workflows so fixtures cannot overlap.
-concurrency:
-  group: production-release
-  cancel-in-progress: false
-
 jobs:
   validate-candidate:
-    if: github.ref == 'refs/heads/main' && github.repository == 'Davinder498/SafeBus-GLM'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'Davinder498/SafeBus-GLM' &&
+      (github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.event == 'push' &&
+         github.event.workflow_run.head_repository.id == github.event.repository.id))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      CANDIDATE_BRANCH: ${{ inputs.candidate_branch }}
-      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CANDIDATE_BRANCH: ${{ inputs.candidate_branch || github.event.workflow_run.head_branch }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.workflow_run.head_sha }}
       CAPACITY_PROFILE: ${{ inputs.profile }}
+      AUTOMATION_ACTOR_ID: ${{ vars.SAFEBUS_RECOVERY_AUTOMATION_ACTOR_ID }}
     outputs:
       sha: ${{ steps.verify.outputs.sha }}
       buses: ${{ steps.profile.outputs.buses }}
@@ -47,6 +53,27 @@ jobs:
         run: |
           [[ "$CANDIDATE_BRANCH" =~ ^capacity/recovery-[a-z0-9][a-z0-9-]{0,55}$ ]]
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$GITHUB_RUN_ATTEMPT" != 1 ]]; then
+            echo 'Start a new Recovery request for a repeat run.'
+            exit 1
+          fi
+          mode=reviewer
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            source_actor="$(jq -er '.workflow_run.actor.id' "$GITHUB_EVENT_PATH")"
+            jq -e '.workflow_run.path == ".github/workflows/request-recovery-candidate.yml"
+              and .workflow_run.run_attempt == 1' "$GITHUB_EVENT_PATH" >/dev/null
+            [[ "$AUTOMATION_ACTOR_ID" =~ ^[1-9][0-9]*$ && "$source_actor" == "$AUTOMATION_ACTOR_ID" ]]
+            mode=automatic
+            case "$CANDIDATE_BRANCH" in
+              *-run-10) CAPACITY_PROFILE=combined-10 ;;
+              *-run-100) CAPACITY_PROFILE=direct-gps-100 ;;
+              *-run-500) CAPACITY_PROFILE=direct-gps-500 ;;
+              *) exit 1 ;;
+            esac
+          elif [[ "$AUTOMATION_ACTOR_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_ACTOR_ID" == "$AUTOMATION_ACTOR_ID" ]]; then
+            mode=automatic
+          fi
+          printf 'mode=%s\n' "$mode" >> "$GITHUB_OUTPUT"
           case "$CAPACITY_PROFILE" in
             combined-10)
               printf '%s\n' 'buses=10' 'workload=combined' 'confirmation=RUN_RECOVERY_CAPACITY' ;;
@@ -59,27 +86,35 @@ jobs:
           esac >> "$GITHUB_OUTPUT"
       - name: Verify Recovery-only deployment protection
         shell: bash
+        env:
+          REVIEW_MODE: ${{ steps.profile.outputs.mode }}
         run: |
           api="https://api.github.com/repos/$GITHUB_REPOSITORY/environments/recovery-capacity"
           curl --fail --silent --show-error --max-time 20 "$api" |
-            jq -e '.deployment_branch_policy.custom_branch_policies == true
-              and any(.protection_rules[]; .type == "required_reviewers"
-                and .prevent_self_review == true and (.reviewers | length > 0))' >/dev/null
+            jq -e --arg mode "$REVIEW_MODE" '.deployment_branch_policy.custom_branch_policies == true
+              and ($mode == "automatic" or
+                any(.protection_rules[]; .type == "required_reviewers"
+                  and .prevent_self_review == true and (.reviewers | length > 0)))' >/dev/null
           curl --fail --silent --show-error --max-time 20 "$api/deployment-branch-policies?per_page=100" |
             jq -e '.total_count == 1 and .branch_policies[0].name == "main"
               and .branch_policies[0].type == "branch"' >/dev/null
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: refs/heads/${{ inputs.candidate_branch }}
+          ref: refs/heads/${{ inputs.candidate_branch || github.event.workflow_run.head_branch }}
           fetch-depth: 0
           persist-credentials: false
       - name: Verify exact same-repository candidate before review
         id: verify
         shell: bash
+        env:
+          REVIEW_MODE: ${{ steps.profile.outputs.mode }}
         run: |
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$CANDIDATE_SHA" != "$GITHUB_SHA"
           git merge-base --is-ancestor "$GITHUB_SHA" "$CANDIDATE_SHA"
+          if [[ "$REVIEW_MODE" == automatic ]]; then
+            git diff --quiet "$GITHUB_SHA" "$CANDIDATE_SHA" -- .github/workflows
+          fi
           echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
           printf 'Candidate [%s](https://github.com/%s/compare/%s...%s) for profile `%s`.\n' \
             "$CANDIDATE_SHA" "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$CANDIDATE_SHA" "$CAPACITY_PROFILE" >> "$GITHUB_STEP_SUMMARY"
@@ -102,7 +137,11 @@ jobs:
     name: Review and measure exact candidate
     needs: validate-candidate
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.profile == 'direct-gps-500' && 80 || 45 }}
+    timeout-minutes: ${{ needs.validate-candidate.outputs.buses == '500' && 80 || 45 }}
+    # Share the lock with the existing Recovery workflows so fixtures cannot overlap.
+    concurrency:
+      group: production-release
+      cancel-in-progress: false
     environment:
       name: recovery-capacity
       url: ${{ format('https://github.com/{0}/compare/{1}...{2}', github.repository, github.sha, needs.validate-candidate.outputs.sha) }}
