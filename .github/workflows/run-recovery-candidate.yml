@@ -1,0 +1,193 @@
+name: Test Recovery capacity candidate
+run-name: Recovery candidate ${{ inputs.candidate_sha }} (${{ inputs.profile }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_branch:
+        description: Same-repository capacity/recovery-* branch
+        required: true
+        type: string
+      candidate_sha:
+        description: Exact 40-character commit to review and test
+        required: true
+        type: string
+      profile:
+        description: Bounded synthetic workload
+        required: true
+        type: choice
+        options: [combined-10, direct-gps-100, direct-gps-500]
+
+permissions:
+  contents: read
+
+# Share the lock with the existing Recovery workflows so fixtures cannot overlap.
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate-candidate:
+    if: github.ref == 'refs/heads/main' && github.repository == 'Davinder498/SafeBus-GLM'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CANDIDATE_BRANCH: ${{ inputs.candidate_branch }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CAPACITY_PROFILE: ${{ inputs.profile }}
+    outputs:
+      sha: ${{ steps.verify.outputs.sha }}
+      buses: ${{ steps.profile.outputs.buses }}
+      workload: ${{ steps.profile.outputs.workload }}
+      confirmation: ${{ steps.profile.outputs.confirmation }}
+    steps:
+      - name: Validate input and select a supported profile
+        id: profile
+        shell: bash
+        run: |
+          [[ "$CANDIDATE_BRANCH" =~ ^capacity/recovery-[a-z0-9][a-z0-9-]{0,55}$ ]]
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          case "$CAPACITY_PROFILE" in
+            combined-10)
+              printf '%s\n' 'buses=10' 'workload=combined' 'confirmation=RUN_RECOVERY_CAPACITY' ;;
+            direct-gps-100)
+              printf '%s\n' 'buses=100' 'workload=android_gps_direct_compare' 'confirmation=RUN_RECOVERY_DIRECT_GPS_100' ;;
+            direct-gps-500)
+              printf '%s\n' 'buses=500' 'workload=android_gps_direct_compare' 'confirmation=RUN_RECOVERY_DIRECT_GPS_500' ;;
+            *)
+              exit 1 ;;
+          esac >> "$GITHUB_OUTPUT"
+      - name: Verify Recovery-only deployment protection
+        shell: bash
+        run: |
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/environments/recovery-capacity"
+          curl --fail --silent --show-error --max-time 20 "$api" |
+            jq -e '.deployment_branch_policy.custom_branch_policies == true
+              and any(.protection_rules[]; .type == "required_reviewers"
+                and .prevent_self_review == true and (.reviewers | length > 0))' >/dev/null
+          curl --fail --silent --show-error --max-time 20 "$api/deployment-branch-policies?per_page=100" |
+            jq -e '.total_count == 1 and .branch_policies[0].name == "main"
+              and .branch_policies[0].type == "branch"' >/dev/null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: refs/heads/${{ inputs.candidate_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact same-repository candidate before review
+        id: verify
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$CANDIDATE_SHA" != "$GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" "$CANDIDATE_SHA"
+          echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+          printf 'Candidate [%s](https://github.com/%s/compare/%s...%s) for profile `%s`.\n' \
+            "$CANDIDATE_SHA" "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$CANDIDATE_SHA" "$CAPACITY_PROFILE" >> "$GITHUB_STEP_SUMMARY"
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Run focused tests without Recovery credentials
+        run: |
+          node --test \
+            tests/release/recovery-candidate-workflow.test.mjs \
+            tests/release/recovery-capacity.test.mjs \
+            tests/release/recovery-capacity-lifecycle.test.mjs \
+            tests/release/direct-gps-batch.test.mjs
+
+  measure:
+    name: Review and measure exact candidate
+    needs: validate-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.profile == 'direct-gps-500' && 80 || 45 }}
+    environment:
+      name: recovery-capacity
+      url: ${{ format('https://github.com/{0}/compare/{1}...{2}', github.repository, github.sha, needs.validate-candidate.outputs.sha) }}
+    env:
+      CANDIDATE_SHA: ${{ needs.validate-candidate.outputs.sha }}
+    steps:
+      - name: Verify configured credentials target Recovery
+        shell: bash
+        env:
+          RECOVERY_DATABASE_URL: ${{ secrets.SAFEBUS_RECOVERY_EXPERIMENT_DATABASE_URL }}
+          RECOVERY_AUTH_SECRET: ${{ secrets.SAFEBUS_RECOVERY_EXPERIMENT_AUTH_SECRET }}
+          RECOVERY_PUBLISHABLE_KEY: ${{ vars.SAFEBUS_RECOVERY_EXPERIMENT_PUBLISHABLE_KEY }}
+          RECOVERY_DATABASE_CA: ${{ vars.SAFEBUS_RECOVERY_EXPERIMENT_DATABASE_CA_CERT }}
+        run: |
+          node <<'NODE'
+          const recovery = 'deladookciebwvqojhkv';
+          const { RECOVERY_DATABASE_URL, RECOVERY_AUTH_SECRET,
+            RECOVERY_PUBLISHABLE_KEY, RECOVERY_DATABASE_CA } = process.env;
+          async function verify() {
+            const db = new URL(RECOVERY_DATABASE_URL);
+            const direct = db.hostname === `db.${recovery}.supabase.co`;
+            const pooled = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.pooler\.supabase\.com$/.test(db.hostname)
+              && decodeURIComponent(db.username) === `postgres.${recovery}`;
+            if (!['postgres:', 'postgresql:'].includes(db.protocol)
+                || !(direct || pooled) || db.pathname !== '/postgres' || (db.port || '5432') !== '5432'
+                || !db.password || db.search || db.hash || !RECOVERY_AUTH_SECRET
+                || !RECOVERY_PUBLISHABLE_KEY || !RECOVERY_DATABASE_CA?.includes('-----BEGIN CERTIFICATE-----')) {
+              throw new Error();
+            }
+            for (const [key, role, prefix] of [
+              [RECOVERY_AUTH_SECRET, 'service_role', 'sb_secret_'],
+              [RECOVERY_PUBLISHABLE_KEY, 'anon', 'sb_publishable_'],
+            ]) {
+              if (key.startsWith('eyJ')) {
+                const claims = JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString());
+                if (claims.ref !== recovery || claims.role !== role) throw new Error();
+              } else if (!key.startsWith(prefix)) {
+                throw new Error();
+              }
+              const response = await fetch(`https://${recovery}.supabase.co/auth/v1/settings`, {
+                headers: { apikey: key },
+                redirect: 'error',
+                signal: AbortSignal.timeout(5000),
+              });
+              await response.body?.cancel();
+              if (!response.ok) throw new Error();
+            }
+          }
+          verify().catch(() => {
+            console.error('The Recovery-only database and Auth configuration is required.');
+            process.exitCode = 1;
+          });
+          NODE
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.validate-candidate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify candidate did not change after review
+        shell: bash
+        run: |
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" "$CANDIDATE_SHA"
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Measure and clean up synthetic Recovery workload
+        env:
+          SAFEBUS_RECOVERY_CANDIDATE: 'true'
+          SAFEBUS_RELEASE_SHA: ${{ needs.validate-candidate.outputs.sha }}
+          SAFEBUS_CAPACITY_BUSES: ${{ needs.validate-candidate.outputs.buses }}
+          SAFEBUS_CAPACITY_WORKLOAD: ${{ needs.validate-candidate.outputs.workload }}
+          SAFEBUS_CAPACITY_CONFIRM: ${{ needs.validate-candidate.outputs.confirmation }}
+          SAFEBUS_CAPACITY_DATABASE_URL: ${{ secrets.SAFEBUS_RECOVERY_EXPERIMENT_DATABASE_URL }}
+          SAFEBUS_CAPACITY_AUTH_SECRET: ${{ secrets.SAFEBUS_RECOVERY_EXPERIMENT_AUTH_SECRET }}
+          SAFEBUS_CAPACITY_PUBLISHABLE_KEY: ${{ vars.SAFEBUS_RECOVERY_EXPERIMENT_PUBLISHABLE_KEY }}
+          SAFEBUS_CAPACITY_DATABASE_CA_CERT: ${{ vars.SAFEBUS_RECOVERY_EXPERIMENT_DATABASE_CA_CERT }}
+        run: node scripts/run-recovery-capacity.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: recovery-candidate-${{ github.run_id }}
+          path: .safebus-release/recovery-capacity/evidence.json
+          retention-days: 7
+          if-no-files-found: ignore
