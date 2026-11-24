@@ -15,6 +15,7 @@ Phase 0 requires the development workflow to be **confirmed**:
 - One milestone at a time
 - Codex builds, tests, reviews and merges owner-authorized engineering work
 - GitHub enforces required checks and configured review rules
+- The owner handles required human approvals, then Codex continues
 
 This document is the canonical statement; it mirrors and is enforced by
 `AGENTS.md`. Where any conflict exists, `AGENTS.md` repo rules win on repo
@@ -44,7 +45,7 @@ mechanics and this document wins on milestone/phasing governance.
 | Build | Codex on a feature branch | Local workspace and approved Recovery target when needed |
 | Review | Codex reviews the exact pull request head and records validation and risks | Pull request |
 | Validate | Codex runs focused tests while iterating and required checks before merging | Local tests and GitHub Actions |
-| Approve and merge | Codex merges the reviewed SHA after all required checks pass and GitHub allows it | Protected main branch |
+| Approve and merge | Owner handles required human approval. Codex merges the exact reviewed SHA after the required checks and approvals pass | Protected main branch |
 | Release | Codex prepares and verifies releases within the authorized milestone | Protected release workflow and environment settings |
 
 See [GitHub setup for autonomous engineering](autonomous-engineering.md) for
@@ -123,8 +124,9 @@ A milestone is done when **all** of the following are true:
 3. Any RLS/SQL change remains blocked until an isolated validation target is
    explicitly approved; production is never used as that target.
 4. The relevant phase exit-gate items are satisfied and recorded.
-5. Codex reviews the final commit and the required checks pass.
-6. Codex verifies the resulting merge on the protected main branch.
+5. Codex reviews the final commit, checks pass and required human approvals
+   are recorded.
+6. Codex merges and verifies the result on the protected main branch.
 7. `docs/MILESTONE_STATUS.md` is updated.
 
 ## 11. Changes to this document

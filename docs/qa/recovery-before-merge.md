@@ -7,8 +7,8 @@ identity, push the reviewed commit to a branch ending in `-run-10`, `-run-100` o
 branch for intermediate work. The trusted workflow runs from `main`, validates
 the requested commit and measures it only after the focused checks pass.
 
-The manual workflow also accepts a branch, exact SHA and profile. With the
-automatic identity unset it requires an independent environment reviewer.
+The manual workflow also accepts a branch, exact SHA and profile. Both
+paths require an independent environment reviewer before measurement.
 Before requesting either kind of run, review code, dependencies and test
 scope. The commit must descend from the dispatcher on `main`. Automatic runs
 require workflow files to match that dispatcher. The measurement uses the
@@ -19,9 +19,9 @@ to that commit. The protected release workflows govern release qualification.
 
 Create the `recovery-capacity` environment with the single allowed deployment
 branch `main`. Turn off administrator bypass where the setting is available.
-For attended runs, add an authorized reviewer and turn on **Prevent
-self-review**. For unattended runs, configure the approved repository actor
-as described in [autonomous engineering](../governance/autonomous-engineering.md).
+Add an authorized reviewer and turn on **Prevent self-review**. To start
+validation automatically, configure the approved repository actor as described
+in [autonomous engineering](../governance/autonomous-engineering.md).
 Configure these values for `BusSafe-Recovery-20261011` in this environment only.
 
 | Kind | Name | Value |

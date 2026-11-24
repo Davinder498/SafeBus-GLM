@@ -57,23 +57,18 @@ jobs:
             echo 'Start a new Recovery request for a repeat run.'
             exit 1
           fi
-          mode=reviewer
           if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
             source_actor="$(jq -er '.workflow_run.actor.id' "$GITHUB_EVENT_PATH")"
             jq -e '.workflow_run.path == ".github/workflows/request-recovery-candidate.yml"
               and .workflow_run.run_attempt == 1' "$GITHUB_EVENT_PATH" >/dev/null
             [[ "$AUTOMATION_ACTOR_ID" =~ ^[1-9][0-9]*$ && "$source_actor" == "$AUTOMATION_ACTOR_ID" ]]
-            mode=automatic
             case "$CANDIDATE_BRANCH" in
               *-run-10) CAPACITY_PROFILE=combined-10 ;;
               *-run-100) CAPACITY_PROFILE=direct-gps-100 ;;
               *-run-500) CAPACITY_PROFILE=direct-gps-500 ;;
               *) exit 1 ;;
             esac
-          elif [[ "$AUTOMATION_ACTOR_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_ACTOR_ID" == "$AUTOMATION_ACTOR_ID" ]]; then
-            mode=automatic
           fi
-          printf 'mode=%s\n' "$mode" >> "$GITHUB_OUTPUT"
           case "$CAPACITY_PROFILE" in
             combined-10)
               printf '%s\n' 'buses=10' 'workload=combined' 'confirmation=RUN_RECOVERY_CAPACITY' ;;
@@ -84,17 +79,15 @@ jobs:
             *)
               exit 1 ;;
           esac >> "$GITHUB_OUTPUT"
+          printf 'profile=%s\n' "$CAPACITY_PROFILE" >> "$GITHUB_OUTPUT"
       - name: Verify Recovery-only deployment protection
         shell: bash
-        env:
-          REVIEW_MODE: ${{ steps.profile.outputs.mode }}
         run: |
           api="https://api.github.com/repos/$GITHUB_REPOSITORY/environments/recovery-capacity"
           curl --fail --silent --show-error --max-time 20 "$api" |
-            jq -e --arg mode "$REVIEW_MODE" '.deployment_branch_policy.custom_branch_policies == true
-              and ($mode == "automatic" or
-                any(.protection_rules[]; .type == "required_reviewers"
-                  and .prevent_self_review == true and (.reviewers | length > 0)))' >/dev/null
+            jq -e '.deployment_branch_policy.custom_branch_policies == true
+              and any(.protection_rules[]; .type == "required_reviewers"
+                and .prevent_self_review == true and (.reviewers | length > 0))' >/dev/null
           curl --fail --silent --show-error --max-time 20 "$api/deployment-branch-policies?per_page=100" |
             jq -e '.total_count == 1 and .branch_policies[0].name == "main"
               and .branch_policies[0].type == "branch"' >/dev/null
@@ -107,12 +100,12 @@ jobs:
         id: verify
         shell: bash
         env:
-          REVIEW_MODE: ${{ steps.profile.outputs.mode }}
+          CAPACITY_PROFILE: ${{ steps.profile.outputs.profile }}
         run: |
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$CANDIDATE_SHA" != "$GITHUB_SHA"
           git merge-base --is-ancestor "$GITHUB_SHA" "$CANDIDATE_SHA"
-          if [[ "$REVIEW_MODE" == automatic ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
             git diff --quiet "$GITHUB_SHA" "$CANDIDATE_SHA" -- .github/workflows
           fi
           echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"

@@ -561,14 +561,15 @@ When a Phase 0 document is signed off, add an entry here:
 
 - Date: 2026-11-24 (America/Edmonton).
 - Decision: Codex owns implementation, testing, technical review and the
-  merge of owner-authorized engineering pull requests. The owner changes
-  repository reviewer settings. Required checks and protected production
-  workflows continue to apply.
+  merge of owner-authorized engineering pull requests. The owner gives
+  required human approval when Codex reports an approval gate. Required
+  checks and protected production workflows continue to apply.
 - Recovery can run bounded synthetic profiles on exact branch commits
   before merge. Automatic runs require an explicitly authorized GitHub
-  identity and an isolated, main-only environment with Recovery credentials.
+  identity and an isolated, main-only environment with Recovery credentials
+  and an independent human reviewer.
 - Account upgrades, new subscriptions and paid overages require a separate
   owner decision. Commercial launch and contractual approvals remain distinct.
-- Supersedes: The routine human engineering merge requirement in the
-  development workflow. [Setup](autonomous-engineering.md).
+- Supersedes: The earlier assignment of routine engineering steps to the
+  owner. [Setup](autonomous-engineering.md).
 

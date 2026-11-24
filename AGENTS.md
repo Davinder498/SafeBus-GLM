@@ -71,8 +71,9 @@ repeat the standard notification privacy approval already given.
   diff and owns the merge of the exact reviewed commit after required checks pass.
 - Open a pull request for the milestone. If a check fails, diagnose it, fix
   the branch and review the new head before merging.
-- Use the normal GitHub merge route with branch protections enforced. The owner
-  controls reviewer settings. Honor any active GitHub review or deployment gate.
+- Request the owner's intervention when a human review, merge approval or
+  deployment approval is needed. Continue independently once it is recorded.
+  Use the normal GitHub merge route with branch protections enforced.
 - Keep production changes on the protected release and rollback workflows.
   Treat merge, release and launch approval as distinct actions.
 - Keep the owner updated on meaningful milestones, verification and concrete
@@ -87,10 +88,10 @@ repeat the standard notification privacy approval already given.
 - Use the actual permissions of the connected accounts. Report a concrete access
   or credential problem if it prevents the requested work; do not claim access
   that has not been verified.
-- Continue the feature-branch, recovery and protected production release
-  workflow. The November 24, 2026 owner direction supersedes the older manual
-  engineering merge rule. Account security, configured deployment protections,
-  recipient consent and data boundaries still apply.
+- Continue the feature-branch, human approval, recovery and protected release
+  workflow. The November 24, 2026 owner direction delegates engineering work to
+  Codex. Account security, review protections, recipient consent and data
+  boundaries still apply.
 
 ## Current Development Setup
 

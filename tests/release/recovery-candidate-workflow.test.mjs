@@ -70,6 +70,7 @@ test('candidate credentials are restricted to the reviewed Recovery job', async 
   const [validation, measurement] = workflow.split('\n  measure:');
   assert.match(validation, /github\.ref == 'refs\/heads\/main'/);
   assert.match(validation, /required_reviewers[\s\S]*prevent_self_review == true/);
+  assert.doesNotMatch(validation, /mode == "automatic" or/);
   assert.match(validation, /head_repository\.id == github\.event\.repository\.id/);
   assert.match(validation, /"\$source_actor" == "\$AUTOMATION_ACTOR_ID"/);
   assert.match(validation, /git diff --quiet "\$GITHUB_SHA" "\$CANDIDATE_SHA" -- \.github\/workflows/);
@@ -115,7 +116,6 @@ test('only the configured actor can request an automatic bounded Recovery profil
         CANDIDATE_BRANCH: 'capacity/recovery-diagnostic-run-500',
         CANDIDATE_SHA: 'a'.repeat(40),
         CAPACITY_PROFILE: 'combined-10',
-        GITHUB_ACTOR_ID: '123',
         GITHUB_EVENT_NAME: 'workflow_run',
         GITHUB_EVENT_PATH: event,
         GITHUB_OUTPUT: output,
@@ -126,11 +126,11 @@ test('only the configured actor can request an automatic bounded Recovery profil
     return readFile(output, 'utf8');
   };
 
-  assert.match(await run(), /^mode=automatic\nbuses=500\n/m);
+  assert.match(await run(), /^buses=500\n[\s\S]*^profile=direct-gps-500$/m);
   assert.match(await run({ CANDIDATE_BRANCH: 'capacity/recovery-diagnostic-run-10' }),
-    /^mode=automatic\nbuses=10\n/m);
-  assert.match(await run({ GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_ACTOR_ID: '456' }),
-    /^mode=reviewer\nbuses=10\n/m);
+    /^buses=10\n[\s\S]*^profile=combined-10$/m);
+  assert.match(await run({ GITHUB_EVENT_NAME: 'workflow_dispatch', AUTOMATION_ACTOR_ID: '' }),
+    /^buses=10\n[\s\S]*^profile=combined-10$/m);
   await assert.rejects(run({ AUTOMATION_ACTOR_ID: '' }));
   await assert.rejects(run({}, { actor: { id: 456 } }));
   await assert.rejects(run({}, { path: '.github/workflows/unknown.yml' }));
