@@ -30,3 +30,27 @@ The preferred next candidate is direct microbatch ingestion without a durable se
 The candidate SQL is intentionally outside automatic migrations. It calls the existing authoritative GPS RPC separately under each cryptographically verified Supabase JWT identity inside a single transaction, restoring the request claims after each item. It is denied to PUBLIC, anon, authenticated and service_role. A future dedicated least-privilege gateway role must be granted only this wrapper, not general impersonation or table access; independently review its trust boundary and deny public exposure. The existing v1 path is unchanged. This first implementation reduces network/transaction overhead but does not vectorize row validation/writes, and one slow operation can roll back the batch. Compare it to v1 at equal offered demand before considering set-based optimization or queues.
 
 The HTTP-to-embedded-PostgreSQL regression test uses the real captured GPS write function with a simulated trusted Auth response; it checks commit-before-ACK, duplicate, cross-principal denial, MFA, session revocation, and client ACL. The microbatch test checks distinct device grouping; the commit failure test checks retry behavior. These are not hosted load evidence. Before deployment implement trusted runtime provisioning, independently verified auth signing configuration, bounded authentication latency, global admission/rate limits, TLS, least-privilege role and Android integration, then test real provider JWTs, two-tenant fixtures, sustained and burst performance, guardian/ETA/notification load and cost. Queue adapters are retained as inactive fallback experiments only.
+
+## Hosted direct-batch comparison
+
+Protected Recovery workflow adds `android_gps_direct_compare`, 100 buses only,
+confirmation `RUN_RECOVERY_DIRECT_GPS_100`. Reuse the existing fixture ownership,
+real Supabase Auth, isolated environment verification, cleanup, schema fingerprint,
+and native device scheduler. A new temporary private wrapper is installed only
+after verifying original GPS function hash, no cron jobs and exclusive run-owned
+synthetic accounts. No production changes. The direct candidate gateway listens on
+loopback on the CI runner, uses genuine Supabase JWT verification and four bounded
+Recovery database connections. It proves cross-tenant denial, invalid JWT denial,
+a committed location and duplicate acknowledgement before measurement. No production
+gateway role or mobile deployment is represented by this probe.
+
+Compare 10, 25, 50, 100 maximum batch sizes, then existing individual HTTPS,
+with 10 three-second rounds each of staggered and synchronized arrival. Reset
+run-owned location/cursor/heartbeat/queue state between windows without disabling
+triggers. Report actual batch fill, transaction count, auth time, GPS latency,
+final position reconciliation, database waits and cumulative SQL counters.
+Only fully drained and reconciled performance failures may continue; ambiguous
+writes stop the run. Remove the wrapper and verify original function and cleanup.
+A failed baseline is not permission to claim capacity; the direct candidates
+must pass independently. The runner-local HTTP path lacks the deployed gateway's
+network latency; no sustained 10,000-bus or guardian capacity claim follows.
