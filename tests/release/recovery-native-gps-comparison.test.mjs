@@ -6,6 +6,9 @@ import {
   GPS_ORIGINAL_MD5,
   recoveryGpsComparisonPlan,
   sampleRecoveryGpsDatabase,
+  classifyRecoveryGpsStage,
+  resetRecoveryGpsWindow,
+  sampleRecoveryGpsSql,
 } from '../../scripts/lib/recovery-native-gps-comparison.mjs';
 
 const acl = ['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres'];
@@ -144,4 +147,40 @@ test('database samples use aggregate read-only counters, never reset stats or ex
   }};
   assert.deepEqual(await sampleRecoveryGpsDatabase(db), row);
   await assert.rejects(sampleRecoveryGpsDatabase({ query: async () => ({ rows: [] }) }), /CAPACITY_GPS_DATABASE_STATS/);
+});
+
+test('performance-only failures can continue, while correctness, auth, transport and generator failures cannot', () => {
+  const result = { passed:false, reconciled:true, planned:10000, offered:1300, accepted:1300,
+    late:100, deviceBackpressure:101, cancelledBeforeSend:100,
+    transport:{writes:1300,responses:1300,failures:{}}, errors:{NATIVE_GPS_DEVICE_QUEUE_LIMIT:1} };
+  assert.equal(classifyRecoveryGpsStage(result), 'performance_failed');
+  assert.equal(classifyRecoveryGpsStage({...result,passed:true}), 'passed');
+  assert.equal(classifyRecoveryGpsStage({...result,errors:{}}), 'performance_failed');
+  for (const bad of [
+    {reconciled:false},{accepted:1299},{transport:{writes:1300,responses:1299,failures:{}}},
+    {transport:{writes:1300,responses:1300,failures:{REQUEST_DEADLINE:1}}},
+    ...['NATIVE_GPS_HTTP_403','NATIVE_GPS_ACK_MISMATCH','NATIVE_GPS_TRANSPORT','NATIVE_GPS_GENERATOR_LAG','NATIVE_GPS_CANCELLED'].map(code=>({errors:{[code]:1}})),
+  ]) assert.equal(classifyRecoveryGpsStage({...result,...bad}), 'fatal');
+});
+
+test('fresh GPS window refuses an unowned scope before mutation and rolls back', async () => {
+  const scope={run:'123-1',buses:100,tenantIds:['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'],
+    emails:Array.from({length:151},(_,i)=>`capacity-load-123-1-${i}@example.test`)};
+  const trips=Array.from({length:100},(_,i)=>`00000000-0000-4000-8000-${String(i).padStart(12,'0')}`);
+  const calls=[];
+  const db={query:async sql=>{calls.push(sql);return {rows:sql.includes('as identity')?[{identity:true,trips:100,owned:99}]:[]};}};
+  await assert.rejects(resetRecoveryGpsWindow(db,scope,trips),/CAPACITY_GPS_WINDOW_SCOPE/);
+  assert.equal(calls.at(-1),'rollback');
+  assert.equal(calls.some(sql=>/^delete|^update/i.test(sql)),false);
+});
+
+test('SQL counters are read-only aggregates restricted to authenticated REST calls', async () => {
+  const row={calls:'100',total_exec_ms:400,wal_bytes:'2000'};
+  assert.deepEqual(await sampleRecoveryGpsSql({query:async sql=>{
+    assert.match(sql,/^\s*select/);
+    assert.match(sql,/rolname='authenticated'/);
+    assert.match(sql,/sum\(total_exec_time\)/);
+    assert.doesNotMatch(sql,/pg_stat_reset/);
+    return {rows:[row]};
+  }}),row);
 });

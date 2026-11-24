@@ -270,6 +270,7 @@ export async function measureNativeGps({
   let busyCooldown = 0;
   let maxQueueDelayMs = 0;
   let maxDeviceQueueDepth = 0;
+  let cancelledBeforeSend = 0;
   let maxDispatchLagMs = 0;
   const fail = (code) => {
     errors[code] = (errors[code] ?? 0) + 1;
@@ -333,7 +334,7 @@ export async function measureNativeGps({
           const pauseRemaining = (nextUploadAt.get(driver.tripId) ?? 0) - clock();
           if (pauseRemaining > 0) await waitForUpload(pauseRemaining, signal);
           if (signal?.aborted || Object.keys(errors).length)
-            throw Error("NATIVE_GPS_CANCELLED");
+            throw Error("NATIVE_GPS_UNSENT_CANCELLED");
           maxQueueDelayMs = Math.max(maxQueueDelayMs, clock() - dispatchedAt);
           offered++;
           uploading.add(driver.tripId);
@@ -353,6 +354,10 @@ export async function measureNativeGps({
         },
         (error) => {
           const code = error?.message;
+          if (queueBusySlots && code === "NATIVE_GPS_UNSENT_CANCELLED") {
+            cancelledBeforeSend++;
+            return;
+          }
           fail(
             /^NATIVE_GPS_(HTTP(?:_[45]\d\d)?|ACK_MISMATCH|REJECTED_(OUT_OF_ORDER|TRIP_NOT_ACTIVE|STALE_FIX|INVALID_FIX|IMPOSSIBLE_JUMP))$/.test(
               code,
@@ -398,6 +403,7 @@ export async function measureNativeGps({
     busyCooldown,
     maxQueueDelayMs,
     maxDeviceQueueDepth,
+    cancelledBeforeSend,
     queueBusySlots,
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
