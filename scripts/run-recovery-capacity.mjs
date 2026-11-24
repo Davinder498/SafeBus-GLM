@@ -482,7 +482,7 @@ try {
     }
   } else if (directCompare) {
     stage = "direct-gps-comparison";
-    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + 15*60*1000))
+    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + (scaledDirectRun?20:15)*60*1000))
       throw Error("CAPACITY_AUTH_SESSION_WINDOW");
     evidence.directGpsComparison = { plan: directPlan, windows: [], restored: false, capacityQualified: false };
     await runRecoveryDirectGpsComparison({

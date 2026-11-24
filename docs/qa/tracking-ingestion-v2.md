@@ -76,3 +76,31 @@ clients disconnect. Defer driver login until fixtures and cleanup rehearsal
 complete, with existing provider-respecting pacing; guardian accounts are not
 signed in during GPS-only load. The test remains isolated; no permanent gateway
 deployment, production changes, queue purchases or fleet-wide qualification.
+
+## 500-bus burst optimization
+
+Run 45328052768 accepted all 100,000 fixes and reconciled final positions,
+but synchronized p99 was 5390.1 ms with 1,000 late fixes; staggered p99 was
+979.6 ms with none late. The original four-worker configuration is not
+qualified. Database cumulative stats do not isolate auth or network time.
+The original function and cleanup were independently verified.
+
+Reduce batch transaction network commands from six to three by combining
+constant transaction setup statements into one simple-protocol command;
+keep the parameterized write, all three transaction-local timeouts, and
+separate verified COMMIT. Timestamp authentication, waiting-to-batch, pool
+acquisition, transaction setup, SQL round trip and commit round trip; aggregate
+only numeric timing, never tokens or payloads. The oldest queued event's
+50 ms deadline is not restarted on worker completion.
+
+The 500-bus profile now screens four, eight and sixteen workers on identical
+500-bus synchronized ten-round windows (15,000 planned fixes). Keep a
+15-connection database headroom check and open only the current worker count.
+Select the lowest passing concurrency with reconciled transactions, zero late
+updates and p99 <=1s. Then perform the original two 100-round sustained
+windows with that count (100,000 additional planned fixes). If no candidate
+passes, or correctness/transport is ambiguous, stop and preserve evidence.
+No claim of production readiness or proof of 10,000-bus capacity; no new
+database privileges, paid services or production changes. Any further
+per-fix SQL rewrite should follow observed timing and preserve all security
+and correctness checks.

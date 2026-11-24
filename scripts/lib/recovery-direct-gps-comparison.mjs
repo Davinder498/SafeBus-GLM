@@ -11,6 +11,7 @@ import { GPS_ORIGINAL_MD5, GPS_RPC_SIGNATURE, resetRecoveryGpsWindow,
 import { createNativeGpsTransport, createNativeGpsUpload, measureNativeGps,
   verifyNativeGpsPositions } from './recovery-native-gps-load.mjs';
 import { capacityGpsLatitude } from './recovery-capacity-gps.mjs';
+import { percentiles } from './recovery-capacity-scheduler.mjs';
 import { createSupabaseClaimsVerifier, createDirectBatchWriter,
   createDirectGpsBatcher, createDirectGpsServer } from '../../services/tracking-ingestion/direct-batch.mjs';
 
@@ -28,6 +29,7 @@ export const DIRECT_GPS_SCALE_PLAN=Object.freeze({
   patterns:DIRECT_GPS_PLAN.patterns,batchWaitMs:50,dbConnections:4,
   confirmation:'RUN_RECOVERY_DIRECT_GPS_500',capacityQualified:false,
   compareIndividual:false,p99TargetMs:1000,maxPending:1000,
+  workerCandidates:Object.freeze([4,8,16]),screenRounds:10,
 });
 export function directGpsPlan(buses) {
   if(buses===100)return DIRECT_GPS_PLAN;
@@ -67,9 +69,38 @@ function boundedPool(connections) {
 
 export function directGpsComparisonWindows(plan=DIRECT_GPS_PLAN) {
   if(plan!==directGpsPlan(plan.buses))throw Error('DIRECT_GPS_SCOPE');
+  if(plan.workerCandidates)return plan.workerCandidates.map(dbConnections=>({
+    batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:plan.screenRounds,
+  }));
   return [...plan.batchSizes,...(plan.compareIndividual===false?[]:[0])].flatMap(batchSize=>
     plan.patterns.map(pattern=>({batchSize,pattern,
       path:batchSize?'direct_batch':'individual_https'})));
+}
+
+export function chooseDirectGpsWorkers(plan,windows) {
+  if(plan!==DIRECT_GPS_SCALE_PLAN||!Array.isArray(windows))throw Error('DIRECT_GPS_SCOPE');
+  const complete=directGpsComparisonWindows(plan);
+  if(windows.length!==complete.length||complete.some(c=>!windows.some(w=>
+    w.phase===c.phase&&w.dbConnections===c.dbConnections&&w.rounds===c.rounds&&
+    w.batchSize===c.batchSize&&w.pattern===c.pattern&&w.classification!=='fatal')))
+    throw Error('DIRECT_GPS_SCREEN_INCOMPLETE');
+  return plan.workerCandidates.find(n=>windows.some(w=>w.phase==='worker_screen'&&w.dbConnections===n&&
+    w.passed===true&&w.meetsLatencyTarget===true&&w.batchTransactionsReconciled===true))??null;
+}
+
+function createTimingCollector(){
+  const samples=new Map();
+  return {
+    observe(stage,ms,count=1){
+      if(!Number.isFinite(ms)||ms<0||!Number.isSafeInteger(count)||count<1)return;
+      const data=samples.get(stage)??{values:[],sum:0,max:0,items:0};
+      data.values.push(ms);data.sum+=ms;data.max=Math.max(data.max,ms);data.items+=count;
+      samples.set(stage,data);
+    },
+    snapshot(){return Object.fromEntries([...samples].map(([stage,d])=>[stage,{
+      samples:d.values.length,items:d.items,meanMs:d.sum/d.values.length,maxMs:d.max,...percentiles(d.values),
+    }]));},
+  };
 }
 
 function payload(driver,sequence,recordedAt,latitude) {
@@ -79,14 +110,15 @@ function payload(driver,sequence,recordedAt,latitude) {
     p_speed_mps:5,p_battery_percent:80,p_connectivity:'cellular'};
 }
 
-async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN}) {
+async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,dbConnections=plan.dbConnections}) {
   const verify=createSupabaseClaimsVerifier({auth,issuer:RECOVERY_AUTH_URL+'/auth/v1'});
-  const writer=createDirectBatchWriter({pool});
+  const timing=createTimingCollector();
+  const writer=createDirectBatchWriter({pool,observe:timing.observe});
   const metrics={transactions:0,committedTransactions:0,attemptedItems:0,
     batchSizes:{},authChecks:0,authMs:0,authMaxMs:0,writes:0,responses:0,failures:{}};
   const activeWrites=new Set();
   const batcher=createDirectGpsBatcher({batchSize,maxWaitMs:plan.batchWaitMs,
-    maxInFlight:plan.dbConnections,maxPending:plan.maxPending??500,
+    maxInFlight:dbConnections,maxPending:plan.maxPending??500,observe:timing.observe,
     verify:async token=>{
       const start=performance.now();metrics.authChecks++;
       try{return await verify(token);}finally{
@@ -123,7 +155,7 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN}
       r.body.tripState!=='active'||Date.parse(r.body.recordedAt)!==Date.parse(recordedAt))
       throw Error('NATIVE_GPS_ACK_MISMATCH');
   };
-  return {send,upload,metrics,close:async()=>{
+  return {send,upload,metrics,timings:timing.snapshot,close:async()=>{
     // Stop accepting new work, then drain database transactions even when an
     // HTTP client timed out or disconnected before the write completed.
     batcher.close();await new Promise(resolve=>server.close(resolve));
@@ -155,7 +187,16 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     throw Error('DIRECT_GPS_WORKFLOW_REQUIRED');
   await assertTarget(db,scope,plan);
   const connections=[];
-  let installed=false,monitor;
+  let installed=false,monitor,pool;
+  async function resizePool(count){
+    if(![4,8,16].includes(count))throw Error('DIRECT_GPS_WORKER_BOUNDS');
+    if(connections.length===count)return;
+    for(const c of connections.splice(0))await c.end();
+    const {rows:[budget]}=await db.query("select current_setting('max_connections')::int as maximum,(select count(*)::int from pg_stat_activity) as used");
+    if(!budget||budget.maximum-budget.used-count<15)throw Error('DIRECT_GPS_CONNECTION_HEADROOM');
+    for(let i=0;i<count;i++)connections.push(await connect('safebus-direct-gps-worker'));
+    pool=boundedPool(connections);
+  }
   try{
     await quarantineCapacity(db);
     await db.query('begin');
@@ -169,9 +210,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if(!r?.private)throw Error('DIRECT_GPS_ACL');
       await db.query('commit');installed=true;
     }catch(e){await db.query('rollback').catch(()=>{});throw e;}
-    for(let i=0;i<plan.dbConnections;i++)connections.push(await connect('safebus-direct-gps-worker'));
     monitor=await connect('safebus-direct-gps-monitor');
-    const pool=boundedPool(connections);
+    await resizePool(plan.dbConnections);
     const tripIds=drivers.map(d=>d.tripId);
     // Real hosted JWT, foreign driver, and corrupt token through actual gateway.
     const proof=await directTransport({pool,auth,batchSize:10,signal,plan});
@@ -188,7 +228,14 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         throw Error('DIRECT_GPS_REPLAY_PROOF');
       evidence.securityProof={crossTenantDenied:true,invalidJwtDenied:true,committedPositionVerified:true,duplicateAcknowledged:true};
     }finally{await proof.close();}
-    for(const window of directGpsComparisonWindows(plan)){
+    const windows=directGpsComparisonWindows(plan);
+    let chosenWorkers=null;
+    // Same credentials, schema, batch settings, and burst pattern for each
+    // concurrency screen. Only the lowest passing worker count gets the soak.
+    for(let wi=0;wi<windows.length;wi++){
+      const window=windows[wi];
+      const dbConnections=window.dbConnections??plan.dbConnections;
+      await resizePool(dbConnections);
       if(signal?.aborted)throw Error('CAPACITY_STOP_REQUESTED');
       await quarantineCapacity(db);
       await resetRecoveryGpsWindow(db,scope,tripIds);
@@ -199,7 +246,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         await delay(3000,undefined,{signal});
       }
       const transport=window.batchSize?
-        await directTransport({pool,auth,batchSize:window.batchSize,signal,plan}):createNativeGpsTransport();
+        await directTransport({pool,auth,batchSize:window.batchSize,signal,plan,dbConnections}):createNativeGpsTransport();
       let sampleTask=null,sampleErrors=0;
       const samples=[];
       const sample=async()=>{try{samples.push(await sampleRecoveryGpsDatabase(monitor));}catch{sampleErrors++;}};
@@ -208,7 +255,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       const start=performance.now();
       let result;
       try{
-        result=await measureNativeGps({drivers:drivers.map(d=>({...d,lastSequence:0})),rounds:plan.rounds,
+        result=await measureNativeGps({drivers:drivers.map(d=>({...d,lastSequence:0})),rounds:window.rounds??plan.rounds,
           pattern:window.pattern,upload:window.batchSize?transport.upload:createNativeGpsUpload(publishableKey,transport.fetch),
           verifyPositions:latest=>verifyNativeGpsPositions(db,latest),signal,maxInFlight:plan.buses*2,queueBusySlots:true});
       }finally{
@@ -216,28 +263,39 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         await transport.close();
       }
       await sample();const after=await sqlCounters(monitor,Boolean(window.batchSize));
-      result={...result,...window,elapsedMs:performance.now()-start,transport:window.batchSize?transport.metrics:transport.takeMetrics(),
-        databaseSamples:samples,databaseSampleErrors:sampleErrors,sqlCounters:{before,after}};
+      result={...result,...window,dbConnections,elapsedMs:performance.now()-start,transport:window.batchSize?transport.metrics:transport.takeMetrics(),
+        timings:window.batchSize?transport.timings():null,databaseSamples:samples,databaseSampleErrors:sampleErrors,sqlCounters:{before,after}};
       result.classification=classifyRecoveryGpsStage(result);
       result.meetsLatencyTarget=plan.p99TargetMs===undefined ? null : Number.isFinite(result.latencyMs.p99)&&result.latencyMs.p99<=plan.p99TargetMs;
       result.batchTransactionsReconciled=!window.batchSize || (transport.metrics.attemptedItems===result.offered && transport.metrics.transactions===transport.metrics.committedTransactions);
       if(!result.batchTransactionsReconciled)result.classification='fatal';
       evidence.windows.push(result);
       console.log('Direct GPS comparison: path='+window.path+'; batch='+window.batchSize+'; pattern='+window.pattern+
+        '; phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+
         '; planned='+result.planned+'; sent='+result.offered+'; accepted='+result.accepted+'; late='+result.late+
         '; p99_ms='+(result.latencyMs.p99?.toFixed(1)??'unavailable')+
         '; transactions='+(window.batchSize?transport.metrics.transactions:'see_sql_counters')+
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+
         '; reconciled='+result.reconciled+'; classification='+result.classification+'; latency_target_met='+result.meetsLatencyTarget+'; errors='+JSON.stringify(result.errors));
+      if(result.timings)console.log('Direct GPS timing (ms): phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+'; pattern='+window.pattern+'; stages='+JSON.stringify(result.timings));
       if(sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
       // Continue only with reconciled responses; never reset ambiguous writes.
       if(result.classification==='fatal')throw Error('DIRECT_GPS_STAGE_FATAL');
+      if(plan.workerCandidates&&wi===plan.workerCandidates.length-1){
+        chosenWorkers=chooseDirectGpsWorkers(plan,evidence.windows);
+        evidence.selectedWorkers=chosenWorkers;
+        console.log('Direct GPS worker screen: selected='+(chosenWorkers??'none'));
+        if(chosenWorkers===null)throw Error('DIRECT_GPS_NO_PASSING_WORKERS');
+        for(const pattern of plan.patterns)windows.push({batchSize:50,pattern,path:'direct_batch',
+          phase:'sustained',dbConnections:chosenWorkers,rounds:plan.rounds});
+      }
     }
-    evidence.completedAllWindows=evidence.windows.length===directGpsComparisonWindows(plan).length;
+    evidence.completedAllWindows=evidence.windows.length===windows.length;
+    const qualification=plan.workerCandidates?evidence.windows.filter(w=>w.phase==='sustained'):evidence.windows;
     evidence.passingBatchSizes=plan.batchSizes.filter(size=>
-      evidence.windows.filter(w=>w.batchSize===size&&w.passed&&w.batchTransactionsReconciled).length===2);
-    if(!evidence.passingBatchSizes.length)throw Error('DIRECT_GPS_NO_PASSING_BATCH');
-    if(plan.p99TargetMs!==undefined && !evidence.windows.every(w=>w.meetsLatencyTarget===true))
+      qualification.filter(w=>w.batchSize===size&&w.passed&&w.batchTransactionsReconciled).length===2);
+    if(!evidence.completedAllWindows||!evidence.passingBatchSizes.length)throw Error('DIRECT_GPS_NO_PASSING_BATCH');
+    if(plan.p99TargetMs!==undefined && !qualification.every(w=>w.meetsLatencyTarget===true))
       throw Error('DIRECT_GPS_LATENCY_TARGET');
   }finally{
     for(const c of connections)await c.end().catch(()=>{});

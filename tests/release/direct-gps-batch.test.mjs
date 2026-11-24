@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import test from 'node:test';
 import {once} from 'node:events';
 import {installed,setup,id,time} from './fixtures/live-tracking-only-db.mjs';
-import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatcher,createDirectGpsServer}
+import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatcher,createDirectGpsServer,BATCH_TRANSACTION_SETUP}
   from '../../services/tracking-ingestion/direct-batch.mjs';
 
 const sql=await fs.readFile('services/tracking-ingestion/direct-batch.sql','utf8');
@@ -23,7 +23,8 @@ test('HTTP to embedded PostgreSQL: commit, duplicate, denial, MFA and session re
     ({data:{claims:token==='good'?c:token==='other'?bad:null},error:null})}});
   let transactions=0;
   const pool={connect:async()=>({query:async(s,args)=>{
-    if(s==='begin')transactions++;return db.query(s,args);
+    if(s===BATCH_TRANSACTION_SETUP){transactions++;return db.exec(s);}
+    return db.query(s,args);
   },release:()=>{}})};
   const writer=createDirectBatchWriter({pool});
   const batcher=createDirectGpsBatcher({verify,write:writer,maxWaitMs:10,maxInFlight:1});
@@ -94,7 +95,7 @@ test('hosted direct comparison is bounded and compares identical 100-bus pattern
   for(const size of DIRECT_GPS_PLAN.batchSizes)assert.deepEqual(windows.filter(w=>w.batchSize===size).map(w=>w.pattern),['staggered','synchronized']);
 });
 
-test('500-bus qualification fixes batch size 50 and keeps four DB connections, without a baseline replay',async()=>{
+test('500-bus qualification screens bounded worker counts without replaying individual ingestion',async()=>{
   const {DIRECT_GPS_SCALE_PLAN,directGpsPlan,directGpsComparisonWindows}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   assert.equal(directGpsPlan(500),DIRECT_GPS_SCALE_PLAN);
   const plan=directGpsPlan(500);
@@ -103,11 +104,42 @@ test('500-bus qualification fixes batch size 50 and keeps four DB connections, w
   assert.equal(plan.batchWaitMs,50);
   assert.equal(plan.p99TargetMs,1000);
   assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
-  assert.deepEqual(directGpsComparisonWindows(plan),[
-    {batchSize:50,pattern:'staggered',path:'direct_batch'},
-    {batchSize:50,pattern:'synchronized',path:'direct_batch'},
-  ]);
+  assert.deepEqual(plan.workerCandidates,[4,8,16]);
+  assert.deepEqual(directGpsComparisonWindows(plan),[4,8,16].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:10})));
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
   for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
+});
+
+test('batch writer uses exactly three database commands and retains all local deadlines',async()=>{
+  const calls=[],timing=[];
+  const result=await createDirectBatchWriter({observe:(stage,ms,count)=>timing.push({stage,ms,count}),
+    pool:{connect:async()=>({query:async(sql,args)=>{
+      calls.push({sql,args});
+      if(sql.startsWith('select safebus_private'))return {rows:[{result:[{id:'a',status:200,body:{accepted:true,stopTracking:false}}]}]};
+      return {rows:[]};},release:()=>{}})}})([{id:'a'}]);
+  assert.equal(result.get('a').status,200);
+  assert.equal(calls.length,3);
+  assert.equal(calls[0].sql,BATCH_TRANSACTION_SETUP);
+  assert.match(calls[0].sql,/statement_timeout='2s'/);
+  assert.match(calls[0].sql,/lock_timeout='250ms'/);
+  assert.match(calls[0].sql,/idle_in_transaction_session_timeout='3s'/);
+  assert.equal(calls[1].args[0],'[{"id":"a"}]');
+  assert.equal(calls[2].sql,'commit');
+  assert.deepEqual(timing.map(t=>t.stage),['pool_acquire','transaction_setup','sql_round_trip','commit_round_trip']);
+  assert.ok(timing.every(t=>Number.isFinite(t.ms)&&t.ms>=0&&t.count===1));
+});
+
+test('worker screen selects the lowest passing configuration and rejects incomplete evidence',async()=>{
+  const {directGpsPlan,directGpsComparisonWindows,chooseDirectGpsWorkers}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan=directGpsPlan(500);
+  const windows=directGpsComparisonWindows(plan).map(w=>({...w,classification:'passed',passed:true,meetsLatencyTarget:true,batchTransactionsReconciled:true}));
+  assert.equal(chooseDirectGpsWorkers(plan,windows),4);
+  windows[0].meetsLatencyTarget=false;
+  assert.equal(chooseDirectGpsWorkers(plan,windows),8);
+  windows[1].passed=false;
+  assert.equal(chooseDirectGpsWorkers(plan,windows),16);
+  windows[2].batchTransactionsReconciled=false;
+  assert.equal(chooseDirectGpsWorkers(plan,windows),null);
+  assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,2)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
 });
