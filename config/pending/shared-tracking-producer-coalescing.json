@@ -1,0 +1,24 @@
+{
+  "projectId": "ckrkfylsyihwouvesypm",
+  "migration": "supabase/migrations/pending/20261123091500_shared_tracking_producer_coalescing.sql",
+  "migrationSha256": "030cb842b42f8bfcfd601c5bece266e231cda1fe0e8607aa7223b546fd1ff278",
+  "rehearseRestore": true,
+  "functions": [
+    {
+      "signature": "safebus_private.notify_tracking_location_change()",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "before": {
+        "md5": "bb37dbd071510cdc21a677dec90f88cb"
+      },
+      "after": {
+        "md5": "1bfac7323ca153aa948e6be01d9a7470"
+      }
+    }
+  ],
+  "policies": [],
+  "defaults": [],
+  "repairs": []
+}

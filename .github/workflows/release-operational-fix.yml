@@ -25,6 +25,7 @@ on:
             shared_bus_feed,
             independent_shared_tracking,
             compact_shared_tracking,
+            shared_tracking_producer_coalescing,
             shared_route_geometry,
             shared_live_progress,
             retention,
