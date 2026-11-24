@@ -93,9 +93,20 @@ acquisition, transaction setup, SQL round trip and commit round trip; aggregate
 only numeric timing, never tokens or payloads. The oldest queued event's
 50 ms deadline is not restarted on worker completion.
 
-The 500-bus profile now screens four, eight and sixteen workers on identical
-500-bus synchronized ten-round windows (15,000 planned fixes). Keep a
-15-connection database headroom check and open only the current worker count.
+[Run 45346804074](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45346804074)
+accepted and reconciled 5,000 fixes with zero late updates in each short screen.
+Four workers measured 1,800.5 ms p99 and eight measured 1,599.9 ms p99. Both
+exceeded the 1,000 ms gate. The next screen requested sixteen workers, but
+Recovery Supavisor reported its 15-client session-mode limit at 15:01:26 UTC
+on November 24, 2026. Actions reported SQLSTATE `XX000` and verified cleanup
+and wrapper restoration. The sustained windows did not run.
+
+The revised 500-bus profile screens four, eight and twelve workers on
+identical ten-round synchronized windows (15,000 planned fixes). Twelve
+workers plus the control and monitor connections leave one slot under the
+observed session-pool limit. Retain the separate 15-connection PostgreSQL
+headroom check. If a worker connection still fails, the evidence records the
+requested and opened worker counts and SQLSTATE. The run stops and cleans up.
 Select the lowest passing concurrency with reconciled transactions, zero late
 updates and p99 <=1s. Then perform the original two 100-round sustained
 windows with that count (100,000 additional planned fixes). If no candidate

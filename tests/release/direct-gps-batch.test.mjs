@@ -104,8 +104,8 @@ test('500-bus qualification screens bounded worker counts without replaying indi
   assert.equal(plan.batchWaitMs,50);
   assert.equal(plan.p99TargetMs,1000);
   assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
-  assert.deepEqual(plan.workerCandidates,[4,8,16]);
-  assert.deepEqual(directGpsComparisonWindows(plan),[4,8,16].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:10})));
+  assert.deepEqual(plan.workerCandidates,[4,8,12]);
+  assert.deepEqual(directGpsComparisonWindows(plan),[4,8,12].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:10})));
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
   for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
@@ -138,8 +138,44 @@ test('worker screen selects the lowest passing configuration and rejects incompl
   windows[0].meetsLatencyTarget=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),8);
   windows[1].passed=false;
-  assert.equal(chooseDirectGpsWorkers(plan,windows),16);
+  assert.equal(chooseDirectGpsWorkers(plan,windows),12);
   windows[2].batchTransactionsReconciled=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),null);
   assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,2)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
+});
+
+test('Recovery worker resize stays within the session-pool budget and records an open failure', async () => {
+  const { directGpsPlan, resizeDirectGpsWorkers } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan = directGpsPlan(500);
+  const evidence = {};
+  let activeWorkers = 8;
+  let attempts = 0;
+  const worker = { end: async () => { activeWorkers--; } };
+  const connections = Array.from({ length: activeWorkers }, () => worker);
+  const refusal = Object.assign(Error('private provider detail'), { code: 'XX000' });
+  const resize = count => resizeDirectGpsWorkers({
+    plan, count, evidence, connections,
+    db: { query: async () => {
+      assert.equal(activeWorkers, 0);
+      return { rows: [{ maximum: 100, used: 12 }] };
+    } },
+    connect: async () => {
+      attempts++;
+      if (attempts === 5) throw refusal;
+      activeWorkers++;
+      return worker;
+    },
+  });
+
+  await assert.rejects(resize(16), /DIRECT_GPS_WORKER_BOUNDS/);
+  assert.equal(activeWorkers, 8);
+  assert.equal(attempts, 0);
+  await assert.rejects(resize(12), error => error === refusal);
+  assert.equal(attempts, 5);
+  assert.equal(connections.length, 4);
+  assert.deepEqual(evidence, {
+    workerConnectionFailure: { requestedWorkers: 12, openedWorkers: 4, sqlState: 'XX000' },
+  });
+  await Promise.all(connections.map(connection => connection.end()));
+  assert.equal(activeWorkers, 0);
 });
