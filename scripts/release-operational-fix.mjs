@@ -44,6 +44,7 @@ const manifests = {
   shared_bus_feed: 'config/pending/shared-bus-feed.json',
   independent_shared_tracking: 'config/pending/independent-shared-tracking.json',
   compact_shared_tracking: 'config/pending/compact-shared-tracking.json',
+  shared_tracking_producer_coalescing: 'config/pending/shared-tracking-producer-coalescing.json',
   shared_route_geometry: 'config/pending/shared-route-geometry.json',
   shared_live_progress: 'config/pending/shared-live-progress.json',
   calendar: 'config/pending/route-service-calendar.json',
@@ -284,6 +285,8 @@ try {
       await client.query(
         await fs.readFile('tests/rls/independent-shared-tracking-readonly.sql', 'utf8'),
       );
+    if (milestone === 'shared_tracking_producer_coalescing')
+      await client.query(await fs.readFile('tests/rls/shared-tracking-producer-coalescing-readonly.sql', 'utf8'));
     if (milestone === 'shared_route_geometry')
       await client.query(await fs.readFile('tests/rls/shared-route-geometry-readonly.sql', 'utf8'));
     if (milestone === 'shared_live_progress')

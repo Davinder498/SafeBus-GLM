@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { independentTrackingFixture, seedSharedTrip, id } from './fixtures/independent-tracking-db.mjs';
@@ -104,4 +105,23 @@ test('retired direct 16-shard activation is never permitted', async (t) => {
     await scalar(db, "select count(*)::int as value from cron.job where jobname like 'safebus-shared-tracking-%' and active"),
     1,
   );
+});
+
+test('shared producer has a source-bound protected production release and read-only verification', async () => {
+  const config = JSON.parse(await fs.readFile('config/pending/shared-tracking-producer-coalescing.json','utf8'));
+  assert.equal(config.migrationSha256,createHash('sha256').update(forward).digest('hex'));
+  assert.equal(config.rehearseRestore,true);
+  assert.deepEqual(config.functions,[{
+    signature:'safebus_private.notify_tracking_location_change()',owner:'postgres',
+    acl:['postgres=X/postgres'],before:{md5:'bb37dbd071510cdc21a677dec90f88cb'},
+    after:{md5:'1bfac7323ca153aa948e6be01d9a7470'},
+  }]);
+  const workflow = await fs.readFile('.github/workflows/release-operational-fix.yml','utf8');
+  const runner = await fs.readFile('scripts/release-operational-fix.mjs','utf8');
+  const verify = await fs.readFile('tests/rls/shared-tracking-producer-coalescing-readonly.sql','utf8');
+  assert.match(workflow,/shared_tracking_producer_coalescing/);
+  assert.match(runner,/shared-tracking-producer-coalescing-readonly\.sql/);
+  assert.match(verify,/begin transaction read only/);
+  assert.match(verify,/tgenabled='O'/);
+  assert.match(verify,/has_function_privilege/);
 });
