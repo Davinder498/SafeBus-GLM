@@ -71,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       full: ${{ steps.scope.outputs.full }}
+      android: ${{ steps.scope.outputs.android }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -134,33 +135,55 @@ jobs:
 
   android:
     name: Android build and lint
+    needs: browser-scope
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: needs.browser-scope.outputs.android == 'true'
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        if: needs.browser-scope.outputs.android == 'true'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        if: needs.browser-scope.outputs.android == 'true'
         with:
           node-version: 24
           cache: pnpm
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        if: needs.browser-scope.outputs.android == 'true'
         with:
           distribution: temurin
           java-version: 21
           problem-matcher: true
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+        if: needs.browser-scope.outputs.android == 'true'
         with:
           # The legacy SDK package 'tools' is no longer available.
           packages: platform-tools
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+        if: needs.browser-scope.outputs.android == 'true'
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        if: needs.browser-scope.outputs.android == 'true'
       - run: pnpm install --frozen-lockfile
+        if: needs.browser-scope.outputs.android == 'true'
       - run: pnpm --filter @safebus/mobile build
+        if: needs.browser-scope.outputs.android == 'true'
       - run: pnpm --filter @safebus/mobile cap:sync
+        if: needs.browser-scope.outputs.android == 'true'
       - name: Native tests, package, and lint
+        if: needs.browser-scope.outputs.android == 'true'
         working-directory: apps/mobile/android
         run: |
           chmod +x gradlew
           ./gradlew testDebugUnitTest assembleDebug lintDebug
+
+      - name: Require a valid Android coverage decision
+        if: always()
+        env:
+          SCOPE_RESULT: ${{ needs.browser-scope.result }}
+          FULL_ANDROID: ${{ needs.browser-scope.outputs.android }}
+        run: |
+          test "$SCOPE_RESULT" = success
+          [[ "$FULL_ANDROID" = true || "$FULL_ANDROID" = false ]]
 
   migration-verification:
     name: Migration verification
