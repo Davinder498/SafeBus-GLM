@@ -203,4 +203,15 @@ test('Recovery SQL window reconciles exact batch calls and preserves large count
   assert.deepEqual(summarizeDirectGpsSqlWindow(before, { ...after, wal_bytes: '1' }, 103), { status: 'counter_regressed' });
   assert.deepEqual(summarizeDirectGpsSqlWindow(before, { ...after, total_exec_ms: null }, 103), { status: 'unavailable' });
   assert.deepEqual(summarizeDirectGpsSqlWindow(before, after, 0), { status: 'unavailable' });
+
+  const withTempBefore = { ...before, temp_blks_read: '7', temp_blks_written: '90071992547409930' };
+  const withTempAfter = { ...after, temp_blks_read: '7', temp_blks_written: '90071992547409947' };
+  assert.deepEqual(summarizeDirectGpsSqlWindow(withTempBefore, withTempAfter, 103), {
+    ...summarizeDirectGpsSqlWindow(before, after, 103),
+    tempBlocksRead: '0',
+    tempBlocksWritten: '17',
+  });
+  assert.deepEqual(summarizeDirectGpsSqlWindow(before, withTempAfter, 103), { status: 'unavailable' });
+  assert.deepEqual(summarizeDirectGpsSqlWindow(withTempBefore, { ...withTempAfter, temp_blks_read: '6' }, 103),
+    { status: 'counter_regressed' });
 });
