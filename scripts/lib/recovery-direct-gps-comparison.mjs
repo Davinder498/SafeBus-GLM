@@ -26,12 +26,13 @@ export const DIRECT_GPS_PLAN=Object.freeze({
 
 // Only these immutable, reviewed profiles can reach the hosted test path.
 export const DIRECT_GPS_SCALE_PLAN=Object.freeze({
-  buses:500,rounds:100,batchSizes:Object.freeze([50]),
+  buses:500,rounds:100,batchSizes:Object.freeze([50,64]),
   patterns:DIRECT_GPS_PLAN.patterns,batchWaitMs:50,dbConnections:8,
   confirmation:'RUN_RECOVERY_DIRECT_GPS_500',capacityQualified:false,
   compareIndividual:false,p99TargetMs:1000,maxPending:1000,
-  // Match the fastest completed prior screen. Twelve workers returned 503s.
-  workerCandidates:Object.freeze([8]),screenRounds:10,
+  // Eight connections were reliable in the prior screen. Sixty-four fixes
+  // per batch can fit a synchronized burst of 500 into those eight workers.
+  screenRounds:10,
 });
 export function directGpsPlan(buses) {
   if(buses===100)return DIRECT_GPS_PLAN;
@@ -71,26 +72,24 @@ function boundedPool(connections) {
 
 export function directGpsComparisonWindows(plan=DIRECT_GPS_PLAN) {
   if(plan!==directGpsPlan(plan.buses))throw Error('DIRECT_GPS_SCOPE');
-  if(plan.workerCandidates)return ['original','optimized'].flatMap(writePath=>
-    plan.workerCandidates.map(dbConnections=>({
-      batchSize:50,pattern:'synchronized',path:'direct_batch',
-      phase:writePath==='original'?'baseline_screen':'worker_screen',
-      writePath,dbConnections,rounds:plan.screenRounds,
-    })));
+  if(plan.screenRounds)return plan.batchSizes.map(batchSize=>({
+    batchSize,pattern:'synchronized',path:'direct_batch',phase:'batch_screen',
+    writePath:'optimized',dbConnections:plan.dbConnections,rounds:plan.screenRounds,
+  }));
   return [...plan.batchSizes,...(plan.compareIndividual===false?[]:[0])].flatMap(batchSize=>
     plan.patterns.map(pattern=>({batchSize,pattern,
       path:batchSize?'direct_batch':'individual_https'})));
 }
 
-export function chooseDirectGpsWorkers(plan,windows) {
+export function chooseDirectGpsBatchSize(plan,windows) {
   if(plan!==DIRECT_GPS_SCALE_PLAN||!Array.isArray(windows))throw Error('DIRECT_GPS_SCOPE');
-  const complete=directGpsComparisonWindows(plan).filter(w=>w.writePath==='optimized');
-  const optimized=windows.filter(w=>w.phase==='worker_screen');
-  if(optimized.length!==complete.length||complete.some(c=>!optimized.some(w=>
-    w.writePath===c.writePath&&w.dbConnections===c.dbConnections&&w.rounds===c.rounds&&
-    w.batchSize===c.batchSize&&w.pattern===c.pattern&&w.classification!=='fatal')))
+  const expected=directGpsComparisonWindows(plan);
+  const screens=windows.filter(w=>w.phase==='batch_screen');
+  if(screens.length!==expected.length||expected.some(e=>!screens.some(w=>
+    w.writePath===e.writePath&&w.dbConnections===e.dbConnections&&w.rounds===e.rounds&&
+    w.batchSize===e.batchSize&&w.pattern===e.pattern&&w.classification!=='fatal')))
     throw Error('DIRECT_GPS_SCREEN_INCOMPLETE');
-  return plan.workerCandidates.find(n=>optimized.some(w=>w.dbConnections===n&&
+  return plan.batchSizes.find(size=>screens.some(w=>w.batchSize===size&&
     w.passed===true&&w.meetsLatencyTarget===true&&w.batchTransactionsReconciled===true))??null;
 }
 
@@ -232,7 +231,7 @@ export function summarizeDirectGpsSqlWindow(before, after, committedTransactions
 }
 
 export async function resizeDirectGpsWorkers({ db, connections, connect, count, plan, evidence }) {
-  if (plan !== directGpsPlan(plan.buses) || !(plan.workerCandidates ?? [plan.dbConnections]).includes(count)) {
+  if (plan !== directGpsPlan(plan.buses) || count !== plan.dbConnections) {
     throw Error('DIRECT_GPS_WORKER_BOUNDS');
   }
   while (connections.length) {
@@ -308,8 +307,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     const tripIds=drivers.map(d=>d.tripId);
     evidence.securityProof=await proveGateway();
     const windows=directGpsComparisonWindows(plan);
-    // Same credentials, schema, batch settings, and burst pattern for each
-    // concurrency screen. Only the lowest passing worker count gets the soak.
+    // Compare batch size with the same optimized write path and connection
+    // count. Only the smallest passing batch size gets the sustained windows.
     for(let wi=0;wi<windows.length;wi++){
       const window=windows[wi];
       const dbConnections=window.dbConnections??plan.dbConnections;
@@ -375,17 +374,18 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if(sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
       // Continue only with reconciled responses; never reset ambiguous writes.
       if(result.classification==='fatal')throw Error('DIRECT_GPS_STAGE_FATAL');
-      if(window.phase==='worker_screen'&&dbConnections===plan.workerCandidates.at(-1)){
-        const chosenWorkers=chooseDirectGpsWorkers(plan,evidence.windows);
-        evidence.selectedWorkers=chosenWorkers;
-        console.log('Direct GPS worker screen: selected='+(chosenWorkers??'none'));
-        if(chosenWorkers===null)throw Error('DIRECT_GPS_NO_PASSING_WORKERS');
-        for(const pattern of plan.patterns)windows.push({batchSize:50,pattern,path:'direct_batch',
-          phase:'sustained',writePath:'optimized',dbConnections:chosenWorkers,rounds:plan.rounds});
+      if(window.phase==='batch_screen'&&wi===windows.length-1){
+        const batchSize=chooseDirectGpsBatchSize(plan,evidence.windows);
+        evidence.selectedBatchSize=batchSize;
+        evidence.selectedWorkers=batchSize===null?null:plan.dbConnections;
+        console.log('Direct GPS batch screen: selected='+(batchSize??'none'));
+        if(batchSize===null)throw Error('DIRECT_GPS_NO_PASSING_BATCH_SCREEN');
+        for(const pattern of plan.patterns)windows.push({batchSize,pattern,path:'direct_batch',
+          phase:'sustained',writePath:'optimized',dbConnections:plan.dbConnections,rounds:plan.rounds});
       }
     }
     evidence.completedAllWindows=evidence.windows.length===windows.length;
-    const qualification=plan.workerCandidates?evidence.windows.filter(w=>w.phase==='sustained'):evidence.windows;
+    const qualification=plan.screenRounds?evidence.windows.filter(w=>w.phase==='sustained'):evidence.windows;
     evidence.passingBatchSizes=plan.batchSizes.filter(size=>
       qualification.filter(w=>w.batchSize===size&&w.passed&&w.batchTransactionsReconciled).length===2);
     if(!evidence.completedAllWindows||!evidence.passingBatchSizes.length)throw Error('DIRECT_GPS_NO_PASSING_BATCH');

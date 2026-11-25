@@ -136,7 +136,7 @@ eviction counter, regressing counters, or a call count that differs from
 committed batches prevents attribution. WAL and block deltas are statement
 counters. Project-wide resource and cost headroom still require hosted evidence.
 
-### 500-bus retry at eight connections
+### 500-bus rollback comparison at eight connections
 
 [Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)
 accepted all 5,000 fixes at eight connections in both short screens. The
@@ -145,13 +145,42 @@ respectively. The optimized twelve-connection screen returned 449 HTTP 503s.
 The artifact confirms restoration and fixture cleanup. The sustained windows
 did not run.
 
-The next 500-bus profile uses eight connections throughout. The private GPS
-wrapper uses one rollback block for a successful batch. A permission denial
+The 500-bus rollback comparison used eight connections throughout. The private
+GPS wrapper uses one rollback block for a successful batch. A permission denial
 rolls back that attempt and replays each fix in the same order, so a denied
 item receives its own 403. Unexpected failures abort the whole transaction.
 JWT validation, driver authorization, per-fix result checks, and acknowledgment
 after commit are still required. The 1,000 ms p99 gate applies to the short
 optimized screen and both sustained windows.
+
+[Run 45544667532](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45544667532)
+tested `ba7c5e083a2622564948b2c2e17636953fddc64d` on November 24 in Alberta.
+The original and optimized write paths each accepted and reconciled all 5,000
+fixes with zero late updates. The p99 was 1,560.3 ms and 1,418.3 ms, respectively.
+For the optimized path, batch wait p99 was 737.2 ms and SQL round trip p99 was
+850.5 ms. Those percentiles describe different populations and cannot be
+added. All 104 optimized batch transactions committed, with zero temporary
+blocks read or written by the batch statement. The
+[artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45544667532/artifacts/14994266805)
+confirms cross-tenant and invalid-token denial, duplicate acknowledgement,
+function restoration and fixture cleanup. Neither screen met 1,000 ms p99, so
+the sustained windows did not start.
+
+### Controlled batch size comparison
+
+The next 500-bus profile compares 50 and 64 fixes per batch on the same
+optimized write path, using eight database connections and ten synchronized
+rounds per screen. A fully queued 500-fix burst needs at least ten batches at
+size 50 or eight at size 64. The comparison tests whether fewer batches reduce
+queue time enough to offset the extra SQL work in each larger batch. Arrival
+timing can still cause partial batches.
+
+The maximum workload remains 10,000 screen fixes and 100,000 sustained fixes.
+Only the smallest size that accepts and reconciles every fix, has zero late
+updates, and meets 1,000 ms p99 proceeds to sustained testing. Both sustained
+patterns use that size and the same gate. An ambiguous outcome stops the run.
+The transaction timeouts, connection cap, authorization checks and cleanup
+remain in force.
 
 ### Revised worker screen on November 24, 2026 (Alberta)
 
