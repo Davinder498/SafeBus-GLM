@@ -4,10 +4,9 @@ import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { verifiedDatabaseClient, assertReviewedCheckout } from './lib/security-workflow-evidence.mjs';
 import { createEnvironmentBinding, assertEnvironmentIdentity } from './lib/environment-identity.mjs';
-import { GPS_ORIGINAL_MD5, GPS_RPC_SIGNATURE } from './lib/recovery-native-gps-comparison.mjs';
+import { GPS_OPTIMIZED_MD5, GPS_ORIGINAL_MD5, GPS_RPC_SIGNATURE } from './lib/recovery-native-gps-comparison.mjs';
 
 const TARGET = 'deladookciebwvqojhkv';
-const OPTIMIZED_MD5 = 'cc339d880a35380907eab09b456739c2';
 const ACL = ['authenticated=X/postgres','postgres=X/postgres','service_role=X/postgres'];
 const sqlFile = 'supabase/migrations/pending/20261109214533_remove_gps_history.sql';
 const SHA = (value) => createHash('sha256').update(value).digest('hex');
@@ -39,14 +38,14 @@ export async function restoreRecoveryGps(db, { definition, target = TARGET } = {
   if (!definition?.includes('CREATE OR REPLACE FUNCTION public.ingest_driver_location_event('))
     throw Error('RECOVERY_GPS_RESTORE_SOURCE');
   const before = await inspect(db);
-  if (![GPS_ORIGINAL_MD5, OPTIMIZED_MD5].includes(before))
+  if (![GPS_ORIGINAL_MD5, GPS_OPTIMIZED_MD5].includes(before))
     throw Error('RECOVERY_GPS_RESTORE_DRIFT');
   await db.query('begin');
   try {
     await db.query("set local lock_timeout='1s';set local statement_timeout='10s'");
     // Emergency closure first. Recovery is an isolated, quarantined test DB.
     await db.query('revoke usage on schema public,safebus_private from authenticated');
-    if (before === OPTIMIZED_MD5) await db.query(definition);
+    if (before === GPS_OPTIMIZED_MD5) await db.query(definition);
     if ((await inspect(db)) !== GPS_ORIGINAL_MD5)
       throw Error('RECOVERY_GPS_RESTORE_FAILED');
     await db.query('commit');

@@ -5,6 +5,7 @@ import { assertCapacityScope, capacityQuarantine } from './recovery-capacity-cle
 // Both environments' existing function catalogs were read-only verified on
 // 2026-11-23. A different base is a reason to stop, not to overwrite.
 export const GPS_ORIGINAL_MD5 = 'a567e385b73bf59ef71a9fc8d47597ad';
+export const GPS_OPTIMIZED_MD5 = 'cc339d880a35380907eab09b456739c2';
 export const GPS_RPC_SIGNATURE =
   'public.ingest_driver_location_event(text,text,uuid,bigint,timestamptz,double precision,double precision,double precision,double precision,double precision,integer,text)';
 const HEARTBEAT_SQL = 'supabase/migrations/pending/20261123095000_bounded_native_tracking_heartbeats.sql';
