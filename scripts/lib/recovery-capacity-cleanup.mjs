@@ -45,7 +45,7 @@ export const capacityGuards = [
   ['profiles', 'protect_final_tenant_admin_delete'],
 ];
 export function capacityAccountCount(buses) {
-  if (buses === 5000) return buses;
+  if (buses === 5000 || buses === 10000) return buses;
   return [10, 100, 500].includes(buses) ? buses + 51 : 0;
 }
 export function assertCapacityScope(s) {

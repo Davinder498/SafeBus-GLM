@@ -264,6 +264,7 @@ export async function measureNativeGps({
   const errors = {};
   let offered = 0;
   let accepted = 0;
+  let lastAcknowledgementMs = null;
   let late = 0;
   let deviceBackpressure = 0;
   let busyInFlight = 0;
@@ -328,6 +329,7 @@ export async function measureNativeGps({
       offered++;
       uploading.add(driver.tripId);
     }
+    let uploadStarted = false;
     const request = Promise.resolve(previous)
       .then(async () => {
         if (queueBusySlots) {
@@ -339,12 +341,15 @@ export async function measureNativeGps({
           offered++;
           uploading.add(driver.tripId);
         }
+        uploadStarted = true;
         return upload(driver, sequence, recordedAt, latitude, signal);
       })
       .then(
         () => {
-          const elapsed = clock() - due;
+          const acknowledgedAt = clock();
+          const elapsed = acknowledgedAt - due;
           latency.push(elapsed);
+          lastAcknowledgementMs = acknowledgedAt - started;
           // Use the real Android pause range upper bound for reproducible A-B-A.
           nextUploadAt.set(driver.tripId, clock() + (queueBusySlots ? 750 : minimumUploadPauseMs));
           if (elapsed > periodMs) late++;
@@ -354,7 +359,7 @@ export async function measureNativeGps({
         },
         (error) => {
           const code = error?.message;
-          if (queueBusySlots && code === "NATIVE_GPS_UNSENT_CANCELLED") {
+          if (!uploadStarted && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
             cancelledBeforeSend++;
             return;
           }
@@ -397,6 +402,8 @@ export async function measureNativeGps({
     planned: slots,
     offered,
     accepted,
+    unsent: slots - offered,
+    unacknowledged: offered - accepted,
     late,
     deviceBackpressure,
     busyInFlight,
@@ -407,6 +414,7 @@ export async function measureNativeGps({
     queueBusySlots,
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
+    lastAcknowledgementMs,
     errors,
     reconciled,
     passed:

@@ -258,12 +258,27 @@ export function seededRandom(seed) {
   };
 }
 
-export function sampledRates(workload, name, scale) {
+export function sampledRates(workload, name, scale, viewerMix) {
   const estimate = estimateScenario(workload, name);
   number(scale, 'sample scale', 0.00001, 1);
-  return Object.fromEntries(
-    Object.entries(estimate.workItemsPerSecond).map(([kind, rate]) => [kind, rate * scale]),
-  );
+  let rates = estimate.workItemsPerSecond;
+  if (viewerMix !== undefined) {
+    const mix = estimateViewerSensitivity(workload).find(
+      row => row.buses === estimate.population.buses && row.mix === viewerMix,
+    );
+    if (!mix) throw new Error('Viewer mix is unavailable for this scenario.');
+    rates = {
+      gps: rates.gps,
+      guardianMapPosition: mix.guardianRpcsPerSecond.mapPosition,
+      guardianMapDetail: mix.guardianRpcsPerSecond.mapDetail,
+      guardianSummary: mix.guardianRpcsPerSecond.summary,
+      adminRead: rates.adminRead,
+      login: rates.login,
+      notification: mix.notificationChannelDeliveriesPerSecond,
+      catchUp: rates.catchUp,
+    };
+  }
+  return Object.fromEntries(Object.entries(rates).map(([kind, rate]) => [kind, rate * scale]));
 }
 
 function percentile(values, fraction) {
@@ -277,6 +292,7 @@ function percentile(values, fraction) {
 export async function runLocalSimulation(workload, options = {}) {
   const {
     scenario = 'pilot',
+    viewerMix,
     scale = 0.1,
     seed = 42,
     durationMs = 5000,
@@ -289,6 +305,7 @@ export async function runLocalSimulation(workload, options = {}) {
     Object.keys(options).filter((key) =>
       [
         'scenario',
+        'viewerMix',
         'scale',
         'seed',
         'durationMs',
@@ -304,7 +321,7 @@ export async function runLocalSimulation(workload, options = {}) {
   integer(fixtureRejectEvery, 'fixture rejection interval', 0, 1000);
   integer(maxInFlight, 'in-flight ceiling', 1, 32);
   const random = seededRandom(seed);
-  const rates = sampledRates(workload, scenario, scale);
+  const rates = sampledRates(workload, scenario, scale, viewerMix);
   const scheduled = Object.fromEntries(
     Object.entries(rates).map(([kind, rate]) => [kind, Math.floor((rate * durationMs) / 1000)]),
   );
@@ -478,6 +495,7 @@ export async function runLocalSimulation(workload, options = {}) {
       providerDeliveriesTested: false,
       target: 'owned-loopback-fixture',
       scenario,
+      ...(viewerMix === undefined ? {} : { viewerMix }),
       scale,
       seed,
       durationMs,

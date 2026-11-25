@@ -15,6 +15,7 @@ pnpm capacity:model
 pnpm capacity:model --scenario=reconnect
 pnpm capacity:simulate
 pnpm capacity:simulate --scenario=peak --scale=0.01 --duration-seconds=10 --seed=42
+pnpm capacity:simulate --scenario=reconnect --viewer-mix=light_viewing --scale=0.004 --duration-seconds=10
 pnpm capacity:simulate --fixture-reject-every=10
 ```
 
@@ -113,8 +114,16 @@ compute size, data, retention policy, runtime cadence or release approval change
 Input version 2 / model report format 2 adds the independent viewer matrix
 specified in [capacity assumptions](../governance/capacity-assumptions.md#current-qualification-preparation--2026-11-17).
 The original six fixed-concurrency scenarios remain explicit historical
-comparisons. The bounded loopback simulator still samples those scenarios; it
-does not run the new matrix, actual RPCs, SQL, sessions, or notification workers.
+comparisons. The bounded loopback simulator uses those historical rates by
+default. With `--viewer-mix`, it uses the selected fleet's current viewer
+matrix for map position, map detail, summary and notification work items. It
+retains the selected scenario's GPS, dispatcher, login, and reconnect rates.
+The fleet must have a viewer matrix row, which currently covers
+`fleet5000`, `normal`, `peak`, and `reconnect` in the CLI.
+
+This sample exercises combined open-loop arrival accounting through the
+synthetic endpoint. Actual RPCs, SQL, sessions, synchronized fleet GPS bursts
+and notification workers require separate evidence.
 
 All 18 local capacity tests passed, including no-viewer notification invariance,
 500/5,000/10,000 arithmetic, role-population accounting, source cadence checks,

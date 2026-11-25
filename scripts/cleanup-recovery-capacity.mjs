@@ -9,7 +9,7 @@ import {
   assertEnvironmentIdentity,
 } from './lib/environment-identity.mjs';
 import { RECOVERY_AUTH_URL, assertRecoveryAuthKeys } from './lib/recovery-auth.mjs';
-import { capacityQuarantine, cleanupCapacity } from './lib/recovery-capacity-cleanup.mjs';
+import { capacityAccountCount, capacityQuarantine, cleanupCapacity } from './lib/recovery-capacity-cleanup.mjs';
 import { quarantineCapacity, capacityFetch } from './lib/recovery-capacity-lifecycle.mjs';
 import { checkedCapacityAuth } from './lib/recovery-capacity-auth.mjs';
 import { recoverCapacityScope } from './lib/recovery-capacity-recovery.mjs';
@@ -34,7 +34,7 @@ try {
     process.env.GITHUB_REF !== 'refs/heads/main' ||
     process.env.SAFEBUS_CAPACITY_CONFIRM !== 'CLEANUP_RECOVERY_CAPACITY' ||
     !/^\d+-\d+$/.test(run ?? '') ||
-    ![10, 100, 500, 5000].includes(buses)
+    !capacityAccountCount(buses)
   )
     throw Error('CAPACITY_CLEANUP_WORKFLOW_REQUIRED');
   const url = new URL(process.env.SAFEBUS_CAPACITY_DATABASE_URL);
@@ -76,7 +76,7 @@ try {
   await quarantineCapacity(db);
   const fingerprint = await calculateSchemaFingerprint(db);
   stage = 'ownership';
-  // Recovery accepts only fully identified fixtures. A 5,000-bus run may stop during provisioning.
+  // Recovery accepts only fully identified fixtures, including interrupted provisioning.
   const tenants = (await db.query('select id,name,type from public.tenants order by name')).rows;
   const users = (
     await db.query("select id,email,raw_app_meta_data->>'safebus_capacity_run' run from auth.users")

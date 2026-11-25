@@ -167,7 +167,7 @@ export function classifyRecoveryGpsStage(result) {
  * drain all HTTP work and quarantine the Data API first. No trigger bypass. */
 export async function resetRecoveryGpsWindow(db, scope, tripIds) {
   assertCapacityScope(scope);
-  if (![100,500].includes(scope.buses) || tripIds.length !== scope.buses || new Set(tripIds).size !== scope.buses)
+  if (![100,500,10000].includes(scope.buses) || tripIds.length !== scope.buses || new Set(tripIds).size !== scope.buses)
     throw Error('CAPACITY_GPS_WINDOW_SCOPE');
   await capacityQuarantine(db);
   await db.query('begin');
