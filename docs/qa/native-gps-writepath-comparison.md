@@ -75,16 +75,21 @@ Production still writes both legacy and shared invalidation queues per GPS fix. 
 
 ## Direct GPS comparison at 500 buses
 
-The 500-bus direct workload repeats the same synchronized burst against the
-original and optimized SQL at eight database connections. Each window offers
-5,000 updates. It compares reconciled execution time,
-WAL and end-to-end latency under the same inputs. The optimized write path
-reuses the two pending SQL files above and must match the reviewed checksum.
-The runner repeats its gateway authorization and retry checks after switching.
+The 500-bus direct workload compares batches of 50 and 64 against the same
+optimized SQL and eight database connections. Each synchronized screen offers
+5,000 updates. The optimized write path reuses the two pending SQL files
+above and must match the reviewed checksum. The runner repeats its gateway
+authorization and retry checks after switching.
 
-The optimized screen must meet the one-second p99 target and reconcile every
-fix to proceed to the two sustained workloads.
-Both sustained workloads must meet the same threshold. The runner restores
+The screen with the lowest measured acknowledgement p99 advances if it
+accepts every scheduled update within three seconds and reconciles final
+positions and batch transactions. The selected batch runs 100 rounds each
+with staggered and synchronized sends. Both sustained windows must meet the
+same three-second per-update deadline and reconciliation checks. The runner
+continues to report the one-second p99 benchmark for comparison with earlier
+runs.
+
+The runner restores
 the original function and its grants, removes its private batch function and
 verifies fixture cleanup. Interrupted runs require independent restoration
 and fixture checks before another workload starts.

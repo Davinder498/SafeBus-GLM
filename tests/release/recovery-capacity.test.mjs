@@ -111,11 +111,15 @@ test('native GPS runner issues two separate requests per driver for a 10,000-bus
           recordedAt: payload.p_recorded_at,
         });
       }
+      now += 750;
       return true;
     },
   });
   assert.equal(eventIds.size, 20_000);
   assert.equal(result.accepted, 20_000);
+  assert.equal(result.lastAcknowledgementMs, 3000);
+  assert.equal(result.loadElapsedMs, 3000);
+  assert.equal(result.positionVerificationMs, 750);
   assert.equal(result.passed, true);
 });
 
@@ -192,6 +196,9 @@ test('native GPS runner rejects stale acknowledgements and reports unsent load',
   assert.equal(result.planned, 4);
   assert.equal(result.offered, 2);
   assert.equal(result.accepted, 0);
+  assert.equal(result.lastAcknowledgementMs, null);
+  assert.equal(result.loadElapsedMs, 3000);
+  assert.equal(result.positionVerificationMs, null);
   assert.deepEqual(result.errors, { NATIVE_GPS_ACK_MISMATCH: 2 });
   assert.equal(result.passed, false);
 });

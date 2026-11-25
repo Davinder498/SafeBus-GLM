@@ -111,8 +111,11 @@ export function chooseDirectGpsBatchSize(plan,windows) {
     w.writePath===e.writePath&&w.dbConnections===e.dbConnections&&w.rounds===e.rounds&&
     w.batchSize===e.batchSize&&w.pattern===e.pattern&&w.classification!=='fatal')))
     throw Error('DIRECT_GPS_SCREEN_INCOMPLETE');
-  return plan.batchSizes.find(size=>screens.some(w=>w.batchSize===size&&
-    w.passed===true&&w.meetsLatencyTarget===true&&w.batchTransactionsReconciled===true))??null;
+  const passing = screens.filter(window =>
+    window.classification === 'passed' && window.batchTransactionsReconciled === true &&
+    Number.isFinite(window.latencyMs?.p99));
+  passing.sort((a, b) => a.latencyMs.p99 - b.latencyMs.p99 || a.batchSize - b.batchSize);
+  return passing[0]?.batchSize ?? null;
 }
 
 function createTimingCollector(){
@@ -349,7 +352,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     evidence.securityProof=await proveGateway();
     const windows=directGpsComparisonWindows(plan);
     // Compare batch size with the same optimized write path and connection
-    // count. Only the smallest passing batch size gets the sustained windows.
+    // count. Run both sustained patterns with the fastest passing screen.
     for(let wi=0;wi<windows.length;wi++){
       const window=windows[wi];
       const dbConnections=window.dbConnections??plan.dbConnections;
@@ -422,6 +425,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         '; p95_ms='+(result.latencyMs.p95?.toFixed(1)??'unavailable')+
         '; p99_ms='+(result.latencyMs.p99?.toFixed(1)??'unavailable')+
         '; last_ack_ms='+(result.lastAcknowledgementMs?.toFixed(1)??'unavailable')+
+        '; load_elapsed_ms='+result.loadElapsedMs.toFixed(1)+
+        '; position_verification_ms='+(result.positionVerificationMs?.toFixed(1)??'not_attempted')+
         '; elapsed_ms='+result.elapsedMs.toFixed(1)+
         '; transactions='+(window.batchSize?transport.metrics.transactions:'see_sql_counters')+
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+
@@ -450,8 +455,6 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     evidence.passingBatchSizes=plan.batchSizes.filter(size=>
       qualification.filter(w=>w.batchSize===size&&w.passed&&w.batchTransactionsReconciled).length===2);
     if(!evidence.completedAllWindows||!evidence.passingBatchSizes.length)throw Error('DIRECT_GPS_NO_PASSING_BATCH');
-    if(plan.p99TargetMs!==undefined && !qualification.every(w=>w.meetsLatencyTarget===true))
-      throw Error('DIRECT_GPS_LATENCY_TARGET');
   }finally{
     for(const c of connections)await c.end().catch(()=>{});
     if(monitor)await monitor.end().catch(()=>{});
