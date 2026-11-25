@@ -253,6 +253,11 @@ window time. The runner can stop on transport, integrity or isolation failures.
 The one-second p99 threshold does not apply to this profile. This run covers
 synthetic GPS ingestion only, with the existing gateway and database limits.
 
+The evidence records driver token lifetime at each existing session gate.
+It includes the required and minimum remaining time and counts of missing or
+short expiries. This makes setup failures visible before GPS measurement.
+The evidence contains no identities or token values.
+
 For each direct batch window, `gatewayAdmission` records the gateway's peak
 admitted fixes and the number refused at its admission limit. It also records
 the loopback HTTP server's connection limit and the number of sockets dropped

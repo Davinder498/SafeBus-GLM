@@ -13,6 +13,29 @@ export function checkedCapacityAuth(result) {
   return result.data;
 }
 
+export function summarizeCapacitySessionWindow(accounts, requiredRemainingMs, now = Date.now()) {
+  let minimumRemainingMs = null;
+  let invalidExpiryCount = 0;
+  let shortExpiryCount = 0;
+  for (const { expiresAt } of accounts) {
+    if (!Number.isFinite(expiresAt)) {
+      invalidExpiryCount++;
+      continue;
+    }
+    const remainingMs = expiresAt - now;
+    minimumRemainingMs = minimumRemainingMs === null ? remainingMs : Math.min(minimumRemainingMs, remainingMs);
+    if (remainingMs < requiredRemainingMs) shortExpiryCount++;
+  }
+  return {
+    driverCount: accounts.length,
+    requiredRemainingMs,
+    minimumRemainingMs,
+    invalidExpiryCount,
+    shortExpiryCount,
+    passed: accounts.length > 0 && invalidExpiryCount === 0 && shortExpiryCount === 0,
+  };
+}
+
 // Sequential fixture sign-ins, outside measured load. Preserve provider limits.
 // Default token limit is 150 / 5 minutes. The isolated 5,000-driver run
 // uses a separately configured quota and does not depend on its initial burst.

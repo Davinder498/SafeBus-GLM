@@ -52,6 +52,7 @@ import {
 import {
   checkedCapacityAuth,
   createCapacityLogin,
+  summarizeCapacitySessionWindow,
 } from "./lib/recovery-capacity-auth.mjs";
 import { sendRecoveryProbe } from "./lib/recovery-broadcast-readiness.mjs";
 import {
@@ -106,6 +107,7 @@ const evidence = {
     rateLimitRetries: 0,
     retryWaitMs: 0,
     minimumLoginIntervalMs: loginIntervalMs,
+    sessionWindows: [],
   },
   capacityQualified: false,
   limitations: nativeGpsOnly
@@ -439,15 +441,7 @@ try {
     }
     phaseComplete("driver-sign-ins-complete");
     stage = "android-session-window";
-    const expiresAfter = Date.now() + 300000;
-    if (
-      accounts.slice(0,buses).some(
-        (account) =>
-          !Number.isFinite(account.expiresAt) ||
-          account.expiresAt < expiresAfter,
-      )
-    )
-      throw Error("CAPACITY_AUTH_SESSION_WINDOW");
+    requireDriverSessionWindow(300000);
   }
   if (!scaledDirectRun) await db.query(
     "grant usage on schema public,safebus_private to authenticated",
@@ -456,10 +450,7 @@ try {
     stage = "gps-comparison-preflight";
     if (sustainedGpsCompare) {
       // No JWT renewal during measured traffic; allow the entire A-B-A plus margin.
-      const expiresAfter = Date.now() + comparisonPlan.phaseDurationMs * 3 + 180000;
-      if (accounts.slice(0, buses).some(account =>
-        !Number.isFinite(account.expiresAt) || account.expiresAt < expiresAfter))
-        throw Error("CAPACITY_AUTH_SESSION_WINDOW");
+      requireDriverSessionWindow(comparisonPlan.phaseDurationMs * 3 + 180000);
     }
     if (sustainedGpsCompare) {
       monitorDb = await connect("safebus-capacity-gps-monitor");
@@ -489,8 +480,7 @@ try {
   } else if (directCompare) {
     stage = "direct-gps-comparison";
     const remainingSessionMs = (directTimingRun ? 5 : scaledDirectRun ? 20 : 15) * 60 * 1000;
-    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + remainingSessionMs))
-      throw Error("CAPACITY_AUTH_SESSION_WINDOW");
+    requireDriverSessionWindow(remainingSessionMs);
     evidence.directGpsComparison = { plan: directPlan, windows: [], restored: false, capacityQualified: false };
     await runRecoveryDirectGpsComparison({
       db, scope, drivers: nativeDrivers, plan: directPlan, evidence: evidence.directGpsComparison,
@@ -585,6 +575,11 @@ async function signInAccount(account, password) {
     throw Error("CAPACITY_LOGIN_MISMATCH");
   account.token = login.session.access_token;
   account.expiresAt = login.session.expires_at * 1000;
+}
+function requireDriverSessionWindow(requiredRemainingMs) {
+  const window = summarizeCapacitySessionWindow(accounts.slice(0, buses), requiredRemainingMs);
+  evidence.authSetup.sessionWindows.push({ stage, ...window });
+  if (!window.passed) throw Error("CAPACITY_AUTH_SESSION_WINDOW");
 }
 async function runNativeGps(drivers, { phase = null, sequenceOffset = 0 } = {}) {
   const transport = createNativeGpsTransport();

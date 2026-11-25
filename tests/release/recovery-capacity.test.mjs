@@ -323,7 +323,48 @@ test('batch results cannot hide reported worker failures or missing dispatches',
 import {
   checkedCapacityAuth,
   createCapacityLogin,
+  summarizeCapacitySessionWindow,
 } from '../../scripts/lib/recovery-capacity-auth.mjs';
+
+test('driver session evidence reports expiry margin without identities or tokens', () => {
+  const now = 1_000_000;
+  const atGate = { expiresAt: now + 300_000, token: 'fixture-token', id: 'fixture-driver' };
+  assert.deepEqual(summarizeCapacitySessionWindow([atGate], 300_000, now), {
+    driverCount: 1, requiredRemainingMs: 300_000, minimumRemainingMs: 300_000,
+    invalidExpiryCount: 0, shortExpiryCount: 0, passed: true,
+  });
+  const accounts = [atGate, { expiresAt: now + 299_999 }, { expiresAt: now - 1 }, {}];
+  assert.deepEqual(summarizeCapacitySessionWindow(accounts, 300_000, now), {
+    driverCount: 4, requiredRemainingMs: 300_000, minimumRemainingMs: -1,
+    invalidExpiryCount: 1, shortExpiryCount: 2, passed: false,
+  });
+  assert.equal(summarizeCapacitySessionWindow([{}], 300_000, now).minimumRemainingMs, null);
+  assert.equal(summarizeCapacitySessionWindow([], 300_000, now).passed, false);
+});
+
+test('10,000 simulated sign-ins report a short token window after bounded retry backoff', async () => {
+  let now = 0;
+  const accounts = [];
+  const login = createCapacityLogin({
+    minimumIntervalMs: 250,
+    clock: () => now,
+    wait: async ms => { now += ms; },
+  });
+  for (let i = 0; i < 10_000; i++) {
+    let attempt = 0;
+    accounts.push(await login(async () => {
+      now += 320;
+      if (i < 8 && attempt++ < 2) return { error: { status: 429 } };
+      return { data: { expiresAt: Math.floor(now / 1000) * 1000 + 3_600_000 } };
+    }));
+  }
+  const window = summarizeCapacitySessionWindow(accounts, 300_000, now);
+  assert.equal(window.driverCount, 10_000);
+  assert.equal(window.minimumRemainingMs, 289_880);
+  assert.equal(window.invalidExpiryCount, 0);
+  assert.ok(window.shortExpiryCount > 0);
+  assert.equal(window.passed, false);
+});
 
 test('capacity setup sustains 551 sign-ins without exhausting a 150/5-minute token bucket', async () => {
   let now = 0,
