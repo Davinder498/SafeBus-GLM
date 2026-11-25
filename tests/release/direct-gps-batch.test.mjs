@@ -105,7 +105,9 @@ test('500-bus qualification screens bounded worker counts without replaying indi
   assert.equal(plan.p99TargetMs,1000);
   assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
   assert.deepEqual(plan.workerCandidates,[4,8,12]);
-  assert.deepEqual(directGpsComparisonWindows(plan),[4,8,12].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:10})));
+  assert.deepEqual(directGpsComparisonWindows(plan),['original','optimized'].flatMap(writePath=>
+    [4,8,12].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',
+      phase:writePath==='original'?'baseline_screen':'worker_screen',writePath,dbConnections,rounds:10}))));
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
   for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
@@ -135,13 +137,13 @@ test('worker screen selects the lowest passing configuration and rejects incompl
   const plan=directGpsPlan(500);
   const windows=directGpsComparisonWindows(plan).map(w=>({...w,classification:'passed',passed:true,meetsLatencyTarget:true,batchTransactionsReconciled:true}));
   assert.equal(chooseDirectGpsWorkers(plan,windows),4);
-  windows[0].meetsLatencyTarget=false;
+  windows[3].meetsLatencyTarget=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),8);
-  windows[1].passed=false;
+  windows[4].passed=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),12);
-  windows[2].batchTransactionsReconciled=false;
+  windows[5].batchTransactionsReconciled=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),null);
-  assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,2)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
+  assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,-1)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
 });
 
 test('Recovery worker resize stays within the session-pool budget and records an open failure', async () => {

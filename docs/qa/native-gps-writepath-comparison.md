@@ -72,3 +72,19 @@ A dedicated observation connection samples aggregate active wait types, lock wai
 The production history cleanup timeout repair in `20261122004653_tracking_history_worker_timeout.sql` was installed on 2026-11-24 UTC after a rollback rehearsal against the exact production function/job hashes and a guarded transaction. The installed command hash is `b3af6d0df7a9ca40b8bfb025adadb7c8`. This changes only the minute cleanup job statement budget from 750 ms to 8 s, retaining its 100 ms lock timeout and existing bounded 48-hour retention rules. The first observed scheduled execution succeeded in 1.550 s; sustained success remains to be checked. The existing operational release can reconcile the installed state.
 
 Production still writes both legacy and shared invalidation queues per GPS fix. The existing shared producer coalescing migration is now wired into the protected operational release as `shared_tracking_producer_coalescing`, with the observed production function checksum, predicted post-change checksum (derived from the live catalog and reviewed SQL body), exact source digest, rollback rehearsal, and read-only trigger/privilege verification. It is **not installed**. Before installation verify legacy Android polling and current shared-channel behavior, then use the protected release and observe freshness and queues. Do not deploy the native GPS optimizations on the basis of the failed Recovery comparison. Neither cleanup nor coalescing establishes capacity at 10,000 buses.
+
+## Direct GPS comparison at 500 buses
+
+The 500-bus direct workload repeats the same synchronized burst against the
+original and optimized SQL, using 4, 8 and 12 database connections in each
+case. Each window offers 5,000 updates. It compares reconciled execution time,
+WAL and end-to-end latency under the same inputs. The optimized write path
+reuses the two pending SQL files above and must match the reviewed checksum.
+The runner repeats its gateway authorization and retry checks after switching.
+
+Only the lowest optimized connection count that meets the one-second p99
+target and reconciles every fix proceeds to the two sustained workloads.
+Both sustained workloads must meet the same threshold. The runner restores
+the original function and its grants, removes its private batch function and
+verifies fixture cleanup. Interrupted runs require independent restoration
+and fixture checks before another workload starts.

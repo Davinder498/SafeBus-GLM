@@ -6,7 +6,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { RECOVERY_AUTH_URL } from './recovery-auth.mjs';
 import { assertCapacityScope, capacityQuarantine } from './recovery-capacity-cleanup.mjs';
 import { quarantineCapacity } from './recovery-capacity-lifecycle.mjs';
-import { GPS_ORIGINAL_MD5, GPS_RPC_SIGNATURE, resetRecoveryGpsWindow,
+import { GPS_ORIGINAL_MD5, GPS_OPTIMIZED_MD5, GPS_RPC_SIGNATURE, createRecoveryGpsComparison,
+  resetRecoveryGpsWindow,
   sampleRecoveryGpsDatabase, classifyRecoveryGpsStage } from './recovery-native-gps-comparison.mjs';
 import { createNativeGpsTransport, createNativeGpsUpload, measureNativeGps,
   verifyNativeGpsPositions } from './recovery-native-gps-load.mjs';
@@ -71,9 +72,12 @@ function boundedPool(connections) {
 
 export function directGpsComparisonWindows(plan=DIRECT_GPS_PLAN) {
   if(plan!==directGpsPlan(plan.buses))throw Error('DIRECT_GPS_SCOPE');
-  if(plan.workerCandidates)return plan.workerCandidates.map(dbConnections=>({
-    batchSize:50,pattern:'synchronized',path:'direct_batch',phase:'worker_screen',dbConnections,rounds:plan.screenRounds,
-  }));
+  if(plan.workerCandidates)return ['original','optimized'].flatMap(writePath=>
+    plan.workerCandidates.map(dbConnections=>({
+      batchSize:50,pattern:'synchronized',path:'direct_batch',
+      phase:writePath==='original'?'baseline_screen':'worker_screen',
+      writePath,dbConnections,rounds:plan.screenRounds,
+    })));
   return [...plan.batchSizes,...(plan.compareIndividual===false?[]:[0])].flatMap(batchSize=>
     plan.patterns.map(pattern=>({batchSize,pattern,
       path:batchSize?'direct_batch':'individual_https'})));
@@ -81,12 +85,13 @@ export function directGpsComparisonWindows(plan=DIRECT_GPS_PLAN) {
 
 export function chooseDirectGpsWorkers(plan,windows) {
   if(plan!==DIRECT_GPS_SCALE_PLAN||!Array.isArray(windows))throw Error('DIRECT_GPS_SCOPE');
-  const complete=directGpsComparisonWindows(plan);
-  if(windows.length!==complete.length||complete.some(c=>!windows.some(w=>
-    w.phase===c.phase&&w.dbConnections===c.dbConnections&&w.rounds===c.rounds&&
+  const complete=directGpsComparisonWindows(plan).filter(w=>w.writePath==='optimized');
+  const optimized=windows.filter(w=>w.phase==='worker_screen');
+  if(optimized.length!==complete.length||complete.some(c=>!optimized.some(w=>
+    w.writePath===c.writePath&&w.dbConnections===c.dbConnections&&w.rounds===c.rounds&&
     w.batchSize===c.batchSize&&w.pattern===c.pattern&&w.classification!=='fatal')))
     throw Error('DIRECT_GPS_SCREEN_INCOMPLETE');
-  return plan.workerCandidates.find(n=>windows.some(w=>w.phase==='worker_screen'&&w.dbConnections===n&&
+  return plan.workerCandidates.find(n=>optimized.some(w=>w.dbConnections===n&&
     w.passed===true&&w.meetsLatencyTarget===true&&w.batchTransactionsReconciled===true))??null;
 }
 
@@ -263,11 +268,28 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     throw Error('DIRECT_GPS_WORKFLOW_REQUIRED');
   await assertTarget(db,scope,plan);
   const connections=[];
-  let installed=false,monitor,pool;
+  let installed=false,monitor,pool,writePathComparison;
   async function resizePool(count){
     if (connections.length === count) return;
     await resizeDirectGpsWorkers({ db, connections, connect, count, plan, evidence });
     pool=boundedPool(connections);
+  }
+  async function proveGateway() {
+    // Real hosted JWT, foreign driver, and corrupt token through actual gateway.
+    const proof=await directTransport({pool,auth,batchSize:10,signal,plan});
+    try{
+      const fix=payload(drivers[0],1,new Date().toISOString(),capacityGpsLatitude(1));
+      const denied=await proof.send({...drivers[0],accessToken:drivers[1].accessToken},fix);
+      const invalid=await proof.send({...drivers[0],accessToken:'invalid.jwt.signature'},fix);
+      if(denied.status!==403||invalid.status!==401)throw Error('DIRECT_GPS_SCOPE_DENIAL');
+      const first=await proof.send(drivers[0],fix);
+      const retry=await proof.send(drivers[0],fix);
+      if(first.status!==200||first.body?.accepted!==true||first.body.duplicate!==false||
+        retry.status!==200||retry.body?.accepted!==true||retry.body.duplicate!==true||
+        !await verifyNativeGpsPositions(db,new Map([[drivers[0].tripId,{sequence:1,recordedAt:fix.p_recorded_at,latitude:fix.p_latitude}]])))
+        throw Error('DIRECT_GPS_REPLAY_PROOF');
+      return {crossTenantDenied:true,invalidJwtDenied:true,committedPositionVerified:true,duplicateAcknowledged:true};
+    }finally{await proof.close();}
   }
   try{
     await quarantineCapacity(db);
@@ -285,23 +307,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     monitor=await connect('safebus-direct-gps-monitor');
     await resizePool(plan.dbConnections);
     const tripIds=drivers.map(d=>d.tripId);
-    // Real hosted JWT, foreign driver, and corrupt token through actual gateway.
-    const proof=await directTransport({pool,auth,batchSize:10,signal,plan});
-    try{
-      const fix=payload(drivers[0],1,new Date().toISOString(),capacityGpsLatitude(1));
-      const denied=await proof.send({...drivers[0],accessToken:drivers[1].accessToken},fix);
-      const invalid=await proof.send({...drivers[0],accessToken:'invalid.jwt.signature'},fix);
-      if(denied.status!==403||invalid.status!==401)throw Error('DIRECT_GPS_SCOPE_DENIAL');
-      const first=await proof.send(drivers[0],fix);
-      const retry=await proof.send(drivers[0],fix);
-      if(first.status!==200||first.body?.accepted!==true||first.body.duplicate!==false||
-        retry.status!==200||retry.body?.accepted!==true||retry.body.duplicate!==true||
-        !await verifyNativeGpsPositions(db,new Map([[drivers[0].tripId,{sequence:1,recordedAt:fix.p_recorded_at,latitude:fix.p_latitude}]])))
-        throw Error('DIRECT_GPS_REPLAY_PROOF');
-      evidence.securityProof={crossTenantDenied:true,invalidJwtDenied:true,committedPositionVerified:true,duplicateAcknowledged:true};
-    }finally{await proof.close();}
+    evidence.securityProof=await proveGateway();
     const windows=directGpsComparisonWindows(plan);
-    let chosenWorkers=null;
     // Same credentials, schema, batch settings, and burst pattern for each
     // concurrency screen. Only the lowest passing worker count gets the soak.
     for(let wi=0;wi<windows.length;wi++){
@@ -311,6 +318,14 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if(signal?.aborted)throw Error('CAPACITY_STOP_REQUESTED');
       await quarantineCapacity(db);
       await resetRecoveryGpsWindow(db,scope,tripIds);
+      if(window.writePath==='optimized'&&!writePathComparison){
+        writePathComparison=await createRecoveryGpsComparison(db);
+        const {md5}=await writePathComparison.install();
+        if(md5!==GPS_OPTIMIZED_MD5)throw Error('DIRECT_GPS_OPTIMIZED_DRIFT');
+        evidence.optimizedWritePath={md5,migrationsSha256:writePathComparison.evidence.migrationsSha256,
+          securityProof:await proveGateway()};
+        await resetRecoveryGpsWindow(db,scope,tripIds);
+      }
       // Direct phase keeps PostgREST quarantined. Individual phase is the
       // existing authenticated HTTPS path, with no wrapper calls.
       if(!window.batchSize){
@@ -361,13 +376,13 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if(sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
       // Continue only with reconciled responses; never reset ambiguous writes.
       if(result.classification==='fatal')throw Error('DIRECT_GPS_STAGE_FATAL');
-      if(plan.workerCandidates&&wi===plan.workerCandidates.length-1){
-        chosenWorkers=chooseDirectGpsWorkers(plan,evidence.windows);
+      if(window.phase==='worker_screen'&&dbConnections===plan.workerCandidates.at(-1)){
+        const chosenWorkers=chooseDirectGpsWorkers(plan,evidence.windows);
         evidence.selectedWorkers=chosenWorkers;
         console.log('Direct GPS worker screen: selected='+(chosenWorkers??'none'));
         if(chosenWorkers===null)throw Error('DIRECT_GPS_NO_PASSING_WORKERS');
         for(const pattern of plan.patterns)windows.push({batchSize:50,pattern,path:'direct_batch',
-          phase:'sustained',dbConnections:chosenWorkers,rounds:plan.rounds});
+          phase:'sustained',writePath:'optimized',dbConnections:chosenWorkers,rounds:plan.rounds});
       }
     }
     evidence.completedAllWindows=evidence.windows.length===windows.length;
@@ -382,9 +397,13 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
     if(monitor)await monitor.end().catch(()=>{});
     if(installed){
       await quarantineCapacity(db);
-      // Exact wrapper created by this isolated run only. Original RPC untouched.
-      await db.query('drop function '+signature);
-      await capacityQuarantine(db);
+      try{
+        if(writePathComparison)await writePathComparison.restore();
+      }finally{
+        // Remove only the private wrapper created by this isolated run.
+        await db.query('drop function '+signature);
+        await capacityQuarantine(db);
+      }
       const {rows:[r]}=await db.query('select to_regprocedure($1) is null as absent,md5(replace(pg_get_functiondef(to_regprocedure($2)),chr(13),\'\')) as original',[signature,GPS_RPC_SIGNATURE]);
       if(!r?.absent||r.original!==GPS_ORIGINAL_MD5)throw Error('DIRECT_GPS_RESTORE_FAILED');
       evidence.restored=true;
