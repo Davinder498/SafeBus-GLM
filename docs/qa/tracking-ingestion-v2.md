@@ -136,6 +136,23 @@ eviction counter, regressing counters, or a call count that differs from
 committed batches prevents attribution. WAL and block deltas are statement
 counters. Project-wide resource and cost headroom still require hosted evidence.
 
+### 500-bus retry at eight connections
+
+[Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)
+accepted all 5,000 fixes at eight connections in both short screens. The
+original and optimized GPS functions measured 1,467.7 ms and 1,355.6 ms p99,
+respectively. The optimized twelve-connection screen returned 449 HTTP 503s.
+The artifact confirms restoration and fixture cleanup. The sustained windows
+did not run.
+
+The next 500-bus profile uses eight connections throughout. The private GPS
+wrapper uses one rollback block for a successful batch. A permission denial
+rolls back that attempt and replays each fix in the same order, so a denied
+item receives its own 403. Unexpected failures abort the whole transaction.
+JWT validation, driver authorization, per-fix result checks, and acknowledgment
+after commit are still required. The 1,000 ms p99 gate applies to the short
+optimized screen and both sustained windows.
+
 ### Revised worker screen on November 24, 2026 (Alberta)
 
 [Run 45510134719](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45510134719)

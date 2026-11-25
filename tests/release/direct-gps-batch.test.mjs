@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import {once} from 'node:events';
@@ -55,6 +56,44 @@ test('HTTP to embedded PostgreSQL: commit, duplicate, denial, MFA and session re
   assert.equal(Number((await db.query('select count(*) as n from tracking_test_signals')).rows[0].n),2);
   assert.ok(transactions>=6);
 });
+
+test('mixed batches retry a denial without duplicate writes and roll back on unexpected errors',async t=>{
+  const db=await installed();t.after(()=>db.close());
+  const {run,device}=await setup(db);
+  await db.exec(sql);
+  const record=async items=>(await db.query(
+    'select safebus_private.ingest_verified_driver_location_batch($1::jsonb) as result',
+    [JSON.stringify(items)],
+  )).rows[0].result;
+  const digest=value=>createHash('sha256').update(value).digest('hex');
+  // Put the denied fix after the authorized write so a leaked write would
+  // make the retry acknowledge a duplicate instead of a new position.
+  const [validCredential,deniedCredential]=['a','b'].map(char=>'sbus_device_v1_'+char.repeat(43))
+    .sort((a,b)=>digest(a).localeCompare(digest(b)));
+  await db.query(`update public.driver_tracking_devices
+    set credential_hash=safebus_private.hash_driver_device_credential($1)
+    where installation_id=$2`,[validCredential,device.installationId]);
+  device.deviceCredential=validCredential;
+  const c=claims();
+  const first={id:'first',claims:c,fix:payload(run,device,1,await time(db,'-10 seconds'))};
+  const denied={id:'denied',claims:c,fix:{...first.fix,p_device_credential:deniedCredential}};
+  const rejected={id:'rejected',claims:{...c,role:'anon'},fix:{...first.fix,p_device_credential:'other'}};
+  const replies=new Map((await record([denied,rejected,first])).map(reply=>[reply.id,reply]));
+  assert.equal(replies.get('first').status,200);
+  assert.equal(replies.get('first').body.accepted,true);
+  assert.equal(replies.get('first').body.duplicate,false);
+  assert.equal(replies.get('denied').status,403);
+  assert.equal(replies.get('rejected').status,401);
+  const count=async()=>Number((await db.query('select count(*) as n from tracking_test_signals')).rows[0].n);
+  assert.equal(await count(),1);
+
+  const second={id:'second',claims:c,fix:payload(run,device,2,await time(db,'-5 seconds'))};
+  const invalid={...denied,fix:{...denied.fix,p_event_id:'invalid'}};
+  await assert.rejects(record([second,invalid]),{code:'22P02'});
+  assert.equal(await count(),1);
+  assert.equal((await record([second]))[0].body.duplicate,false);
+  assert.equal(await count(),2);
+});
 test('microbatch groups independent verified devices, returns only after writer completion',async()=>{
   const sizes=[];let release,started;
   const began=new Promise(r=>started=r);
@@ -95,19 +134,19 @@ test('hosted direct comparison is bounded and compares identical 100-bus pattern
   for(const size of DIRECT_GPS_PLAN.batchSizes)assert.deepEqual(windows.filter(w=>w.batchSize===size).map(w=>w.pattern),['staggered','synchronized']);
 });
 
-test('500-bus qualification screens bounded worker counts without replaying individual ingestion',async()=>{
+test('500-bus qualification repeats the eight-connection screen without replaying individual ingestion',async()=>{
   const {DIRECT_GPS_SCALE_PLAN,directGpsPlan,directGpsComparisonWindows}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   assert.equal(directGpsPlan(500),DIRECT_GPS_SCALE_PLAN);
   const plan=directGpsPlan(500);
   assert.equal(plan.rounds,100);
-  assert.equal(plan.dbConnections,4);
+  assert.equal(plan.dbConnections,8);
   assert.equal(plan.batchWaitMs,50);
   assert.equal(plan.p99TargetMs,1000);
   assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
-  assert.deepEqual(plan.workerCandidates,[4,8,12]);
-  assert.deepEqual(directGpsComparisonWindows(plan),['original','optimized'].flatMap(writePath=>
-    [4,8,12].map(dbConnections=>({batchSize:50,pattern:'synchronized',path:'direct_batch',
-      phase:writePath==='original'?'baseline_screen':'worker_screen',writePath,dbConnections,rounds:10}))));
+  assert.deepEqual(plan.workerCandidates,[8]);
+  assert.deepEqual(directGpsComparisonWindows(plan),['original','optimized'].map(writePath=>
+    ({batchSize:50,pattern:'synchronized',path:'direct_batch',
+      phase:writePath==='original'?'baseline_screen':'worker_screen',writePath,dbConnections:8,rounds:10})));
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
   for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
@@ -132,16 +171,15 @@ test('batch writer uses exactly three database commands and retains all local de
   assert.ok(timing.every(t=>Number.isFinite(t.ms)&&t.ms>=0&&t.count===1));
 });
 
-test('worker screen selects the lowest passing configuration and rejects incomplete evidence',async()=>{
+test('worker screen requires a passing optimized window and complete evidence',async()=>{
   const {directGpsPlan,directGpsComparisonWindows,chooseDirectGpsWorkers}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   const plan=directGpsPlan(500);
   const windows=directGpsComparisonWindows(plan).map(w=>({...w,classification:'passed',passed:true,meetsLatencyTarget:true,batchTransactionsReconciled:true}));
-  assert.equal(chooseDirectGpsWorkers(plan,windows),4);
-  windows[3].meetsLatencyTarget=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),8);
-  windows[4].passed=false;
-  assert.equal(chooseDirectGpsWorkers(plan,windows),12);
-  windows[5].batchTransactionsReconciled=false;
+  windows[1].meetsLatencyTarget=false;
+  assert.equal(chooseDirectGpsWorkers(plan,windows),null);
+  windows[1].meetsLatencyTarget=true;
+  windows[1].batchTransactionsReconciled=false;
   assert.equal(chooseDirectGpsWorkers(plan,windows),null);
   assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,-1)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
 });
@@ -150,7 +188,7 @@ test('Recovery worker resize stays within the session-pool budget and records an
   const { directGpsPlan, resizeDirectGpsWorkers } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   const plan = directGpsPlan(500);
   const evidence = {};
-  let activeWorkers = 8;
+  let activeWorkers = 4;
   let attempts = 0;
   const worker = { end: async () => { activeWorkers--; } };
   const connections = Array.from({ length: activeWorkers }, () => worker);
@@ -170,13 +208,13 @@ test('Recovery worker resize stays within the session-pool budget and records an
   });
 
   await assert.rejects(resize(16), /DIRECT_GPS_WORKER_BOUNDS/);
-  assert.equal(activeWorkers, 8);
+  assert.equal(activeWorkers, 4);
   assert.equal(attempts, 0);
-  await assert.rejects(resize(12), error => error === refusal);
+  await assert.rejects(resize(8), error => error === refusal);
   assert.equal(attempts, 5);
   assert.equal(connections.length, 4);
   assert.deepEqual(evidence, {
-    workerConnectionFailure: { requestedWorkers: 12, openedWorkers: 4, sqlState: 'XX000' },
+    workerConnectionFailure: { requestedWorkers: 8, openedWorkers: 4, sqlState: 'XX000' },
   });
   await Promise.all(connections.map(connection => connection.end()));
   assert.equal(activeWorkers, 0);
