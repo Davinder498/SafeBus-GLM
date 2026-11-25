@@ -417,6 +417,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       console.log('Direct GPS comparison: path='+window.path+'; batch='+window.batchSize+'; pattern='+window.pattern+
         '; phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+
         '; planned='+result.planned+'; sent='+result.offered+'; accepted='+result.accepted+'; late='+result.late+
+        '; unsent='+result.unsent+'; unacknowledged='+result.unacknowledged+
         '; p50_ms='+(result.latencyMs.p50?.toFixed(1)??'unavailable')+
         '; p95_ms='+(result.latencyMs.p95?.toFixed(1)??'unavailable')+
         '; p99_ms='+(result.latencyMs.p99?.toFixed(1)??'unavailable')+

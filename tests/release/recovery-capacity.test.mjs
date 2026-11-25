@@ -851,3 +851,49 @@ test('sustained native GPS queues behind an in-flight request without overlap', 
   assert.equal(result.late, 1);
   assert.equal(result.passed, false);
 });
+
+test('native GPS distinguishes aborts before send from aborts after an upload starts', async () => {
+  for (const cancelDuringCooldown of [true, false]) {
+    const controller = new AbortController();
+    const abortError = Object.assign(Error('simulation aborted'), { name: 'AbortError' });
+    let now = 0;
+    const sent = [];
+    const result = await measureNativeGps({
+      drivers: nativeDrivers(1),
+      rounds: 2,
+      pattern: 'synchronized',
+      queueBusySlots: true,
+      signal: controller.signal,
+      clock: () => now,
+      wait: async ms => {
+        const due = now + ms;
+        await new Promise(setImmediate);
+        now = Math.max(now, due);
+      },
+      waitForUpload: async ms => {
+        assert.equal(ms, 450);
+        if (cancelDuringCooldown) {
+          controller.abort();
+          throw abortError;
+        }
+        now += ms;
+      },
+      upload: async (_driver, sequence) => {
+        sent.push(sequence);
+        if (sequence === 1) now += 2700;
+        else {
+          controller.abort();
+          throw abortError;
+        }
+      },
+      verifyPositions: async latest => latest.get('trip-0')?.sequence === 1,
+    });
+    assert.deepEqual(sent, cancelDuringCooldown ? [1] : [1, 2]);
+    assert.equal(result.cancelledBeforeSend, cancelDuringCooldown ? 1 : 0);
+    assert.equal(result.unsent, cancelDuringCooldown ? 1 : 0);
+    assert.equal(result.unacknowledged, cancelDuringCooldown ? 0 : 1);
+    assert.equal(result.errors.NATIVE_GPS_TRANSPORT, cancelDuringCooldown ? undefined : 1);
+    assert.equal(result.errors.NATIVE_GPS_CANCELLED, 1);
+    assert.equal(result.passed, false);
+  }
+});

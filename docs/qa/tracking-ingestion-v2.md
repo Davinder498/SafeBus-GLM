@@ -253,6 +253,11 @@ window time. The runner can stop on transport, integrity or isolation failures.
 The one-second p99 threshold does not apply to this profile. This run covers
 synthetic GPS ingestion only, with the existing gateway and database limits.
 
+GPS window evidence records unsent fixes and attempted uploads that received
+no valid acknowledgement. If cancellation interrupts a driver during the
+simulated cooldown, the queued fix counts as cancelled before send. A failed
+upload does not establish whether its fix committed.
+
 The evidence records driver token lifetime at each existing session gate.
 It includes the required and minimum remaining time and counts of missing or
 short expiries. This makes setup failures visible before GPS measurement.

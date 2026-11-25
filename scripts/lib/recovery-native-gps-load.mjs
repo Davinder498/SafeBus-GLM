@@ -329,6 +329,7 @@ export async function measureNativeGps({
       offered++;
       uploading.add(driver.tripId);
     }
+    let uploadStarted = false;
     const request = Promise.resolve(previous)
       .then(async () => {
         if (queueBusySlots) {
@@ -340,6 +341,7 @@ export async function measureNativeGps({
           offered++;
           uploading.add(driver.tripId);
         }
+        uploadStarted = true;
         return upload(driver, sequence, recordedAt, latitude, signal);
       })
       .then(
@@ -357,7 +359,7 @@ export async function measureNativeGps({
         },
         (error) => {
           const code = error?.message;
-          if (queueBusySlots && code === "NATIVE_GPS_UNSENT_CANCELLED") {
+          if (!uploadStarted && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
             cancelledBeforeSend++;
             return;
           }
@@ -400,6 +402,8 @@ export async function measureNativeGps({
     planned: slots,
     offered,
     accepted,
+    unsent: slots - offered,
+    unacknowledged: offered - accepted,
     late,
     deviceBackpressure,
     busyInFlight,
