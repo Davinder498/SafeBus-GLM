@@ -435,7 +435,8 @@ test('5,000 Recovery sign-ins fit the dedicated fixture quota at 250 ms pacing',
   assert.equal(now, 4999 * 250);
   assert.equal(capacityAccountCount(5000), 5000);
   assert.equal(capacityAccountCount(10), 61);
-  assert.equal(capacityAccountCount(10000), 0);
+  assert.equal(capacityAccountCount(10000), 10000);
+  assert.equal(capacityAccountCount(10001), 0);
   assert.throws(() => createCapacityLogin({ minimumIntervalMs: 249 }));
 });
 

@@ -264,6 +264,7 @@ export async function measureNativeGps({
   const errors = {};
   let offered = 0;
   let accepted = 0;
+  let lastAcknowledgementMs = null;
   let late = 0;
   let deviceBackpressure = 0;
   let busyInFlight = 0;
@@ -343,8 +344,10 @@ export async function measureNativeGps({
       })
       .then(
         () => {
-          const elapsed = clock() - due;
+          const acknowledgedAt = clock();
+          const elapsed = acknowledgedAt - due;
           latency.push(elapsed);
+          lastAcknowledgementMs = acknowledgedAt - started;
           // Use the real Android pause range upper bound for reproducible A-B-A.
           nextUploadAt.set(driver.tripId, clock() + (queueBusySlots ? 750 : minimumUploadPauseMs));
           if (elapsed > periodMs) late++;
@@ -407,6 +410,7 @@ export async function measureNativeGps({
     queueBusySlots,
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
+    lastAcknowledgementMs,
     errors,
     reconciled,
     passed:

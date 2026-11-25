@@ -148,8 +148,24 @@ test('500-bus qualification repeats the eight-connection screen without replayin
     ({batchSize:50,pattern:'synchronized',path:'direct_batch',
       phase:writePath==='original'?'baseline_screen':'worker_screen',writePath,dbConnections:8,rounds:10})));
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
-  for(const invalid of [0,10,499,1000,5000,10000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
+  for(const invalid of [0,10,499,1000,5000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
+});
+
+test('10,000-bus Recovery profile measures the burst and staggered arrivals without a p99 gate', async () => {
+  const { directGpsPlan, directGpsComparisonWindows } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan = directGpsPlan(10000);
+  const previous = directGpsPlan(500);
+  assert.equal(plan.confirmation, 'RUN_RECOVERY_DIRECT_GPS_10000');
+  assert.equal(plan.p99TargetMs, undefined);
+  assert.equal(plan.workerCandidates, undefined);
+  assert.equal(plan.dbConnections, previous.dbConnections);
+  assert.equal(plan.maxPending, previous.maxPending);
+  assert.equal(plan.capacityQualified, false);
+  assert.deepEqual(directGpsComparisonWindows(plan), [
+    { batchSize: 50, pattern: 'synchronized', path: 'direct_batch', phase: 'timing', writePath: 'optimized', dbConnections: 8, rounds: 1 },
+    { batchSize: 50, pattern: 'staggered', path: 'direct_batch', phase: 'timing', writePath: 'optimized', dbConnections: 8, rounds: 10 },
+  ]);
 });
 
 test('batch writer uses exactly three database commands and retains all local deadlines',async()=>{

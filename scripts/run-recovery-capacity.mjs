@@ -70,13 +70,15 @@ const buses = Number(process.env.SAFEBUS_CAPACITY_BUSES);
 const workload = process.env.SAFEBUS_CAPACITY_WORKLOAD ?? "combined";
 const gpsCompare = workload === "android_gps_compare";
 const directCompare = workload === "android_gps_direct_compare";
-const directPlan = directCompare && [100,500].includes(buses) ? directGpsPlan(buses) : null;
-const scaledDirectRun = directCompare && buses === 500;
+const directPlan = directCompare && [100, 500, 10000].includes(buses) ? directGpsPlan(buses) : null;
+const directTimingRun = directPlan?.measurementOnly === true;
+const scaledDirectRun = directCompare && (buses === 500 || directTimingRun);
 const nativeGpsOnly = workload === "android_gps" || gpsCompare || directCompare;
 const sustainedGpsCompare = gpsCompare && buses === 100;
 const comparisonPlan = gpsCompare && [10, 100].includes(buses) ? recoveryGpsComparisonPlan(buses) : null;
 const largeNativeRun = nativeGpsOnly && buses === 5000;
-const loginIntervalMs = largeNativeRun ? 250 : 2100;
+const driverOnlyFixtures = largeNativeRun || directTimingRun;
+const loginIntervalMs = driverOnlyFixtures ? 250 : 2100;
 const run = `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`;
 const scope = {
   run,
@@ -143,7 +145,7 @@ const deadline = setTimeout(
     deadlineReached = true;
     stop.abort();
   },
-  (largeNativeRun ? 160 : scaledDirectRun ? 65 : sustainedGpsCompare ? 55 : 35) * 60 * 1000,
+  (directTimingRun ? 210 : largeNativeRun ? 160 : scaledDirectRun ? 65 : sustainedGpsCompare ? 55 : 35) * 60 * 1000,
 );
 const checked = checkedCapacityAuth;
 const loginAccount = createCapacityLogin({
@@ -188,6 +190,7 @@ try {
   if (
     !["combined", "android_gps", "android_gps_compare", "android_gps_direct_compare"].includes(workload) ||
     (directCompare && !directPlan) ||
+    (buses === 10000 && !directTimingRun) ||
     (!nativeGpsOnly && buses === 5000) ||
     (gpsCompare && !comparisonPlan)
   )
@@ -400,7 +403,7 @@ try {
       );
     }
   }
-  if (!largeNativeRun) {
+  if (!driverOnlyFixtures) {
     for (let i = 0; i < 50; i++) {
       stage = `fixture-guardian-${i}`;
       const a = accounts[buses + i];
@@ -485,7 +488,8 @@ try {
     }
   } else if (directCompare) {
     stage = "direct-gps-comparison";
-    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + (scaledDirectRun?20:15)*60*1000))
+    const remainingSessionMs = (directTimingRun ? 5 : scaledDirectRun ? 20 : 15) * 60 * 1000;
+    if (accounts.slice(0,buses).some(a => !Number.isFinite(a.expiresAt) || a.expiresAt < Date.now() + remainingSessionMs))
       throw Error("CAPACITY_AUTH_SESSION_WINDOW");
     evidence.directGpsComparison = { plan: directPlan, windows: [], restored: false, capacityQualified: false };
     await runRecoveryDirectGpsComparison({
