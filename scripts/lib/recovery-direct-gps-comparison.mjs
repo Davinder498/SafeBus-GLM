@@ -33,9 +33,22 @@ export const DIRECT_GPS_SCALE_PLAN=Object.freeze({
   // Match the fastest completed prior screen. Twelve workers returned 503s.
   workerCandidates:Object.freeze([8]),screenRounds:10,
 });
+const DIRECT_GPS_TIMING_PLAN = Object.freeze({
+  buses: 10000,
+  rounds: 10,
+  batchSizes: DIRECT_GPS_SCALE_PLAN.batchSizes,
+  patterns: Object.freeze(['synchronized', 'staggered']),
+  batchWaitMs: DIRECT_GPS_SCALE_PLAN.batchWaitMs,
+  dbConnections: DIRECT_GPS_SCALE_PLAN.dbConnections,
+  maxPending: DIRECT_GPS_SCALE_PLAN.maxPending,
+  confirmation: 'RUN_RECOVERY_DIRECT_GPS_10000',
+  capacityQualified: false,
+  measurementOnly: true,
+});
 export function directGpsPlan(buses) {
   if(buses===100)return DIRECT_GPS_PLAN;
   if(buses===500)return DIRECT_GPS_SCALE_PLAN;
+  if(buses===10000)return DIRECT_GPS_TIMING_PLAN;
   throw Error('DIRECT_GPS_SCOPE');
 }
 
@@ -71,6 +84,15 @@ function boundedPool(connections) {
 
 export function directGpsComparisonWindows(plan=DIRECT_GPS_PLAN) {
   if(plan!==directGpsPlan(plan.buses))throw Error('DIRECT_GPS_SCOPE');
+  if (plan.measurementOnly) return plan.patterns.map(pattern => ({
+    batchSize: plan.batchSizes[0],
+    pattern,
+    path: 'direct_batch',
+    phase: 'timing',
+    writePath: 'optimized',
+    dbConnections: plan.dbConnections,
+    rounds: pattern === 'synchronized' ? 1 : plan.rounds,
+  }));
   if(plan.workerCandidates)return ['original','optimized'].flatMap(writePath=>
     plan.workerCandidates.map(dbConnections=>({
       batchSize:50,pattern:'synchronized',path:'direct_batch',
@@ -343,7 +365,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       try{
         result=await measureNativeGps({drivers:drivers.map(d=>({...d,lastSequence:0})),rounds:window.rounds??plan.rounds,
           pattern:window.pattern,upload:window.batchSize?transport.upload:createNativeGpsUpload(publishableKey,transport.fetch),
-          verifyPositions:latest=>verifyNativeGpsPositions(db,latest),signal,maxInFlight:plan.buses*2,queueBusySlots:true});
+          verifyPositions:latest=>verifyNativeGpsPositions(db,latest),signal,maxInFlight:Math.min(10000,plan.buses*2),queueBusySlots:true});
       }finally{
         clearInterval(timer);if(sampleTask)await sampleTask;
         await transport.close();
@@ -367,7 +389,11 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       console.log('Direct GPS comparison: path='+window.path+'; batch='+window.batchSize+'; pattern='+window.pattern+
         '; phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+
         '; planned='+result.planned+'; sent='+result.offered+'; accepted='+result.accepted+'; late='+result.late+
+        '; p50_ms='+(result.latencyMs.p50?.toFixed(1)??'unavailable')+
+        '; p95_ms='+(result.latencyMs.p95?.toFixed(1)??'unavailable')+
         '; p99_ms='+(result.latencyMs.p99?.toFixed(1)??'unavailable')+
+        '; last_ack_ms='+(result.lastAcknowledgementMs?.toFixed(1)??'unavailable')+
+        '; elapsed_ms='+result.elapsedMs.toFixed(1)+
         '; transactions='+(window.batchSize?transport.metrics.transactions:'see_sql_counters')+
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+
         '; reconciled='+result.reconciled+'; classification='+result.classification+'; latency_target_met='+result.meetsLatencyTarget+'; errors='+JSON.stringify(result.errors));
@@ -385,6 +411,11 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       }
     }
     evidence.completedAllWindows=evidence.windows.length===windows.length;
+    if (plan.measurementOnly) {
+      if (!evidence.windows.every(window => window.accepted === window.planned))
+        throw Error('DIRECT_GPS_TIMING_INCOMPLETE');
+      return;
+    }
     const qualification=plan.workerCandidates?evidence.windows.filter(w=>w.phase==='sustained'):evidence.windows;
     evidence.passingBatchSizes=plan.batchSizes.filter(size=>
       qualification.filter(w=>w.batchSize===size&&w.passed&&w.batchTransactionsReconciled).length===2);

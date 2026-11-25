@@ -177,3 +177,18 @@ SQL and cannot attribute temporary I/O to the GPS batch. The next bounded
 profile records the batch statement's temporary blocks read and written under
 the same counter epoch and call-count checks as the existing SQL metrics. Old
 artifacts remain readable and have no statement-level temporary I/O values.
+
+### 10,000-bus GPS timing run
+
+In **Run isolated recovery capacity**, select `10000` buses and
+`android_gps_direct_compare` at the reviewed main SHA. Enter
+`RUN_RECOVERY_DIRECT_GPS_10000`. The workflow provisions synthetic drivers in
+Recovery and uses eight database connections and 50-fix direct batches.
+
+The run offers one synchronized burst of 10,000 fixes. If the burst can be
+reconciled, the staggered window offers ten fixes per driver at three-second
+intervals. Each measured window records planned, sent, accepted and late fixes,
+acknowledgement percentiles, time to the last acknowledgement and elapsed
+window time. The runner can stop on transport, integrity or isolation failures.
+The one-second p99 threshold does not apply to this profile. This run covers
+synthetic GPS ingestion only, with the existing gateway and database limits.
