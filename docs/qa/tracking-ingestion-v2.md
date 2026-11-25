@@ -160,3 +160,29 @@ SQL and cannot attribute temporary I/O to the GPS batch. The next bounded
 profile records the batch statement's temporary blocks read and written under
 the same counter epoch and call-count checks as the existing SQL metrics. Old
 artifacts remain readable and have no statement-level temporary I/O values.
+
+### Optimized write-path comparison on November 24, 2026 (Alberta)
+
+[Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)
+tested main revision `5130b2f78400f5558befdbe90e918b0ae6ddafaa`. Four and eight
+workers on the optimized write path each accepted 5,000 fixes with zero late
+updates. Their p99 was 1,429.9 and 1,355.6 ms, respectively, above the 1,000 ms
+gate. The original path measured 1,530.3 and 1,467.7 ms at those worker counts.
+The five complete windows recorded zero temporary blocks read or written by
+the batch statement.
+
+The optimized twelve-worker screen stopped after 2,500 sends. It accepted
+2,051 fixes, with 51 late and 449 HTTP 503s. Nine of 52 batch transactions did
+not commit. Recovery's PostgreSQL logs from 03:06:40–03:06:50 UTC on November
+25 showed nine `57014` statement timeouts on the batch call. Error contexts
+spanned the batch wrapper, native ingest, active-session checks and the
+location-change trigger. They do not attribute the latency to a single
+operation. No session-mode client-limit error appeared in that window.
+The [artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001/artifacts/14986529911)
+records verified function restoration and fixture cleanup. Sustained and
+combined capacity were not qualified.
+
+Recovery direct-batch evidence records aggregate failed batch and item counts
+by transaction phase and allowlisted SQLSTATE. Unknown errors use a fixed
+label. HTTP responses still use the same generic failure, deadlines are
+unchanged, and evidence excludes provider error text and request payloads.

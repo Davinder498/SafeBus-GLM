@@ -120,9 +120,17 @@ function payload(driver,sequence,recordedAt,latitude) {
 async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,dbConnections=plan.dbConnections}) {
   const verify=createSupabaseClaimsVerifier({auth,issuer:RECOVERY_AUTH_URL+'/auth/v1'});
   const timing=createTimingCollector();
-  const writer=createDirectBatchWriter({pool,observe:timing.observe});
   const metrics={transactions:0,committedTransactions:0,attemptedItems:0,
-    batchSizes:{},authChecks:0,authMs:0,authMaxMs:0,writes:0,responses:0,failures:{}};
+    batchSizes:{},authChecks:0,authMs:0,authMaxMs:0,writes:0,responses:0,failures:{},
+    batchFailures:{}};
+  const writer=createDirectBatchWriter({pool,observe:timing.observe,
+    observeFailure(stage,sqlState,count){
+      const key=stage+':'+sqlState;
+      const tally=metrics.batchFailures[key]??={batches:0,items:0};
+      tally.batches++;
+      tally.items+=count;
+    },
+  });
   const activeWrites=new Set();
   const batcher=createDirectGpsBatcher({batchSize,maxWaitMs:plan.batchWaitMs,
     maxInFlight:dbConnections,maxPending:plan.maxPending??500,observe:timing.observe,
