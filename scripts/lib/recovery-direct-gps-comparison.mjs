@@ -178,7 +178,9 @@ async function sqlCounters(db,batch) {
     coalesce(sum(total_exec_time),0) as total_exec_ms,
     coalesce(sum(wal_bytes),0)::text as wal_bytes,
     coalesce(sum(shared_blks_hit),0)::text as shared_blks_hit,
-    coalesce(sum(shared_blks_read),0)::text as shared_blks_read
+    coalesce(sum(shared_blks_read),0)::text as shared_blks_read,
+    coalesce(sum(temp_blks_read),0)::text as temp_blks_read,
+    coalesce(sum(temp_blks_written),0)::text as temp_blks_written
     from extensions.pg_stat_statements
     where dbid=(select oid from pg_database where datname=current_database())
       and toplevel and query ilike $1
@@ -199,6 +201,10 @@ export function summarizeDirectGpsSqlWindow(before, after, committedTransactions
     return { status: 'counter_epoch_changed' };
 
   const fields = ['calls', 'wal_bytes', 'shared_blks_hit', 'shared_blks_read'];
+  const tempFields = ['temp_blks_read', 'temp_blks_written'];
+  // Older evidence artifacts lack both temporary block counters.
+  const hasTempCounters = tempFields.some(field => Object.hasOwn(before, field) || Object.hasOwn(after, field));
+  if (hasTempCounters) fields.push(...tempFields);
   const deltas = {};
   for (const field of fields) {
     if (![before[field], after[field]].every(isCounter))
@@ -222,6 +228,7 @@ export function summarizeDirectGpsSqlWindow(before, after, committedTransactions
     walBytes: deltas.wal_bytes,
     sharedBlocksHit: deltas.shared_blks_hit,
     sharedBlocksRead: deltas.shared_blks_read,
+    ...(hasTempCounters ? { tempBlocksRead: deltas.temp_blks_read, tempBlocksWritten: deltas.temp_blks_written } : {}),
   };
 }
 

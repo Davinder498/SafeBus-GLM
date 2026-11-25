@@ -135,3 +135,28 @@ alongside the raw snapshots and gateway timings. A changed stats reset or
 eviction counter, regressing counters, or a call count that differs from
 committed batches prevents attribution. WAL and block deltas are statement
 counters. Project-wide resource and cost headroom still require hosted evidence.
+
+### Revised worker screen on November 24, 2026 (Alberta)
+
+[Run 45510134719](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45510134719)
+tested `eed949bdcd06415436ca861e96bc19a668a49d67`. Four, eight, and twelve workers
+each accepted 5,000 fixes with zero late updates and reconciled final positions
+and committed batches. The twelve-worker screen completed without a connection
+refusal. Every screen missed the 1,000 ms p99 gate, so the runner stopped before
+sustained qualification. The [artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45510134719/artifacts/14978500391)
+verifies cross-tenant and invalid-token denial, duplicate acknowledgement,
+wrapper removal, and fixture cleanup.
+
+| Workers | GPS p99 (ms) | Batch wait p99 (ms) | Mean PostgreSQL execution per batch (ms) | Database-wide temporary bytes added |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 2,107.3 | 1,299.1 | 272.4 | 12,021,279 |
+| 8 | 1,879.8 | 1,146.4 | 662.3 | 12,026,263 |
+| 12 | 1,809.6 | 49.0 | 999.4 | 3,418,680 |
+
+At twelve workers, SQL round-trip p99 was 1,538.1 ms. None of the 92 database
+samples recorded a lock waiter or an increase in shared blocks read. Short
+waits can fall between samples. Database-wide temporary bytes include other
+SQL and cannot attribute temporary I/O to the GPS batch. The next bounded
+profile records the batch statement's temporary blocks read and written under
+the same counter epoch and call-count checks as the existing SQL metrics. Old
+artifacts remain readable and have no statement-level temporary I/O values.
