@@ -111,12 +111,87 @@ test('microbatch groups independent verified devices, returns only after writer 
   batcher.close();
 });
 test('ambiguous commit cannot return a final acknowledgement',async()=>{
-  const seen=[];const pool={connect:async()=>({query:async s=>{
+  const seen=[],failures=[];const pool={connect:async()=>({query:async s=>{
     seen.push(s);if(s==='commit')throw Error('network failure');
     if(s.startsWith('select safebus_private'))return {rows:[{result:[{id:'x',status:200,body:{accepted:true,stopTracking:false}}]}]};
     return {rows:[]};},release:()=>{}})};
-  await assert.rejects(createDirectBatchWriter({pool})([{id:'x'}]),/BATCH_UNAVAILABLE/);
+  const writer=createDirectBatchWriter({pool,observeFailure:(...failure)=>failures.push(failure)});
+  await assert.rejects(writer([{id:'x'}]),/BATCH_UNAVAILABLE/);
   assert.ok(seen.includes('rollback'));
+  assert.deepEqual(failures,[['commit_round_trip','unknown',1]]);
+});
+
+test('batch diagnostics record a statement timeout without exposing provider details',async()=>{
+  const failures=[],commands=[],releases=[];
+  const timeout=Object.assign(Error('private provider detail'),{code:'57014'});
+  const writer=createDirectBatchWriter({
+    pool:{connect:async()=>({
+      async query(sql){
+        commands.push(sql);
+        if(sql.startsWith('select safebus_private'))throw timeout;
+        if(sql==='rollback')throw Error('private rollback detail');
+      },
+      release(error){releases.push(error?.message);},
+    })},
+    observeFailure(...failure){
+      failures.push(failure);
+      throw Error('diagnostic consumer unavailable');
+    },
+  });
+
+  await assert.rejects(writer([{id:'a'},{id:'b'}]),{message:'BATCH_UNAVAILABLE'});
+  assert.deepEqual(failures,[['sql_round_trip','57014',2]]);
+  assert.equal(commands.at(-1),'rollback');
+  assert.equal(commands.includes('commit'),false);
+  assert.deepEqual(releases,['CONNECTION_UNUSABLE']);
+});
+
+test('batch diagnostics distinguish connection refusal and invalid results',async()=>{
+  const failures=[];
+  const observeFailure=(...failure)=>failures.push(failure);
+  const refused=Object.assign(Error('private provider detail'),{code:'XX000'});
+  const disconnected=createDirectBatchWriter({
+    pool:{async connect(){throw refused;}},observeFailure,
+  });
+  const incomplete=createDirectBatchWriter({
+    pool:{connect:async()=>({query:async()=>({rows:[]}),release(){}})},observeFailure,
+  });
+
+  await assert.rejects(disconnected([{id:'a'}]),error=>error===refused);
+  await assert.rejects(incomplete([{id:'b'}]),{message:'BATCH_UNAVAILABLE'});
+  assert.deepEqual(failures,[['pool_acquire','XX000',1],['batch_response','unknown',1]]);
+});
+
+test('Recovery timing burst distinguishes gateway saturation from database writes',async()=>{
+  const {directGpsPlan}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan=directGpsPlan(10_000);
+  const gate=Promise.withResolvers();
+  let committed=0;
+  const batcher=createDirectGpsBatcher({batchSize:plan.batchSizes[0],maxWaitMs:plan.batchWaitMs,
+    maxInFlight:plan.dbConnections,maxPending:plan.maxPending,verify:async token=>({sub:token}),
+    write:async items=>{
+      await gate.promise;
+      committed+=items.length;
+      return new Map(items.map(item=>[item.id,{status:200}]));
+    }});
+  const at=Date.now();
+  const run={trackingToken:'sbus_track_v1_'+'a'.repeat(43)};
+  const responses=Array.from({length:plan.buses},(_,index)=>{
+    const device={deviceCredential:'sbus_device_v1_'+String(index).padStart(43,'0')};
+    return batcher.submit('Bearer driver'+index,payload(run,device,1,at));
+  });
+  const expected={limit:1000,peakAdmitted:1000,rejectedAtLimit:9000};
+  const beforeCommit=batcher.admissionStats();
+  const committedBeforeRelease=committed;
+  gate.resolve();
+  const statuses=(await Promise.all(responses)).map(response=>response.status);
+  batcher.close();
+  assert.deepEqual(beforeCommit,expected);
+  assert.equal(committedBeforeRelease,0);
+  assert.equal(statuses.filter(status=>status===503).length,9000);
+  assert.equal(statuses.filter(status=>status===200).length,1000);
+  assert.equal(committed,1000);
+  assert.deepEqual(batcher.admissionStats(),expected);
 });
 
 test('hosted direct comparison is bounded and compares identical 100-bus patterns',async()=>{

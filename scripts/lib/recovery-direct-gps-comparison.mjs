@@ -141,9 +141,17 @@ function payload(driver,sequence,recordedAt,latitude) {
 async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,dbConnections=plan.dbConnections}) {
   const verify=createSupabaseClaimsVerifier({auth,issuer:RECOVERY_AUTH_URL+'/auth/v1'});
   const timing=createTimingCollector();
-  const writer=createDirectBatchWriter({pool,observe:timing.observe});
   const metrics={transactions:0,committedTransactions:0,attemptedItems:0,
-    batchSizes:{},authChecks:0,authMs:0,authMaxMs:0,writes:0,responses:0,failures:{}};
+    batchSizes:{},authChecks:0,authMs:0,authMaxMs:0,writes:0,responses:0,failures:{},
+    batchFailures:{}};
+  const writer=createDirectBatchWriter({pool,observe:timing.observe,
+    observeFailure(stage,sqlState,count){
+      const key=stage+':'+sqlState;
+      const tally=metrics.batchFailures[key]??={batches:0,items:0};
+      tally.batches++;
+      tally.items+=count;
+    },
+  });
   const activeWrites=new Set();
   const batcher=createDirectGpsBatcher({batchSize,maxWaitMs:plan.batchWaitMs,
     maxInFlight:dbConnections,maxPending:plan.maxPending??500,observe:timing.observe,
@@ -161,6 +169,8 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
       finally{activeWrites.delete(task);}
     }});
   const server=createDirectGpsServer({batcher});
+  let socketDrops=0;
+  server.on('drop',()=>{socketDrops++;});
   server.listen(0,'127.0.0.1');await once(server,'listening');
   const endpoint='http://127.0.0.1:'+server.address().port+'/tracking/v2/location';
   const send=async(driver,fix,abortSignal)=>{
@@ -183,7 +193,8 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
       r.body.tripState!=='active'||Date.parse(r.body.recordedAt)!==Date.parse(recordedAt))
       throw Error('NATIVE_GPS_ACK_MISMATCH');
   };
-  return {send,upload,metrics,timings:timing.snapshot,close:async()=>{
+  return {send,upload,metrics,timings:timing.snapshot,
+    admissionStats:()=>({...batcher.admissionStats(),socketLimit:server.maxConnections,socketDrops}),close:async()=>{
     // Stop accepting new work, then drain database transactions even when an
     // HTTP client timed out or disconnected before the write completed.
     batcher.close();await new Promise(resolve=>server.close(resolve));
@@ -373,6 +384,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       await sample();const after=await sqlCounters(monitor,Boolean(window.batchSize));
       result={...result,...window,dbConnections,elapsedMs:performance.now()-start,transport:window.batchSize?transport.metrics:transport.takeMetrics(),
         timings:window.batchSize?transport.timings():null,databaseSamples:samples,databaseSampleErrors:sampleErrors,sqlCounters:{before,after}};
+      if(window.batchSize)result.gatewayAdmission=transport.admissionStats();
       result.classification=classifyRecoveryGpsStage(result);
       result.meetsLatencyTarget=plan.p99TargetMs===undefined ? null : Number.isFinite(result.latencyMs.p99)&&result.latencyMs.p99<=plan.p99TargetMs;
       result.batchTransactionsReconciled=!window.batchSize || (transport.metrics.attemptedItems===result.offered && transport.metrics.transactions===transport.metrics.committedTransactions);
@@ -386,6 +398,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
           '; window='+JSON.stringify(result.sqlCounters.window));
       }
       evidence.windows.push(result);
+      if(result.gatewayAdmission)console.log('Direct GPS gateway admission: '+JSON.stringify(result.gatewayAdmission));
       console.log('Direct GPS comparison: path='+window.path+'; batch='+window.batchSize+'; pattern='+window.pattern+
         '; phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+
         '; planned='+result.planned+'; sent='+result.offered+'; accepted='+result.accepted+'; late='+result.late+
