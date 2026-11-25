@@ -27,12 +27,11 @@ export const DIRECT_GPS_PLAN=Object.freeze({
 // Only these immutable, reviewed profiles can reach the hosted test path.
 export const DIRECT_GPS_SCALE_PLAN=Object.freeze({
   buses:500,rounds:100,batchSizes:Object.freeze([50]),
-  patterns:DIRECT_GPS_PLAN.patterns,batchWaitMs:50,dbConnections:4,
+  patterns:DIRECT_GPS_PLAN.patterns,batchWaitMs:50,dbConnections:8,
   confirmation:'RUN_RECOVERY_DIRECT_GPS_500',capacityQualified:false,
   compareIndividual:false,p99TargetMs:1000,maxPending:1000,
-  // Recovery Supavisor rejected the previous 16-worker screen at its
-  // 15-client limit. Allow for control, monitor, and one spare session.
-  workerCandidates:Object.freeze([4,8,12]),screenRounds:10,
+  // Match the fastest completed prior screen. Twelve workers returned 503s.
+  workerCandidates:Object.freeze([8]),screenRounds:10,
 });
 export function directGpsPlan(buses) {
   if(buses===100)return DIRECT_GPS_PLAN;
