@@ -136,6 +136,11 @@ eviction counter, regressing counters, or a call count that differs from
 committed batches prevents attribution. WAL and block deltas are statement
 counters. Project-wide resource and cost headroom still require hosted evidence.
 
+If the opening SQL counter snapshot fails, the runner records the phase and
+SQLSTATE before opening the window's transport. If the closing snapshot fails,
+the runner saves the GPS results and gateway diagnostics already collected.
+Either failure stops qualification and proceeds through Recovery cleanup.
+
 ### 500-bus rollback comparison at eight connections
 
 [Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)

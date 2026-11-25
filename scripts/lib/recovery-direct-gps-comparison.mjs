@@ -201,8 +201,12 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
   }};
 }
 
-async function sqlCounters(db,batch) {
-  const {rows:[row]}=await db.query(`select
+const directGpsSqlState = error =>
+  typeof error?.code === 'string' && /^[A-Z0-9]{5}$/.test(error.code) ? error.code : null;
+
+export async function readDirectGpsSqlCounters(db,batch) {
+  try {
+    const {rows:[row]}=await db.query(`select
     (select stats_reset from extensions.pg_stat_statements_info)::text as stats_reset,
     (select dealloc from extensions.pg_stat_statements_info)::text as dealloc,
     coalesce(sum(calls),0)::text as calls,
@@ -218,7 +222,11 @@ async function sqlCounters(db,batch) {
       and query not ilike '%pg_stat_statements%'
       and userid=(select oid from pg_roles where rolname=$2)`,
     [batch?'%ingest_verified_driver_location_batch%':'%ingest_driver_location_event%',batch?'postgres':'authenticated']);
-  return row;
+    if (row) return { snapshot: row, failure: null };
+  } catch (error) {
+    return { snapshot: null, failure: { sqlState: directGpsSqlState(error) } };
+  }
+  return { snapshot: null, failure: { sqlState: null } };
 }
 
 // The counters are cumulative. A changed epoch, eviction, or unexpected call
@@ -286,7 +294,7 @@ export async function resizeDirectGpsWorkers({ db, connections, connect, count, 
       evidence.workerConnectionFailure = {
         requestedWorkers: count,
         openedWorkers: connections.length,
-        sqlState: /^[A-Z0-9]{5}$/.test(error?.code ?? '') ? error.code : null,
+        sqlState: directGpsSqlState(error),
       };
       throw error;
     }
@@ -363,12 +371,17 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         await db.query('grant usage on schema public,safebus_private to authenticated');
         await delay(3000,undefined,{signal});
       }
-      const transport=window.batchSize?
-        await directTransport({pool,auth,batchSize:window.batchSize,signal,plan,dbConnections}):createNativeGpsTransport();
       let sampleTask=null,sampleErrors=0;
       const samples=[];
       const sample=async()=>{try{samples.push(await sampleRecoveryGpsDatabase(monitor));}catch{sampleErrors++;}};
-      await sample();const before=await sqlCounters(monitor,Boolean(window.batchSize));
+      await sample();
+      const before=await readDirectGpsSqlCounters(monitor,Boolean(window.batchSize));
+      if(before.failure){
+        evidence.sqlCounterFailure={phase:'before',window,...before.failure};
+        throw Error('DIRECT_GPS_DATABASE_STATS');
+      }
+      const transport=window.batchSize?
+        await directTransport({pool,auth,batchSize:window.batchSize,signal,plan,dbConnections}):createNativeGpsTransport();
       const timer=setInterval(()=>{if(!sampleTask)sampleTask=sample().finally(()=>{sampleTask=null;});},1000);
       const start=performance.now();
       let result;
@@ -380,9 +393,12 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         clearInterval(timer);if(sampleTask)await sampleTask;
         await transport.close();
       }
-      await sample();const after=await sqlCounters(monitor,Boolean(window.batchSize));
+      await sample();
+      const after=await readDirectGpsSqlCounters(monitor,Boolean(window.batchSize));
       result={...result,...window,dbConnections,elapsedMs:performance.now()-start,transport:window.batchSize?transport.metrics:transport.takeMetrics(),
-        timings:window.batchSize?transport.timings():null,databaseSamples:samples,databaseSampleErrors:sampleErrors,sqlCounters:{before,after}};
+        timings:window.batchSize?transport.timings():null,databaseSamples:samples,databaseSampleErrors:sampleErrors,
+        sqlCounters:{before:before.snapshot,after:after.snapshot}};
+      if(after.failure)result.sqlCounters.failure={phase:'after',...after.failure};
       if(window.batchSize)result.gatewayAdmission=transport.admissionStats();
       result.classification=classifyRecoveryGpsStage(result);
       result.meetsLatencyTarget=plan.p99TargetMs===undefined ? null : Number.isFinite(result.latencyMs.p99)&&result.latencyMs.p99<=plan.p99TargetMs;
@@ -391,7 +407,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if (window.batchSize) {
         result.sqlCounters.window = result.classification === 'fatal'
           ? { status: 'unreconciled_workload' }
-          : summarizeDirectGpsSqlWindow(before, after, transport.metrics.committedTransactions);
+          : summarizeDirectGpsSqlWindow(before.snapshot, after.snapshot, transport.metrics.committedTransactions);
         console.log('Direct GPS SQL counters: phase='+(window.phase??'comparison')+
           '; db_connections='+dbConnections+'; pattern='+window.pattern+
           '; window='+JSON.stringify(result.sqlCounters.window));
@@ -410,7 +426,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+
         '; reconciled='+result.reconciled+'; classification='+result.classification+'; latency_target_met='+result.meetsLatencyTarget+'; errors='+JSON.stringify(result.errors));
       if(result.timings)console.log('Direct GPS timing (ms): phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+'; pattern='+window.pattern+'; stages='+JSON.stringify(result.timings));
-      if(sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
+      if(after.failure||sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
       // Continue only with reconciled responses; never reset ambiguous writes.
       if(result.classification==='fatal')throw Error('DIRECT_GPS_STAGE_FATAL');
       if(window.phase==='batch_screen'&&wi===windows.length-1){

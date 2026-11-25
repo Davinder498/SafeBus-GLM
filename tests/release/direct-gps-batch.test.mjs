@@ -347,6 +347,41 @@ test('Recovery worker resize stays within the session-pool budget and records an
   assert.equal(activeWorkers, 0);
 });
 
+test('Recovery SQL snapshot returns counters or a sanitized read failure', async () => {
+  const { readDirectGpsSqlCounters } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const snapshot = { calls: '104', total_exec_ms: 31000 };
+  const db = { query: async (_sql, params) => {
+    assert.deepEqual(params, ['%ingest_verified_driver_location_batch%', 'postgres']);
+    return { rows: [snapshot] };
+  } };
+  assert.deepEqual(await readDirectGpsSqlCounters(db, true), { snapshot, failure: null });
+  const failed = code => ({
+    query: async () => { throw Object.assign(Error('private database detail'), { code }); },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters(failed('57014'), true), {
+    snapshot: null, failure: { sqlState: '57014' },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters(failed('unexpected provider code'), true), {
+    snapshot: null, failure: { sqlState: null },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters({ query: async () => ({ rows: [] }) }, true), {
+    snapshot: null, failure: { sqlState: null },
+  });
+});
+
+test('Recovery opens the window after the baseline and records completed work before stopping', async () => {
+  const script = await fs.readFile('scripts/lib/recovery-direct-gps-comparison.mjs', 'utf8');
+  const run = script.slice(script.indexOf('export async function runRecoveryDirectGpsComparison'));
+  const baseline = run.indexOf('if(before.failure)');
+  const transport = run.indexOf('const transport=window.batchSize?');
+  const close = run.indexOf('await transport.close()');
+  const endingSnapshot = run.indexOf('const after=await readDirectGpsSqlCounters');
+  const saved = run.indexOf('evidence.windows.push(result)');
+  const stop = run.indexOf("if(after.failure||sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS')");
+  assert.ok(baseline >= 0 && transport > baseline);
+  assert.ok(close > transport && endingSnapshot > close && saved > endingSnapshot && stop > saved);
+});
+
 test('Recovery SQL window reconciles exact batch calls and preserves large counter deltas', async () => {
   const { summarizeDirectGpsSqlWindow } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   const before = {
