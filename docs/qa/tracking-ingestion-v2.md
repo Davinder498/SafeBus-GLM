@@ -1,6 +1,6 @@
 # Tracking ingestion v2 — implementation foundation
 
-Target: 10,000 active buses (3,333 fixes/s; 10,000 simultaneous burst), 500,000 guardians, 100,000 location deliveries/s at five seconds, ETA and notification independence. This component is **not deployed** and is not evidence of capacity.
+Active-trip driver GPS is collected every three seconds. At 10,000 active buses, the target workload is about 3,333 fixes per second on average and up to 10,000 fixes in a synchronized burst. The separate guardian fan-out model assumes up to 500,000 viewers and 100,000 location deliveries per second at a proposed five-second map update interval. ETA and notification processing are independent. This component is **not deployed** and is not evidence of capacity.
 
 ## Data plane boundary
 The existing Android v1 RPC returns a final acknowledgement and the device then removes its encrypted local copy. Do not change that endpoint or route v1 clients to this module. The v2 ingress has a distinct `queued` receipt and a later authoritative final outcome. A queued receipt must never be interpreted by v1 or v2 as a committed location. A v2 client must retain its local event until an authenticated final receipt is confirmed; retry the same event identity if a result is ambiguous.
@@ -63,6 +63,13 @@ staggered/synchronized p99 of 742.1/736.4 ms, 249/20 transactions for 1,000
 events in each pattern; individual HTTPS p99 was 2105.8/1906.8 ms. The hosted
 gateway was runner-local, not a deployed production gateway. All fixture rows
 and the temporary wrapper were verified removed.
+
+The 1-second p99 limit is a Recovery engineering target measured from the
+scheduled GPS fix to acknowledgement after the database commit. The 100-bus batch
+screens measured about 0.74 seconds p99.
+The 1-second target tests whether the candidate can keep 99% of acknowledgements
+well within the three-second collection interval as load grows.
+Guardian map freshness and alert delivery require separate end-to-end measurements.
 
 The next protected profile uses 500 distinct drivers across two synthetic
 districts, batch size 50, 50 ms collection window, four worker connections,

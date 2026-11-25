@@ -136,7 +136,7 @@ environment; production credentials are not part of local setup.
 | 2. Backend                       | ⏳     | DB + auth + RLS + consent + terms                       |
 | 3. Admin CRUD                    | ⏳     | Entity management + CSV import                          |
 | 4. Driver Mobile                 | ⏳     | Expo app + login + trips                                |
-| 5. GPS Tracking                  | ⏳     | Background GPS + 5s pings + stale/lost logic            |
+| 5. GPS Tracking                  | ⏳     | Background GPS every 3 seconds + stale/lost logic        |
 | 6. Guardian Live Trip Visibility | ✅     | Guardian-scoped active-trip visibility                  |
 | 7. QR Scan / Notifications       | ⏳     | Future scope; not implemented until explicitly approved |
 | 8. Pilot Readiness               | ⏳     | Reports + security review + PIA filed                   |
