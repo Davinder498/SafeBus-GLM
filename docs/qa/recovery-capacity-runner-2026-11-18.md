@@ -132,6 +132,22 @@ production pg_cron concurrency. No production jobs,
 provider credentials, native devices, push destinations or email delivery workers
 are copied or invoked. Managed Realtime partitions are initialized by the service.
 
+## Realtime readiness before combined load
+
+The combined runner records the database's UTC date, whether the provider's
+message table exists, partition count, latest dated partition name, and
+whether the current and next UTC days have complete midnight-to-midnight
+coverage. The artifact retains this evidence when the runner stops before
+creating fixtures. The GPS-only profiles do not require this preflight.
+
+On November 24 in Alberta (November 25 UTC), a read-only Recovery check
+found five partitions. The latest was `messages_2026_11_21`. Neither
+November 25 nor November 26 UTC had coverage, so combined load remains
+blocked. The provider initializes these partitions when a Realtime client
+joins a channel. Use an existing isolated Realtime verification after the
+active GPS run and recheck both days before requesting combined load.
+[Supabase Realtime partition initialization](https://supabase.com/kb/troubleshooting/realtime-warn-sending-broadcast-message)
+
 ## Evidence and stop conditions
 
 Record offered versus completed GPS/read operations, p50/p95/p99 client latency,

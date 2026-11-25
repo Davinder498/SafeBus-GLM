@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 // Telemetry is numeric and cannot change authorization or acknowledgement.
 const report=(observe,stage,ms,count=1)=>{try{observe?.(stage,ms,count);}catch{/* metrics never break ingestion */}};
 export const BATCH_TRANSACTION_SETUP="begin; set local statement_timeout='2s'; set local lock_timeout='250ms'; set local idle_in_transaction_session_timeout='3s'";
+const knownBatchSqlStates=new Set(['57014','55P03','25P03','40001','40P01','08003','08006','57P01','XX000']);
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const fields=['p_tracking_token','p_device_credential','p_event_id','p_sequence','p_recorded_at',
@@ -52,24 +53,28 @@ export function createSupabaseClaimsVerifier({auth,issuer,clock=Date.now}={}) {
  * Only a dedicated trusted gateway role may get EXECUTE on the private function.
  * The query is parameterized and never logs payloads, bearer tokens or errors.
  */
-export function createDirectBatchWriter({pool,observe}={}) {
+export function createDirectBatchWriter({pool,observe,observeFailure}={}) {
   if(typeof pool?.connect!=='function')throw Error('DATABASE_CONFIGURATION');
   return async items=>{
     const acquiredAt=performance.now();
-    const client=await pool.connect();
-    report(observe,'pool_acquire',performance.now()-acquiredAt,items.length);
+    let stage='pool_acquire';
+    let client;
     let broken;
-    const query=async(stage,...args)=>{
+    const query=async(nextStage,...args)=>{
+      stage=nextStage;
       const start=performance.now();
       try{return await client.query(...args);}
       finally{report(observe,stage,performance.now()-start,items.length);}
     };
     try{
+      client=await pool.connect();
+      report(observe,stage,performance.now()-acquiredAt,items.length);
       // Constant SQL only. PostgreSQL simple protocol supports multiple statements;
       // never interpolate request data here. Keep the batch query parameterized.
       await query('transaction_setup',BATCH_TRANSACTION_SETUP);
       const {rows}=await query('sql_round_trip','select safebus_private.ingest_verified_driver_location_batch($1::jsonb) as result',
         [JSON.stringify(items)]);
+      stage='batch_response';
       const outcomes=rows[0]?.result;
       if(!Array.isArray(outcomes)||outcomes.length!==items.length||
         new Set(outcomes.map(o=>o?.id)).size!==items.length||
@@ -78,10 +83,15 @@ export function createDirectBatchWriter({pool,observe}={}) {
         throw Error('INCOMPLETE_BATCH');
       await query('commit_round_trip','commit');
       return new Map(outcomes.map(o=>[o.id,o.status===200?{status:200,body:o.body}:fail(o.status)]));
-    }catch{
-      try{await client.query('rollback');}catch{broken=Error('CONNECTION_UNUSABLE');}
+    }catch(error){
+      if(client){
+        try{await client.query('rollback');}catch{broken=Error('CONNECTION_UNUSABLE');}
+      }
+      const sqlState=knownBatchSqlStates.has(error?.code)?error.code:'unknown';
+      try{observeFailure?.(stage,sqlState,items.length);}catch{/* metrics never break ingestion */}
+      if(!client)throw error;
       throw Error('BATCH_UNAVAILABLE');
-    }finally{client.release(broken);}
+    }finally{client?.release(broken);}
   };
 }
 
@@ -96,7 +106,7 @@ export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,m
     !Number.isInteger(maxWaitMs)||maxWaitMs<1||maxWaitMs>100||
     !Number.isInteger(maxInFlight)||maxInFlight<1||maxInFlight>16||
     !Number.isInteger(maxPending)||maxPending<batchSize||maxPending>5000)throw Error('BATCH_CONFIGURATION');
-  let active=0,admitted=0,timer=null,closed=false;
+  let active=0,admitted=0,peakAdmitted=0,rejectedAtLimit=0,timer=null,closed=false;
   const waiting=[],devices=new Set(),principals=new Set();
   function schedule(){
     if(timer!==null||closed||!waiting.length||active>=maxInFlight)return;
@@ -122,10 +132,12 @@ export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,m
   }
   return {
     async submit(bearer,fix){
-      if(closed||admitted>=maxPending)return fail(503);
+      if(closed)return fail(503);
+      if(admitted>=maxPending){rejectedAtLimit++;return fail(503);}
       if(typeof bearer!=='string'||bearer.length>8192||!/^Bearer [A-Za-z0-9._~-]+$/.test(bearer))return fail(401);
       if(!validFix(fix))return fail(400);
       admitted++;
+      peakAdmitted=Math.max(peakAdmitted,admitted);
       const device=fix.p_device_credential;
       let principal,ownsDevice=false,ownsPrincipal=false;
       try{
@@ -145,6 +157,7 @@ export function createDirectGpsBatcher({verify,write,batchSize=50,maxWaitMs=50,m
       }catch{return fail(503);}
       finally{admitted--;if(ownsDevice)devices.delete(device);if(ownsPrincipal)principals.delete(principal);}
     },
+    admissionStats(){return {limit:maxPending,peakAdmitted,rejectedAtLimit};},
     close(){
       closed=true;if(timer!==null)clearTimeout(timer);timer=null;
       for(const e of waiting.splice(0))e.resolve(fail(503));

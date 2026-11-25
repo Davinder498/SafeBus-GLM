@@ -143,7 +143,12 @@ eviction counter, regressing counters, or a call count that differs from
 committed batches prevents attribution. WAL and block deltas are statement
 counters. Project-wide resource and cost headroom still require hosted evidence.
 
-### 500-bus retry at eight connections
+If the opening SQL counter snapshot fails, the runner records the phase and
+SQLSTATE before opening the window's transport. If the closing snapshot fails,
+the runner saves the GPS results and gateway diagnostics already collected.
+Either failure stops qualification and proceeds through Recovery cleanup.
+
+### 500-bus rollback comparison at eight connections
 
 [Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)
 accepted all 5,000 fixes at eight connections in both short screens. The
@@ -152,13 +157,42 @@ respectively. The optimized twelve-connection screen returned 449 HTTP 503s.
 The artifact confirms restoration and fixture cleanup. The sustained windows
 did not run.
 
-The next 500-bus profile uses eight connections throughout. The private GPS
-wrapper uses one rollback block for a successful batch. A permission denial
+The 500-bus rollback comparison used eight connections throughout. The private
+GPS wrapper uses one rollback block for a successful batch. A permission denial
 rolls back that attempt and replays each fix in the same order, so a denied
 item receives its own 403. Unexpected failures abort the whole transaction.
 JWT validation, driver authorization, per-fix result checks, and acknowledgment
 after commit are still required. The 1,000 ms p99 gate applies to the short
 optimized screen and both sustained windows.
+
+[Run 45544667532](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45544667532)
+tested `ba7c5e083a2622564948b2c2e17636953fddc64d` on November 24 in Alberta.
+The original and optimized write paths each accepted and reconciled all 5,000
+fixes with zero late updates. The p99 was 1,560.3 ms and 1,418.3 ms, respectively.
+For the optimized path, batch wait p99 was 737.2 ms and SQL round trip p99 was
+850.5 ms. Those percentiles describe different populations and cannot be
+added. All 104 optimized batch transactions committed, with zero temporary
+blocks read or written by the batch statement. The
+[artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45544667532/artifacts/14994266805)
+confirms cross-tenant and invalid-token denial, duplicate acknowledgement,
+function restoration and fixture cleanup. Neither screen met 1,000 ms p99, so
+the sustained windows did not start.
+
+### Controlled batch size comparison
+
+The next 500-bus profile compares 50 and 64 fixes per batch on the same
+optimized write path, using eight database connections and ten synchronized
+rounds per screen. A fully queued 500-fix burst needs at least ten batches at
+size 50 or eight at size 64. The comparison tests whether fewer batches reduce
+queue time enough to offset the extra SQL work in each larger batch. Arrival
+timing can still cause partial batches.
+
+The maximum workload remains 10,000 screen fixes and 100,000 sustained fixes.
+Only the smallest size that accepts and reconciles every fix, has zero late
+updates, and meets 1,000 ms p99 proceeds to sustained testing. Both sustained
+patterns use that size and the same gate. An ambiguous outcome stops the run.
+The transaction timeouts, connection cap, authorization checks and cleanup
+remain in force.
 
 ### Revised worker screen on November 24, 2026 (Alberta)
 
@@ -184,3 +218,63 @@ SQL and cannot attribute temporary I/O to the GPS batch. The next bounded
 profile records the batch statement's temporary blocks read and written under
 the same counter epoch and call-count checks as the existing SQL metrics. Old
 artifacts remain readable and have no statement-level temporary I/O values.
+
+### Optimized write-path comparison on November 24, 2026 (Alberta)
+
+[Run 45533825001](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001)
+tested main revision `5130b2f78400f5558befdbe90e918b0ae6ddafaa`. Four and eight
+workers on the optimized write path each accepted 5,000 fixes with zero late
+updates. Their p99 was 1,429.9 and 1,355.6 ms, respectively, above the 1,000 ms
+gate. The original path measured 1,530.3 and 1,467.7 ms at those worker counts.
+The five complete windows recorded zero temporary blocks read or written by
+the batch statement.
+
+The optimized twelve-worker screen stopped after 2,500 sends. It accepted
+2,051 fixes, with 51 late and 449 HTTP 503s. Nine of 52 batch transactions did
+not commit. Recovery's PostgreSQL logs from 03:06:40–03:06:50 UTC on November
+25 showed nine `57014` statement timeouts on the batch call. Error contexts
+spanned the batch wrapper, native ingest, active-session checks and the
+location-change trigger. They do not attribute the latency to a single
+operation. No session-mode client-limit error appeared in that window.
+The [artifact](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45533825001/artifacts/14986529911)
+records verified function restoration and fixture cleanup. Sustained and
+combined capacity were not qualified.
+
+Recovery direct-batch evidence records aggregate failed batch and item counts
+by transaction phase and allowlisted SQLSTATE. Unknown errors use a fixed
+label. HTTP responses still use the same generic failure, deadlines are
+unchanged, and evidence excludes provider error text and request payloads.
+
+### 10,000-bus GPS timing run
+
+In **Run isolated recovery capacity**, select `10000` buses and
+`android_gps_direct_compare` at the reviewed main SHA. Enter
+`RUN_RECOVERY_DIRECT_GPS_10000`. The workflow provisions synthetic drivers in
+Recovery and uses eight database connections and 50-fix direct batches.
+
+The run offers one synchronized burst of 10,000 fixes. If the burst can be
+reconciled, the staggered window offers ten fixes per driver at three-second
+intervals. Each measured window records planned, sent, accepted and late fixes,
+acknowledgement percentiles, time to the last acknowledgement and elapsed
+window time. The runner can stop on transport, integrity or isolation failures.
+The one-second p99 threshold does not apply to this profile. This run covers
+synthetic GPS ingestion only, with the existing gateway and database limits.
+
+GPS window evidence records unsent fixes and attempted uploads that received
+no valid acknowledgement. If cancellation interrupts a driver during the
+simulated cooldown, the queued fix counts as cancelled before send. A failed
+upload does not establish whether its fix committed.
+
+The evidence records driver token lifetime at each existing session gate.
+It includes the required and minimum remaining time and counts of missing or
+short expiries. This makes setup failures visible before GPS measurement.
+The evidence contains no identities or token values.
+
+For each direct batch window, `gatewayAdmission` records the gateway's peak
+admitted fixes and the number refused at its admission limit. It also records
+the loopback HTTP server's connection limit and the number of sockets dropped
+at that limit. Admission refusals can occur while database writers are busy.
+The socket and admission counts help interpret shortfalls alongside committed
+batches, SQL error codes and request timeouts. A local regression with database
+writers held before commit admitted 1,000 of 10,000 simultaneous synthetic
+submissions and returned 503 to the remaining 9,000 at the existing limit.

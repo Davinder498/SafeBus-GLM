@@ -12,7 +12,7 @@ export function recoverCapacityScope({ run, buses, tenants, users }) {
   assertCapacityScope(scope);
   const expectedEmails = new Set(scope.emails);
   const validUserCount =
-    buses === 5000
+    buses === expectedEmails.size
       ? users.length > 0 && users.length <= expectedEmails.size
       : users.length === expectedEmails.size;
   if (

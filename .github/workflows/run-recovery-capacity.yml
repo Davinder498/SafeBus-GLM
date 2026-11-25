@@ -6,9 +6,9 @@ on:
         description: Full reviewed current main SHA
         required: true
       buses:
-        description: Fleet size; 5000 requires Android GPS
+        description: Fleet size; 10000 requires the direct GPS timing profile
         type: choice
-        options: ['10', '100', '500', '5000']
+        options: ['10', '100', '500', '5000', '10000']
         default: '10'
         required: true
       workload:
@@ -18,7 +18,7 @@ on:
         default: combined
         required: true
       confirmation:
-        description: RUN_RECOVERY_DIRECT_GPS_100 or RUN_RECOVERY_DIRECT_GPS_500; other confirmations unchanged
+        description: For the 10000-bus timing profile, enter RUN_RECOVERY_DIRECT_GPS_10000
         required: true
 permissions:
   contents: read
@@ -29,11 +29,12 @@ jobs:
   validate:
     if: >-
       github.ref == 'refs/heads/main' &&
-      ((inputs.buses != '5000' && inputs.workload != 'android_gps_compare' && inputs.workload != 'android_gps_direct_compare' && inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
+      ((inputs.buses != '5000' && inputs.buses != '10000' && inputs.workload != 'android_gps_compare' && inputs.workload != 'android_gps_direct_compare' && inputs.workload != 'android_gps_restore' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY') ||
       (inputs.buses == '10' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE') ||
       (inputs.buses == '100' && inputs.workload == 'android_gps_compare' && inputs.confirmation == 'RUN_RECOVERY_GPS_COMPARE_100') ||
       (inputs.buses == '100' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_100') ||
       (inputs.buses == '500' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_500') ||
+      (inputs.buses == '10000' && inputs.workload == 'android_gps_direct_compare' && inputs.confirmation == 'RUN_RECOVERY_DIRECT_GPS_10000') ||
       (inputs.buses == '10' && inputs.workload == 'android_gps_restore' && inputs.confirmation == 'RESTORE_RECOVERY_GPS_BASELINE') ||
       (inputs.buses == '5000' && inputs.workload == 'android_gps' && inputs.confirmation == 'RUN_RECOVERY_CAPACITY_5000'))
     uses: ./.github/workflows/validate-security-install.yml
@@ -42,7 +43,7 @@ jobs:
   install:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.buses == '5000' && 210 || (inputs.buses == '500' && inputs.workload == 'android_gps_direct_compare' && 80) || (inputs.buses == '100' && inputs.workload == 'android_gps_compare' && 65) || 45 }}
+    timeout-minutes: ${{ inputs.buses == '10000' && 300 || inputs.buses == '5000' && 210 || (inputs.buses == '500' && inputs.workload == 'android_gps_direct_compare' && 80) || (inputs.buses == '100' && inputs.workload == 'android_gps_compare' && 65) || 45 }}
     environment: production
     steps:
       - name: Verify exact main revision
