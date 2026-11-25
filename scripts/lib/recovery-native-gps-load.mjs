@@ -386,13 +386,18 @@ export async function measureNativeGps({
     pending.add(request);
   }
   await Promise.all(pending);
+  const loadEnded = clock();
   if (signal?.aborted) fail("NATIVE_GPS_CANCELLED");
   let reconciled = false;
+  let positionVerificationMs = null;
   if (latest.size === drivers.length) {
+    const verificationStarted = clock();
     try {
       reconciled = (await verifyPositions(latest)) === true;
     } catch {
       fail("NATIVE_GPS_VERIFY_FAILED");
+    } finally {
+      positionVerificationMs = clock() - verificationStarted;
     }
   }
   return {
@@ -415,6 +420,8 @@ export async function measureNativeGps({
     maxDispatchLagMs,
     latencyMs: percentiles(latency),
     lastAcknowledgementMs,
+    loadElapsedMs: loadEnded - started,
+    positionVerificationMs,
     errors,
     reconciled,
     passed:

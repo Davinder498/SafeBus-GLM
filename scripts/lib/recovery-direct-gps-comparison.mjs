@@ -422,6 +422,8 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         '; p95_ms='+(result.latencyMs.p95?.toFixed(1)??'unavailable')+
         '; p99_ms='+(result.latencyMs.p99?.toFixed(1)??'unavailable')+
         '; last_ack_ms='+(result.lastAcknowledgementMs?.toFixed(1)??'unavailable')+
+        '; load_elapsed_ms='+result.loadElapsedMs.toFixed(1)+
+        '; position_verification_ms='+(result.positionVerificationMs?.toFixed(1)??'not_attempted')+
         '; elapsed_ms='+result.elapsedMs.toFixed(1)+
         '; transactions='+(window.batchSize?transport.metrics.transactions:'see_sql_counters')+
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+

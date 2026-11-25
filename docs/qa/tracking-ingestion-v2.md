@@ -256,7 +256,13 @@ The run offers one synchronized burst of 10,000 fixes. If the burst can be
 reconciled, the staggered window offers ten fixes per driver at three-second
 intervals. Each measured window records planned, sent, accepted and late fixes,
 acknowledgement percentiles, time to the last acknowledgement and elapsed
-window time. The runner can stop on transport, integrity or isolation failures.
+window time. `loadElapsedMs` measures from the scheduled start until scheduling
+ends and every upload has settled, including failed attempts.
+`positionVerificationMs` measures the subsequent final position check and is
+null if that check could not run.
+The existing `elapsedMs` also includes final position verification, transport
+shutdown, and the closing database sample and counter read. The runner can
+stop on transport, integrity or isolation failures.
 The one-second p99 threshold does not apply to this profile. This run covers
 synthetic GPS ingestion only, with the existing gateway and database limits.
 
