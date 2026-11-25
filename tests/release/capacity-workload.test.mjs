@@ -133,9 +133,44 @@ test('tenant distribution uses a reproducible seed without changing system rando
   assert.throws(() => seededRandom(0));
 });
 
+test('viewer-mix samples preserve dispatcher and reconnect rates alongside notification demand', () => {
+  const historical = sampledRates(workload, 'reconnect', 0.004);
+  const light = sampledRates(workload, 'reconnect', 0.004, 'light_viewing');
+  const noViewers = sampledRates(workload, 'reconnect', 0.004, 'notification_only');
+  for (const kind of ['gps', 'adminRead', 'login', 'catchUp']) {
+    near(light[kind], historical[kind]);
+    near(noViewers[kind], historical[kind]);
+  }
+  near(light.guardianMapPosition, (50_000 / 3) * 0.004);
+  near(light.guardianMapDetail, (50_000 / 15) * 0.004);
+  near(light.guardianSummary, ((50_000 * 2) / 30) * 0.004);
+  near(light.notification, ((500_000 * 2 * 3) / 900) * 0.004);
+  assert.equal(noViewers.notification, light.notification);
+  assert.equal(noViewers.guardianMapPosition + noViewers.guardianMapDetail + noViewers.guardianSummary, 0);
+  assert.throws(() => sampledRates(workload, 'pilot', 0.004, 'light_viewing'), /Viewer mix is unavailable/);
+  assert.throws(() => sampledRates(workload, 'peak', 0.004, 'unknown'), /Viewer mix is unavailable/);
+});
+
+test('local CLI delivers a bounded sample of the current viewer mix', () => {
+  const report = JSON.parse(execFileSync(process.execPath, [
+    'scripts/capacity-workload.mjs', '--mode=simulate', '--scenario=normal',
+    '--viewer-mix=light_viewing', '--scale=0.001', '--duration-seconds=1',
+  ], { encoding: 'utf8' }));
+  assert.equal(report.viewerMix, 'light_viewing');
+  assert.equal(report.generatorPassed, true);
+  assert.equal(report.applicationCapacityVerified, false);
+  assert.equal(report.providerDeliveriesTested, false);
+  assert.equal(report.fixtureReceived.guardianMapPosition, 16);
+  assert.equal(report.fixtureReceived.guardianMapDetail, 3);
+  assert.equal(report.fixtureReceived.guardianSummary, 3);
+  assert.equal(report.fixtureReceived.notification, 3);
+  assert.deepEqual(report.fixtureReceived, report.scheduled);
+});
+
 test('local generator enforces duration, rate, request count, in-flight and target boundaries', async () => {
   for (const options of [
     { scenario: 'peak', scale: 1 },
+    { scenario: 'peak', scale: 1, viewerMix: 'light_viewing' },
     { durationMs: 30001 },
     { maxInFlight: 33 },
     { scale: 0 },
@@ -193,6 +228,7 @@ test('CLI refuses hosted URLs, credentials and ambiguous overrides without echoi
     ['--headers=private-secret'],
     ['--mode=simulate', '--scale=NaN'],
     ['--mode=model', '--mode=simulate'],
+    ['--mode=model', '--viewer-mix=light_viewing'],
   ]) {
     const result = spawnSync(process.execPath, ['scripts/capacity-workload.mjs', ...args], {
       encoding: 'utf8',

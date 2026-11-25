@@ -4,6 +4,7 @@ import { planningReport, runLocalSimulation } from './lib/capacity-workload.mjs'
 const help = `SafeBus capacity workload tools (planning and owned local fixture only)
   --mode=model|simulate       Default: model. No hosted target option exists.
   --scenario=all|pilot|regional|fleet5000|normal|peak|reconnect
+  --viewer-mix=<name>        Sample a viewer matrix row for the selected fleet
   --scale=0.00001..1          Local sample multiplier; default 0.1
   --duration-seconds=1..30    Local duration; default 5
   --seed=1..4294967295        Reproducible tenant distribution; default 42
@@ -16,6 +17,7 @@ try {
   const allowed = new Set([
     'mode',
     'scenario',
+    'viewer-mix',
     'scale',
     'duration-seconds',
     'seed',
@@ -55,6 +57,7 @@ try {
       ? planningReport(workload, args.scenario ?? 'all')
       : await runLocalSimulation(workload, {
           scenario: args.scenario ?? 'pilot',
+          viewerMix: args['viewer-mix'],
           scale: value('scale', 0.1),
           durationMs: seconds * 1000,
           seed: value('seed', 42),

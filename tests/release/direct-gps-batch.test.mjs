@@ -111,12 +111,87 @@ test('microbatch groups independent verified devices, returns only after writer 
   batcher.close();
 });
 test('ambiguous commit cannot return a final acknowledgement',async()=>{
-  const seen=[];const pool={connect:async()=>({query:async s=>{
+  const seen=[],failures=[];const pool={connect:async()=>({query:async s=>{
     seen.push(s);if(s==='commit')throw Error('network failure');
     if(s.startsWith('select safebus_private'))return {rows:[{result:[{id:'x',status:200,body:{accepted:true,stopTracking:false}}]}]};
     return {rows:[]};},release:()=>{}})};
-  await assert.rejects(createDirectBatchWriter({pool})([{id:'x'}]),/BATCH_UNAVAILABLE/);
+  const writer=createDirectBatchWriter({pool,observeFailure:(...failure)=>failures.push(failure)});
+  await assert.rejects(writer([{id:'x'}]),/BATCH_UNAVAILABLE/);
   assert.ok(seen.includes('rollback'));
+  assert.deepEqual(failures,[['commit_round_trip','unknown',1]]);
+});
+
+test('batch diagnostics record a statement timeout without exposing provider details',async()=>{
+  const failures=[],commands=[],releases=[];
+  const timeout=Object.assign(Error('private provider detail'),{code:'57014'});
+  const writer=createDirectBatchWriter({
+    pool:{connect:async()=>({
+      async query(sql){
+        commands.push(sql);
+        if(sql.startsWith('select safebus_private'))throw timeout;
+        if(sql==='rollback')throw Error('private rollback detail');
+      },
+      release(error){releases.push(error?.message);},
+    })},
+    observeFailure(...failure){
+      failures.push(failure);
+      throw Error('diagnostic consumer unavailable');
+    },
+  });
+
+  await assert.rejects(writer([{id:'a'},{id:'b'}]),{message:'BATCH_UNAVAILABLE'});
+  assert.deepEqual(failures,[['sql_round_trip','57014',2]]);
+  assert.equal(commands.at(-1),'rollback');
+  assert.equal(commands.includes('commit'),false);
+  assert.deepEqual(releases,['CONNECTION_UNUSABLE']);
+});
+
+test('batch diagnostics distinguish connection refusal and invalid results',async()=>{
+  const failures=[];
+  const observeFailure=(...failure)=>failures.push(failure);
+  const refused=Object.assign(Error('private provider detail'),{code:'XX000'});
+  const disconnected=createDirectBatchWriter({
+    pool:{async connect(){throw refused;}},observeFailure,
+  });
+  const incomplete=createDirectBatchWriter({
+    pool:{connect:async()=>({query:async()=>({rows:[]}),release(){}})},observeFailure,
+  });
+
+  await assert.rejects(disconnected([{id:'a'}]),error=>error===refused);
+  await assert.rejects(incomplete([{id:'b'}]),{message:'BATCH_UNAVAILABLE'});
+  assert.deepEqual(failures,[['pool_acquire','XX000',1],['batch_response','unknown',1]]);
+});
+
+test('Recovery timing burst distinguishes gateway saturation from database writes',async()=>{
+  const {directGpsPlan}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan=directGpsPlan(10_000);
+  const gate=Promise.withResolvers();
+  let committed=0;
+  const batcher=createDirectGpsBatcher({batchSize:plan.batchSizes[0],maxWaitMs:plan.batchWaitMs,
+    maxInFlight:plan.dbConnections,maxPending:plan.maxPending,verify:async token=>({sub:token}),
+    write:async items=>{
+      await gate.promise;
+      committed+=items.length;
+      return new Map(items.map(item=>[item.id,{status:200}]));
+    }});
+  const at=Date.now();
+  const run={trackingToken:'sbus_track_v1_'+'a'.repeat(43)};
+  const responses=Array.from({length:plan.buses},(_,index)=>{
+    const device={deviceCredential:'sbus_device_v1_'+String(index).padStart(43,'0')};
+    return batcher.submit('Bearer driver'+index,payload(run,device,1,at));
+  });
+  const expected={limit:1000,peakAdmitted:1000,rejectedAtLimit:9000};
+  const beforeCommit=batcher.admissionStats();
+  const committedBeforeRelease=committed;
+  gate.resolve();
+  const statuses=(await Promise.all(responses)).map(response=>response.status);
+  batcher.close();
+  assert.deepEqual(beforeCommit,expected);
+  assert.equal(committedBeforeRelease,0);
+  assert.equal(statuses.filter(status=>status===503).length,9000);
+  assert.equal(statuses.filter(status=>status===200).length,1000);
+  assert.equal(committed,1000);
+  assert.deepEqual(batcher.admissionStats(),expected);
 });
 
 test('hosted direct comparison is bounded and compares identical 100-bus patterns',async()=>{
@@ -134,7 +209,7 @@ test('hosted direct comparison is bounded and compares identical 100-bus pattern
   for(const size of DIRECT_GPS_PLAN.batchSizes)assert.deepEqual(windows.filter(w=>w.batchSize===size).map(w=>w.pattern),['staggered','synchronized']);
 });
 
-test('500-bus qualification repeats the eight-connection screen without replaying individual ingestion',async()=>{
+test('500-bus qualification compares batch sizes at eight connections within the previous workload budget',async()=>{
   const {DIRECT_GPS_SCALE_PLAN,directGpsPlan,directGpsComparisonWindows}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   assert.equal(directGpsPlan(500),DIRECT_GPS_SCALE_PLAN);
   const plan=directGpsPlan(500);
@@ -143,10 +218,10 @@ test('500-bus qualification repeats the eight-connection screen without replayin
   assert.equal(plan.batchWaitMs,50);
   assert.equal(plan.p99TargetMs,1000);
   assert.equal(plan.confirmation,'RUN_RECOVERY_DIRECT_GPS_500');
-  assert.deepEqual(plan.workerCandidates,[8]);
-  assert.deepEqual(directGpsComparisonWindows(plan),['original','optimized'].map(writePath=>
-    ({batchSize:50,pattern:'synchronized',path:'direct_batch',
-      phase:writePath==='original'?'baseline_screen':'worker_screen',writePath,dbConnections:8,rounds:10})));
+  const windows=directGpsComparisonWindows(plan);
+  assert.deepEqual(windows,[50,64].map(batchSize=>({batchSize,pattern:'synchronized',path:'direct_batch',
+    phase:'batch_screen',writePath:'optimized',dbConnections:8,rounds:10})));
+  assert.equal(windows.reduce((fixes,w)=>fixes+plan.buses*w.rounds,0),10000);
   assert.equal(plan.buses*plan.rounds*plan.patterns.length,100000);
   for(const invalid of [0,10,499,1000,5000,'500'])assert.throws(()=>directGpsPlan(invalid),/DIRECT_GPS_SCOPE/);
   assert.throws(()=>directGpsComparisonWindows({...plan,dbConnections:60}),/DIRECT_GPS_SCOPE/);
@@ -158,7 +233,8 @@ test('10,000-bus Recovery profile measures the burst and staggered arrivals with
   const previous = directGpsPlan(500);
   assert.equal(plan.confirmation, 'RUN_RECOVERY_DIRECT_GPS_10000');
   assert.equal(plan.p99TargetMs, undefined);
-  assert.equal(plan.workerCandidates, undefined);
+  assert.equal(plan.screenRounds, undefined);
+  assert.deepEqual(plan.batchSizes, [50]);
   assert.equal(plan.dbConnections, previous.dbConnections);
   assert.equal(plan.maxPending, previous.maxPending);
   assert.equal(plan.capacityQualified, false);
@@ -166,6 +242,37 @@ test('10,000-bus Recovery profile measures the burst and staggered arrivals with
     { batchSize: 50, pattern: 'synchronized', path: 'direct_batch', phase: 'timing', writePath: 'optimized', dbConnections: 8, rounds: 1 },
     { batchSize: 50, pattern: 'staggered', path: 'direct_batch', phase: 'timing', writePath: 'optimized', dbConnections: 8, rounds: 10 },
   ]);
+});
+
+test('the wider screen can dispatch a synchronized burst within the same eight workers', {timeout:5000}, async t=>{
+  const {directGpsPlan}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const plan=directGpsPlan(500);
+  for(const batchSize of plan.batchSizes){
+    const firstWave=Promise.withResolvers();
+    const writers=Promise.withResolvers();
+    const sizes=[];
+    const batcher=createDirectGpsBatcher({
+      batchSize,maxWaitMs:plan.batchWaitMs,maxInFlight:plan.dbConnections,maxPending:plan.maxPending,
+      verify:async token=>({sub:token}),
+      async write(items){
+        sizes.push(items.length);
+        if(sizes.length===plan.dbConnections) firstWave.resolve(sizes.reduce((sum,n)=>sum+n,0));
+        await writers.promise;
+        return new Map(items.map(item=>[item.id,{status:200}]));
+      },
+    });
+    t.after(()=>{writers.resolve();batcher.close();});
+    const time=Date.now();
+    const submissions=Array.from({length:plan.buses},(_,index)=>{
+      const fix=payload({trackingToken:'sbus_track_v1_'+'a'.repeat(43)},
+        {deviceCredential:'sbus_device_v1_'+String(index).padStart(43,'0')},1,time);
+      return batcher.submit('Bearer driver-'+index,fix);
+    });
+    const dispatched=await firstWave.promise;
+    writers.resolve();
+    assert.equal(dispatched,batchSize===50?400:500);
+    assert.ok((await Promise.all(submissions)).every(result=>result.status===200));
+  }
 });
 
 test('batch writer uses exactly three database commands and retains all local deadlines',async()=>{
@@ -187,17 +294,21 @@ test('batch writer uses exactly three database commands and retains all local de
   assert.ok(timing.every(t=>Number.isFinite(t.ms)&&t.ms>=0&&t.count===1));
 });
 
-test('worker screen requires a passing optimized window and complete evidence',async()=>{
-  const {directGpsPlan,directGpsComparisonWindows,chooseDirectGpsWorkers}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+test('batch screen selects the smallest passing size and requires complete evidence',async()=>{
+  const {directGpsPlan,directGpsComparisonWindows,chooseDirectGpsBatchSize}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   const plan=directGpsPlan(500);
   const windows=directGpsComparisonWindows(plan).map(w=>({...w,classification:'passed',passed:true,meetsLatencyTarget:true,batchTransactionsReconciled:true}));
-  assert.equal(chooseDirectGpsWorkers(plan,windows),8);
+  assert.equal(chooseDirectGpsBatchSize(plan,windows),50);
+  windows[0].meetsLatencyTarget=false;
+  assert.equal(chooseDirectGpsBatchSize(plan,windows),64);
   windows[1].meetsLatencyTarget=false;
-  assert.equal(chooseDirectGpsWorkers(plan,windows),null);
+  assert.equal(chooseDirectGpsBatchSize(plan,windows),null);
   windows[1].meetsLatencyTarget=true;
   windows[1].batchTransactionsReconciled=false;
-  assert.equal(chooseDirectGpsWorkers(plan,windows),null);
-  assert.throws(()=>chooseDirectGpsWorkers(plan,windows.slice(0,-1)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
+  assert.equal(chooseDirectGpsBatchSize(plan,windows),null);
+  assert.throws(()=>chooseDirectGpsBatchSize(plan,windows.slice(0,-1)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
+  assert.throws(()=>chooseDirectGpsBatchSize(plan,[windows[0], {...windows[1],dbConnections:12}]),/DIRECT_GPS_SCREEN_INCOMPLETE/);
+  assert.throws(()=>chooseDirectGpsBatchSize(plan,[windows[0], {...windows[1],classification:'fatal'}]),/DIRECT_GPS_SCREEN_INCOMPLETE/);
 });
 
 test('Recovery worker resize stays within the session-pool budget and records an open failure', async () => {
@@ -234,6 +345,41 @@ test('Recovery worker resize stays within the session-pool budget and records an
   });
   await Promise.all(connections.map(connection => connection.end()));
   assert.equal(activeWorkers, 0);
+});
+
+test('Recovery SQL snapshot returns counters or a sanitized read failure', async () => {
+  const { readDirectGpsSqlCounters } = await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
+  const snapshot = { calls: '104', total_exec_ms: 31000 };
+  const db = { query: async (_sql, params) => {
+    assert.deepEqual(params, ['%ingest_verified_driver_location_batch%', 'postgres']);
+    return { rows: [snapshot] };
+  } };
+  assert.deepEqual(await readDirectGpsSqlCounters(db, true), { snapshot, failure: null });
+  const failed = code => ({
+    query: async () => { throw Object.assign(Error('private database detail'), { code }); },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters(failed('57014'), true), {
+    snapshot: null, failure: { sqlState: '57014' },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters(failed('unexpected provider code'), true), {
+    snapshot: null, failure: { sqlState: null },
+  });
+  assert.deepEqual(await readDirectGpsSqlCounters({ query: async () => ({ rows: [] }) }, true), {
+    snapshot: null, failure: { sqlState: null },
+  });
+});
+
+test('Recovery opens the window after the baseline and records completed work before stopping', async () => {
+  const script = await fs.readFile('scripts/lib/recovery-direct-gps-comparison.mjs', 'utf8');
+  const run = script.slice(script.indexOf('export async function runRecoveryDirectGpsComparison'));
+  const baseline = run.indexOf('if(before.failure)');
+  const transport = run.indexOf('const transport=window.batchSize?');
+  const close = run.indexOf('await transport.close()');
+  const endingSnapshot = run.indexOf('const after=await readDirectGpsSqlCounters');
+  const saved = run.indexOf('evidence.windows.push(result)');
+  const stop = run.indexOf("if(after.failure||sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS')");
+  assert.ok(baseline >= 0 && transport > baseline);
+  assert.ok(close > transport && endingSnapshot > close && saved > endingSnapshot && stop > saved);
 });
 
 test('Recovery SQL window reconciles exact batch calls and preserves large counter deltas', async () => {
