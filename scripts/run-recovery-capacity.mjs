@@ -61,7 +61,7 @@ import {
 } from "./lib/recovery-api-diagnostics.mjs";
 import { calculateSchemaFingerprint } from "./lib/schema-fingerprint.mjs";
 import { recoveryPolicyQuery } from "./lib/recovery-runtime-catalog.mjs";
-import { assertRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
+import { inspectRecoveryRealtimePartitions } from "./lib/recovery-realtime-readiness.mjs";
 import { createRecoveryGpsComparison, recoveryGpsComparisonPlan, sampleRecoveryGpsDatabase, sampleRecoveryGpsSql, classifyRecoveryGpsStage, resetRecoveryGpsWindow } from "./lib/recovery-native-gps-comparison.mjs";
 import { runRecoveryDirectGpsComparison, directGpsPlan } from "./lib/recovery-direct-gps-comparison.mjs";
 const { createClient } = createRequire(
@@ -310,7 +310,10 @@ try {
   // for isolating ingestion bottlenecks even when managed partitions are stale.
   // The combined workload must have live provider partitions before setup.
   if (!nativeGpsOnly) {
-    evidence.realtimePartitionReadiness = await assertRecoveryRealtimePartitions(db);
+    const readiness = await inspectRecoveryRealtimePartitions(db);
+    evidence.realtimePartitionReadiness = readiness;
+    if (!readiness.todayReady || !readiness.tomorrowReady)
+      throw Error("CAPACITY_REALTIME_PARTITION_NOT_READY");
   }
   evidence.schemaFingerprint = await calculateSchemaFingerprint(db);
   evidence.database = (
