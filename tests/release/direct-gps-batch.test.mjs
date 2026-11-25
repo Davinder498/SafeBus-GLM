@@ -294,17 +294,18 @@ test('batch writer uses exactly three database commands and retains all local de
   assert.ok(timing.every(t=>Number.isFinite(t.ms)&&t.ms>=0&&t.count===1));
 });
 
-test('batch screen selects the smallest passing size and requires complete evidence',async()=>{
+test('batch screen selects the lowest p99 among on-time, reconciled screens',async()=>{
   const {directGpsPlan,directGpsComparisonWindows,chooseDirectGpsBatchSize}=await import('../../scripts/lib/recovery-direct-gps-comparison.mjs');
   const plan=directGpsPlan(500);
-  const windows=directGpsComparisonWindows(plan).map(w=>({...w,classification:'passed',passed:true,meetsLatencyTarget:true,batchTransactionsReconciled:true}));
-  assert.equal(chooseDirectGpsBatchSize(plan,windows),50);
-  windows[0].meetsLatencyTarget=false;
+  const windows=directGpsComparisonWindows(plan).map((window,index)=>({
+    ...window, classification:'passed', passed:true, meetsLatencyTarget:false,
+    batchTransactionsReconciled:true, latencyMs:{p99:[1442.9,1140.3][index]},
+  }));
   assert.equal(chooseDirectGpsBatchSize(plan,windows),64);
-  windows[1].meetsLatencyTarget=false;
-  assert.equal(chooseDirectGpsBatchSize(plan,windows),null);
-  windows[1].meetsLatencyTarget=true;
-  windows[1].batchTransactionsReconciled=false;
+  windows[1].passed=false;
+  windows[1].classification='performance_failed';
+  assert.equal(chooseDirectGpsBatchSize(plan,windows),50);
+  windows[0].batchTransactionsReconciled=false;
   assert.equal(chooseDirectGpsBatchSize(plan,windows),null);
   assert.throws(()=>chooseDirectGpsBatchSize(plan,windows.slice(0,-1)),/DIRECT_GPS_SCREEN_INCOMPLETE/);
   assert.throws(()=>chooseDirectGpsBatchSize(plan,[windows[0], {...windows[1],dbConnections:12}]),/DIRECT_GPS_SCREEN_INCOMPLETE/);

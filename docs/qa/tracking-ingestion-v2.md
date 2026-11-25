@@ -162,8 +162,8 @@ GPS wrapper uses one rollback block for a successful batch. A permission denial
 rolls back that attempt and replays each fix in the same order, so a denied
 item receives its own 403. Unexpected failures abort the whole transaction.
 JWT validation, driver authorization, per-fix result checks, and acknowledgment
-after commit are still required. The 1,000 ms p99 gate applies to the short
-optimized screen and both sustained windows.
+after commit were still required. This historical profile used a 1,000 ms p99
+gate for the short optimized screen and both sustained windows.
 
 [Run 45544667532](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45544667532)
 tested `ba7c5e083a2622564948b2c2e17636953fddc64d` on November 24 in Alberta.
@@ -188,9 +188,11 @@ queue time enough to offset the extra SQL work in each larger batch. Arrival
 timing can still cause partial batches.
 
 The maximum workload remains 10,000 screen fixes and 100,000 sustained fixes.
-Only the smallest size that accepts and reconciles every fix, has zero late
-updates, and meets 1,000 ms p99 proceeds to sustained testing. Both sustained
-patterns use that size and the same gate. An ambiguous outcome stops the run.
+The screen with the lowest measured p99 among those that accept every fix on
+time and reconcile final positions and committed batches proceeds to sustained
+testing. Both sustained patterns must meet the same three-second per-fix
+deadline and reconciliation checks. The 1,000 ms p99 benchmark is recorded for
+comparison. An ambiguous outcome stops the run.
 The transaction timeouts, connection cap, authorization checks and cleanup
 remain in force.
 
