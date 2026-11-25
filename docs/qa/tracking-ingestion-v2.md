@@ -252,6 +252,12 @@ In **Run isolated recovery capacity**, select `10000` buses and
 `RUN_RECOVERY_DIRECT_GPS_10000`. The workflow provisions synthetic drivers in
 Recovery and uses eight database connections and 50-fix direct batches.
 
+The timing profile uses a run-local pool of 512 HTTP connections. The
+gateway still enforces its own socket and admission limits. The request
+deadline includes time spent waiting for a client socket, and the window
+records this wait separately from gateway queue time. A synchronized round
+collects 10,000 fixes at once, with delivery paced by the test client pool.
+
 The run offers one synchronized burst of 10,000 fixes. If the burst can be
 reconciled, the staggered window offers ten fixes per driver at three-second
 intervals. Each measured window records planned, sent, accepted and late fixes,

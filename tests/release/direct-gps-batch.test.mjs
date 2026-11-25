@@ -3,6 +3,8 @@ import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import {once} from 'node:events';
+import {createServer} from 'node:http';
+import {createDirectGpsLoopbackClient} from '../../scripts/lib/recovery-direct-gps-comparison.mjs';
 import {installed,setup,id,time} from './fixtures/live-tracking-only-db.mjs';
 import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatcher,createDirectGpsServer,BATCH_TRANSACTION_SETUP}
   from '../../services/tracking-ingestion/direct-batch.mjs';
@@ -11,6 +13,52 @@ const sql=await fs.readFile('services/tracking-ingestion/direct-batch.sql','utf8
 const issuer='https://synthetic.supabase.co/auth/v1';
 const claims=(sub=id(3),session_id=id(70))=>({iss:issuer,aud:'authenticated',role:'authenticated',sub,session_id,aal:'aal1',exp:Math.floor(Date.now()/1000)+600});
 const payload=(run,device,seq,at)=>({p_tracking_token:run.trackingToken,p_device_credential:device.deviceCredential,p_event_id:id(100+seq),p_sequence:seq,p_recorded_at:new Date(at).toISOString(),p_latitude:53.5,p_longitude:-113.5,p_accuracy_m:5,p_heading_deg:null,p_speed_mps:null,p_battery_percent:80,p_connectivity:'offline'});
+
+test('the bounded GPS client queues on a single socket and sends no cancelled fix', { timeout: 5000 }, async t => {
+  const firstArrival = Promise.withResolvers();
+  const release = Promise.withResolvers();
+  const arrivals = [];
+  const sockets = new Set();
+  const server = createServer(async (incoming, response) => {
+    let body = '';
+    for await (const chunk of incoming) body += chunk;
+    arrivals.push(body);
+    sockets.add(incoming.socket);
+    if (arrivals.length === 1) {
+      firstArrival.resolve();
+      await release.promise;
+    }
+    response.end(JSON.stringify({ body }));
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const observed = [];
+  const client = createDirectGpsLoopbackClient(server.address().port, 1, (...args) => observed.push(args));
+  t.after(async () => {
+    release.resolve();
+    client.close();
+    await new Promise(resolve => server.close(resolve));
+  });
+  const headers = { 'content-type': 'application/json' };
+  const first = client.post(headers, '1');
+  await firstArrival.promise;
+  const cancel = new AbortController();
+  const aborted = assert.rejects(client.post(headers, '2', cancel.signal), { name: 'AbortError' });
+  const queued = client.post(headers, '3');
+  cancel.abort();
+  assert.deepEqual(arrivals, ['1']);
+  release.resolve();
+  await aborted;
+  assert.deepEqual(await Promise.all([first, queued]), [
+    { status: 200, body: { body: '1' } },
+    { status: 200, body: { body: '3' } },
+  ]);
+  assert.deepEqual(arrivals, ['1', '3']);
+  assert.equal(sockets.size, 1);
+  assert.equal(observed.length, 2);
+  assert.ok(observed.every(([name, ms]) => name === 'client_socket_wait' && ms >= 0));
+});
+
 test('HTTP to embedded PostgreSQL: commit, duplicate, denial, MFA and session revocation',async t=>{
   const db=await installed();t.after(()=>db.close());
   const {run,device}=await setup(db);
@@ -237,6 +285,8 @@ test('10,000-bus Recovery profile measures the burst and staggered arrivals with
   assert.deepEqual(plan.batchSizes, [50]);
   assert.equal(plan.dbConnections, previous.dbConnections);
   assert.equal(plan.maxPending, previous.maxPending);
+  assert.equal(plan.clientSocketLimit, 512);
+  assert.equal(previous.clientSocketLimit, undefined);
   assert.equal(plan.capacityQualified, false);
   assert.deepEqual(directGpsComparisonWindows(plan), [
     { batchSize: 50, pattern: 'synchronized', path: 'direct_batch', phase: 'timing', writePath: 'optimized', dbConnections: 8, rounds: 1 },

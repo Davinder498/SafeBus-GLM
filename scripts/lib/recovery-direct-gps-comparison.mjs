@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
+import { Agent, request } from 'node:http';
 import { performance } from 'node:perf_hooks';
 import { setTimeout as delay } from 'node:timers/promises';
 import { RECOVERY_AUTH_URL } from './recovery-auth.mjs';
@@ -42,6 +43,7 @@ const DIRECT_GPS_TIMING_PLAN = Object.freeze({
   batchWaitMs: DIRECT_GPS_SCALE_PLAN.batchWaitMs,
   dbConnections: DIRECT_GPS_SCALE_PLAN.dbConnections,
   maxPending: DIRECT_GPS_SCALE_PLAN.maxPending,
+  clientSocketLimit: 512,
   confirmation: 'RUN_RECOVERY_DIRECT_GPS_10000',
   capacityQualified: false,
   measurementOnly: true,
@@ -137,6 +139,39 @@ function payload(driver,sequence,recordedAt,latitude) {
     p_speed_mps:5,p_battery_percent:80,p_connectivity:'cellular'};
 }
 
+export function createDirectGpsLoopbackClient(port, maxSockets, observe) {
+  const agent = new Agent({ keepAlive: true, maxSockets });
+  return {
+    post(headers, body, signal) {
+      const requestedAt = performance.now();
+      return new Promise((resolve, reject) => {
+        const outgoing = request({
+          hostname: '127.0.0.1', port, path: '/tracking/v2/location',
+          method: 'POST', agent, signal,
+          headers: { ...headers, 'content-length': Buffer.byteLength(body) },
+        }, async response => {
+          try {
+            const chunks = [];
+            let received = 0;
+            for await (const chunk of response) {
+              received += chunk.length;
+              if (received > 65536) throw Error('DIRECT_GPS_RESPONSE_TOO_LARGE');
+              chunks.push(chunk);
+            }
+            resolve({ status: response.statusCode, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
+          } catch (error) {
+            reject(error);
+          }
+        });
+        outgoing.once('socket', () => observe('client_socket_wait', performance.now() - requestedAt));
+        outgoing.once('error', reject);
+        outgoing.end(body);
+      });
+    },
+    close: () => agent.destroy(),
+  };
+}
+
 async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,dbConnections=plan.dbConnections}) {
   const verify=createSupabaseClaimsVerifier({auth,issuer:RECOVERY_AUTH_URL+'/auth/v1'});
   const timing=createTimingCollector();
@@ -171,15 +206,26 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
   let socketDrops=0;
   server.on('drop',()=>{socketDrops++;});
   server.listen(0,'127.0.0.1');await once(server,'listening');
-  const endpoint='http://127.0.0.1:'+server.address().port+'/tracking/v2/location';
+  const { port } = server.address();
+  const endpoint='http://127.0.0.1:'+port+'/tracking/v2/location';
+  const client = plan.clientSocketLimit
+    ? createDirectGpsLoopbackClient(port, plan.clientSocketLimit, timing.observe)
+    : null;
   const send=async(driver,fix,abortSignal)=>{
     metrics.writes++;
     try{
-      const r=await fetch(endpoint,{method:'POST',redirect:'error',
-        headers:{authorization:'Bearer '+driver.accessToken,'content-type':'application/json'},
-        body:JSON.stringify(fix),signal:AbortSignal.any([AbortSignal.timeout(10000),...([signal,abortSignal].filter(Boolean))])});
-      const body=await r.json();metrics.responses++;
-      return {status:r.status,body};
+      const headers={authorization:'Bearer '+driver.accessToken,'content-type':'application/json'};
+      const body=JSON.stringify(fix);
+      const deadline=AbortSignal.any([AbortSignal.timeout(10000),...([signal,abortSignal].filter(Boolean))]);
+      let result;
+      if (client) {
+        result = await client.post(headers,body,deadline);
+      } else {
+        const response=await fetch(endpoint,{method:'POST',redirect:'error',headers,body,signal:deadline});
+        result={status:response.status,body:await response.json()};
+      }
+      metrics.responses++;
+      return result;
     }catch{
       metrics.failures.REQUEST_FAILED=(metrics.failures.REQUEST_FAILED??0)+1;
       throw Error('DIRECT_GPS_TRANSPORT');
@@ -193,10 +239,11 @@ async function directTransport({pool,auth,batchSize,signal,plan=DIRECT_GPS_PLAN,
       throw Error('NATIVE_GPS_ACK_MISMATCH');
   };
   return {send,upload,metrics,timings:timing.snapshot,
-    admissionStats:()=>({...batcher.admissionStats(),socketLimit:server.maxConnections,socketDrops}),close:async()=>{
+    admissionStats:()=>({...batcher.admissionStats(),socketLimit:server.maxConnections,socketDrops,
+      ...(client ? {clientSocketLimit:plan.clientSocketLimit} : {})}),close:async()=>{
     // Stop accepting new work, then drain database transactions even when an
     // HTTP client timed out or disconnected before the write completed.
-    batcher.close();await new Promise(resolve=>server.close(resolve));
+    batcher.close();client?.close();await new Promise(resolve=>server.close(resolve));
     await Promise.allSettled([...activeWrites]);
   }};
 }
