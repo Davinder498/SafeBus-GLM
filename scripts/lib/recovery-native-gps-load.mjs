@@ -255,6 +255,7 @@ export async function measureNativeGps({
   const beganAt = wallClock();
   const slots = drivers.length * rounds;
   const latency = [];
+  const lateByRound = Array(rounds).fill(0);
   const latest = new Map();
   const pending = new Set();
   const uploading = new Set();
@@ -352,7 +353,10 @@ export async function measureNativeGps({
           lastAcknowledgementMs = acknowledgedAt - started;
           // Use the real Android pause range upper bound for reproducible A-B-A.
           nextUploadAt.set(driver.tripId, clock() + (queueBusySlots ? 750 : minimumUploadPauseMs));
-          if (elapsed > periodMs) late++;
+          if (elapsed > periodMs) {
+            late++;
+            lateByRound[round]++;
+          }
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
             latest.set(driver.tripId, { sequence, recordedAt, latitude });
@@ -410,6 +414,7 @@ export async function measureNativeGps({
     unsent: slots - offered,
     unacknowledged: offered - accepted,
     late,
+    lateByRound,
     deviceBackpressure,
     busyInFlight,
     busyCooldown,
