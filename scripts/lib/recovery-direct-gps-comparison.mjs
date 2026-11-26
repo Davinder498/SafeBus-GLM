@@ -431,7 +431,10 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
         '; transactions='+(window.batchSize?transport.metrics.transactions:'see_sql_counters')+
         '; batches='+(window.batchSize?JSON.stringify(transport.metrics.batchSizes):'individual')+
         '; reconciled='+result.reconciled+'; classification='+result.classification+'; latency_target_met='+result.meetsLatencyTarget+'; errors='+JSON.stringify(result.errors));
-      if(result.late)console.log('Direct GPS late acknowledgements by scheduled round: '+JSON.stringify(result.lateByRound));
+      if(result.late){
+        console.log('Direct GPS late acknowledgements by scheduled round: '+JSON.stringify(result.lateByRound));
+        console.log('Direct GPS late acknowledgement timing: '+JSON.stringify(result.lateTiming));
+      }
       if(result.timings)console.log('Direct GPS timing (ms): phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+'; pattern='+window.pattern+'; stages='+JSON.stringify(result.timings));
       if(after.failure||sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
       // Continue only with reconciled responses; never reset ambiguous writes.
