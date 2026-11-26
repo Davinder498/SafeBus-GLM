@@ -256,6 +256,7 @@ export async function measureNativeGps({
   const slots = drivers.length * rounds;
   const latency = [];
   const lateByRound = Array(rounds).fill(0);
+  const lateTiming = { alreadyLateAtSend: 0, uploadOverPeriod: 0, combinedDelay: 0 };
   const latest = new Map();
   const pending = new Set();
   const uploading = new Set();
@@ -330,7 +331,7 @@ export async function measureNativeGps({
       offered++;
       uploading.add(driver.tripId);
     }
-    let uploadStarted = false;
+    let uploadStartedAt = null;
     const request = Promise.resolve(previous)
       .then(async () => {
         if (queueBusySlots) {
@@ -342,7 +343,7 @@ export async function measureNativeGps({
           offered++;
           uploading.add(driver.tripId);
         }
-        uploadStarted = true;
+        uploadStartedAt = clock();
         return upload(driver, sequence, recordedAt, latitude, signal);
       })
       .then(
@@ -356,6 +357,9 @@ export async function measureNativeGps({
           if (elapsed > periodMs) {
             late++;
             lateByRound[round]++;
+            if (uploadStartedAt - due > periodMs) lateTiming.alreadyLateAtSend++;
+            else if (acknowledgedAt - uploadStartedAt > periodMs) lateTiming.uploadOverPeriod++;
+            else lateTiming.combinedDelay++;
           }
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
@@ -363,7 +367,7 @@ export async function measureNativeGps({
         },
         (error) => {
           const code = error?.message;
-          if (!uploadStarted && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
+          if (uploadStartedAt === null && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
             cancelledBeforeSend++;
             return;
           }
@@ -415,6 +419,7 @@ export async function measureNativeGps({
     unacknowledged: offered - accepted,
     late,
     lateByRound,
+    lateTiming,
     deviceBackpressure,
     busyInFlight,
     busyCooldown,
