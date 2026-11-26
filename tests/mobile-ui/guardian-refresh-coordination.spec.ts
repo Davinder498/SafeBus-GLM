@@ -100,15 +100,27 @@ test('shared GPS refreshes locations every three seconds while bounding stop-det
   page,
 }) => {
   const { fixture, socket } = await openMap(page, true);
+  const marker = page.getByTestId('guardian-live-bus-map-marker');
+  const pickup = page.getByTestId('guardian-live-map-pickup-stop-marker');
   const visibilityBefore = fixture.getCallCount();
   const linesBefore = fixture.getServiceLineCallCount();
   const joinsBefore = socket.joins();
+  const markerOffset = async () => {
+    const [busPosition, pickupPosition] = await Promise.all([
+      marker.boundingBox(),
+      pickup.boundingBox(),
+    ]);
+    if (!busPosition || !pickupPosition) return Number.NEGATIVE_INFINITY;
+    return pickupPosition.y - busPosition.y;
+  };
+  let previousOffset = await markerOffset();
+  expect(Number.isFinite(previousOffset)).toBe(true);
   for (let step = 1; step <= 5; step++) {
     await page.clock.runFor(2_850);
     const recordedAt = `2026-01-01T15:00:${String(step * 3).padStart(2, '0')}.000Z`;
     fixture.setRows([
       guardianVisibilityRow({
-        latitude: 51.05,
+        latitude: 51.05 + step * 0.0004,
         location_recorded_at: recordedAt,
       }),
     ]);
@@ -120,7 +132,10 @@ test('shared GPS refreshes locations every three seconds while bounding stop-det
       })
       .toBe(visibilityBefore + step);
     expect(fixture.getServiceLineCallCount() - linesBefore).toBeLessThanOrEqual(1);
-    await expect(page.getByTestId('guardian-live-bus-map-marker')).toHaveCount(1);
+    await expect(marker).toHaveCount(1);
+    // Measure against a fixed stop so a camera move cannot pass as bus movement.
+    await expect.poll(markerOffset).toBeGreaterThan(previousOffset);
+    previousOffset = await markerOffset();
     await page.getByRole('button', { name: 'Bus 42', exact: true }).click();
     const displayedTime = await page.evaluate((iso) => new Date(iso).toLocaleString(), recordedAt);
     await expect(page.locator('.leaflet-popup-content')).toContainText(`Updated ${displayedTime}`);
@@ -133,6 +148,33 @@ test('shared GPS refreshes locations every three seconds while bounding stop-det
   expect(fixture.getCallCount()).toBe(visibilityBefore + 5);
   await page.clock.runFor(1_200);
   await expect.poll(() => fixture.getCallCount()).toBe(visibilityBefore + 6);
+});
+
+test('the open map catches up after reconnect without a new GPS hint or a page reload', async ({
+  page,
+}) => {
+  const { fixture, socket } = await openMap(page, true);
+  const marker = page.getByTestId('guardian-live-bus-map-marker');
+  await expect.poll(() => socket.active(sharedTopic)).toBe(1);
+
+  await page.context().setOffline(true);
+  await expect.poll(socket.active).toBe(0);
+  await expect.poll(() => socket.active(sharedTopic)).toBe(0);
+  await expect(marker).toHaveCount(0);
+  const callsWhileOffline = fixture.getCallCount();
+
+  const latest = '2026-01-01T15:00:09.000Z';
+  fixture.setRows([guardianVisibilityRow({ latitude: 51.052, location_recorded_at: latest })]);
+  await page.clock.runFor(9_000);
+  expect(fixture.getCallCount()).toBe(callsWhileOffline);
+
+  await page.context().setOffline(false);
+  await page.clock.runFor(3_100);
+  await expect.poll(() => socket.active(sharedTopic)).toBe(1);
+  await expect(marker).toBeVisible();
+  await page.getByRole('button', { name: 'Bus 42', exact: true }).click();
+  const displayedTime = await page.evaluate((iso) => new Date(iso).toLocaleString(), latest);
+  await expect(page.locator('.leaflet-popup-content')).toContainText(`Updated ${displayedTime}`);
 });
 
 test('a live permission recheck clears the map when the authoritative RPC denies access', async ({
