@@ -93,3 +93,11 @@ The runner restores
 the original function and its grants, removes its private batch function and
 verifies fixture cleanup. Interrupted runs require independent restoration
 and fixture checks before another workload starts.
+
+For windows with late acknowledgements, `lateTimingByRound` in the evidence and
+comparison log follows scheduled round order, starting with round 1. Each late
+acknowledgement counts once in the round that collected the fix. The three
+counts cover fixes already past the three-second deadline when upload started,
+uploads that took more than three seconds on their own, and fixes whose sender
+delay and upload time together exceeded the deadline. Round totals reconcile to
+`lateByRound`, and totals across rounds reconcile to `lateTiming`.

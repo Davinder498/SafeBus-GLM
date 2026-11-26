@@ -257,6 +257,7 @@ export async function measureNativeGps({
   const latency = [];
   const lateByRound = Array(rounds).fill(0);
   const lateTiming = { alreadyLateAtSend: 0, uploadOverPeriod: 0, combinedDelay: 0 };
+  const lateTimingByRound = Array.from({ length: rounds }, () => ({ ...lateTiming }));
   const latest = new Map();
   const pending = new Set();
   const uploading = new Set();
@@ -357,9 +358,11 @@ export async function measureNativeGps({
           if (elapsed > periodMs) {
             late++;
             lateByRound[round]++;
-            if (uploadStartedAt - due > periodMs) lateTiming.alreadyLateAtSend++;
-            else if (acknowledgedAt - uploadStartedAt > periodMs) lateTiming.uploadOverPeriod++;
-            else lateTiming.combinedDelay++;
+            let timing = "combinedDelay";
+            if (uploadStartedAt - due > periodMs) timing = "alreadyLateAtSend";
+            else if (acknowledgedAt - uploadStartedAt > periodMs) timing = "uploadOverPeriod";
+            lateTiming[timing]++;
+            lateTimingByRound[round][timing]++;
           }
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
@@ -420,6 +423,7 @@ export async function measureNativeGps({
     late,
     lateByRound,
     lateTiming,
+    lateTimingByRound,
     deviceBackpressure,
     busyInFlight,
     busyCooldown,
