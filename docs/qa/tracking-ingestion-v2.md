@@ -286,3 +286,28 @@ The socket and admission counts help interpret shortfalls alongside committed
 batches, SQL error codes and request timeouts. A local regression with database
 writers held before commit admitted 1,000 of 10,000 simultaneous synthetic
 submissions and returned 503 to the remaining 9,000 at the existing limit.
+
+### Sustained hosted 500-bus result on November 25, 2026 (Alberta)
+
+[Run 45716975502](https://github.com/Davinder498/SafeBus-GLM/actions/runs/45716975502)
+tested main revision `226489c900bff3e147f276e0300718a3a4a70054`. Both short screens
+accepted and reconciled all 5,000 fixes within the three-second deadline.
+The 64-fix screen had the lower p99 at 1,093.0 ms and advanced to both
+100-round windows with eight database connections.
+
+| Pattern | Accepted | Late | Acknowledgement p99 |
+| --- | ---: | ---: | ---: |
+| Staggered | 50,000 | 26 | 264.7 ms |
+| Synchronized | 50,000 | 756 | 3,738.5 ms |
+
+Both sustained windows reconciled final positions and committed batches and
+reported zero unsent or unacknowledged fixes. The workflow stopped at the
+latency gate. The 500-bus GPS result leaves combined capacity unverified.
+
+When fixes are acknowledged late, GPS evidence now lists the affected rounds.
+Each entry records how many were already late when upload started and the
+maxima for scheduler lag, device queue time and time from upload start to
+acknowledgement among late fixes. Each maximum may come from a different fix.
+Upload-to-acknowledgement time includes the client transport, gateway and
+database. Use the existing gateway and SQL timing alongside these counts to
+investigate where a delay originated.

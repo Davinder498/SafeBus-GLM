@@ -784,7 +784,8 @@ test('arrivals do not issue a request when cancelled during scheduled wait', asy
 });
 
 test('sustained native GPS queues a cooldown-blocked fix, keeps its collection timestamp and enforces latency', async () => {
-  for (const delayedSecond of [false, true]) {
+  for (const [cooldownScale, delayedSecond] of [[1, false], [1, true], [7, false]]) {
+    const expectedLate = delayedSecond || cooldownScale > 1;
     let now = 0;
     const sent = [];
     const result = await measureNativeGps({
@@ -805,17 +806,25 @@ test('sustained native GPS queues a cooldown-blocked fix, keeps its collection t
         await new Promise(setImmediate);
         now = Math.max(now, due);
       },
-      waitForUpload: async ms => { now += ms; },
+      waitForUpload: async ms => { now += ms * cooldownScale; },
     });
     assert.deepEqual(sent.map(x => x.sequence), [1, 2]);
     assert.equal(Date.parse(sent[1].recordedAt) - Date.parse(sent[0].recordedAt), 3000);
-    assert.equal(sent[1].sentAt, 3450);
+    assert.equal(sent[1].sentAt, 3000 + 450 * cooldownScale);
     assert.equal(result.accepted, 2);
     assert.equal(result.deviceBackpressure, 1);
     assert.equal(result.busyCooldown, 1);
-    assert.equal(result.maxQueueDelayMs, 450);
-    assert.equal(result.late, delayedSecond ? 1 : 0);
-    assert.equal(result.passed, !delayedSecond);
+    assert.equal(result.maxQueueDelayMs, 450 * cooldownScale);
+    assert.equal(result.late, expectedLate ? 1 : 0);
+    assert.deepEqual(result.lateByRound, expectedLate ? [{
+      round: 2,
+      late: 1,
+      lateBeforeUpload: delayedSecond ? 0 : 1,
+      maxDispatchLagMs: 0,
+      maxDeviceQueueMs: 450 * cooldownScale,
+      maxUploadToAckMs: delayedSecond ? 3000 : 0,
+    }] : []);
+    assert.equal(result.passed, !expectedLate);
   }
 });
 

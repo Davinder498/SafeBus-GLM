@@ -266,6 +266,7 @@ export async function measureNativeGps({
   let accepted = 0;
   let lastAcknowledgementMs = null;
   let late = 0;
+  const lateByRound = new Map();
   let deviceBackpressure = 0;
   let busyInFlight = 0;
   let busyCooldown = 0;
@@ -329,7 +330,7 @@ export async function measureNativeGps({
       offered++;
       uploading.add(driver.tripId);
     }
-    let uploadStarted = false;
+    let uploadStartedAt;
     const request = Promise.resolve(previous)
       .then(async () => {
         if (queueBusySlots) {
@@ -337,11 +338,12 @@ export async function measureNativeGps({
           if (pauseRemaining > 0) await waitForUpload(pauseRemaining, signal);
           if (signal?.aborted || Object.keys(errors).length)
             throw Error("NATIVE_GPS_UNSENT_CANCELLED");
-          maxQueueDelayMs = Math.max(maxQueueDelayMs, clock() - dispatchedAt);
           offered++;
           uploading.add(driver.tripId);
         }
-        uploadStarted = true;
+        uploadStartedAt = clock();
+        if (queueBusySlots)
+          maxQueueDelayMs = Math.max(maxQueueDelayMs, uploadStartedAt - dispatchedAt);
         return upload(driver, sequence, recordedAt, latitude, signal);
       })
       .then(
@@ -352,14 +354,33 @@ export async function measureNativeGps({
           lastAcknowledgementMs = acknowledgedAt - started;
           // Use the real Android pause range upper bound for reproducible A-B-A.
           nextUploadAt.set(driver.tripId, clock() + (queueBusySlots ? 750 : minimumUploadPauseMs));
-          if (elapsed > periodMs) late++;
+          if (elapsed > periodMs) {
+            late++;
+            let timing = lateByRound.get(round);
+            if (!timing) {
+              timing = {
+                round: round + 1,
+                late: 0,
+                lateBeforeUpload: 0,
+                maxDispatchLagMs: 0,
+                maxDeviceQueueMs: 0,
+                maxUploadToAckMs: 0,
+              };
+              lateByRound.set(round, timing);
+            }
+            timing.late++;
+            if (uploadStartedAt - due > periodMs) timing.lateBeforeUpload++;
+            timing.maxDispatchLagMs = Math.max(timing.maxDispatchLagMs, lag);
+            timing.maxDeviceQueueMs = Math.max(timing.maxDeviceQueueMs, uploadStartedAt - dispatchedAt);
+            timing.maxUploadToAckMs = Math.max(timing.maxUploadToAckMs, acknowledgedAt - uploadStartedAt);
+          }
           accepted++;
           if ((latest.get(driver.tripId)?.sequence ?? -1) < sequence)
             latest.set(driver.tripId, { sequence, recordedAt, latitude });
         },
         (error) => {
           const code = error?.message;
-          if (!uploadStarted && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
+          if (uploadStartedAt === undefined && (signal?.aborted || code === "NATIVE_GPS_UNSENT_CANCELLED")) {
             cancelledBeforeSend++;
             return;
           }
@@ -410,6 +431,7 @@ export async function measureNativeGps({
     unsent: slots - offered,
     unacknowledged: offered - accepted,
     late,
+    lateByRound: [...lateByRound.values()].sort((a, b) => a.round - b.round),
     deviceBackpressure,
     busyInFlight,
     busyCooldown,
