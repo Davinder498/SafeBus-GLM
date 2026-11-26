@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
+import {
+  createUnifiedNotificationDb,
+  id as rehearsalId,
+  startTrip,
+} from './fixtures/unified-notifications-db.mjs';
 
 const migrationPath =
   'supabase/migrations/pending/20261018032558_guardian_trip_notification_deduplication.sql';
@@ -16,6 +21,88 @@ function definition(source, name) {
   return match[0];
 }
 const id = (n) => `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
+
+test('BusSafe trip rehearsal contains lifecycle notifications and rolls back with retention enabled', async (t) => {
+  const db = await createUnifiedNotificationDb();
+  t.after(() => db.close());
+  const retentionMigration = await fs.readFile(
+    'supabase/migrations/pending/20261109214533_remove_gps_history.sql',
+    'utf8',
+  );
+  const retentionGuard = retentionMigration.match(
+    /CREATE OR REPLACE FUNCTION safebus_private\.retention_source_guard\(\)[\s\S]*?END \$function\$;/,
+  );
+  assert.ok(retentionGuard);
+  await db.exec(retentionGuard[0]);
+  await db.exec(`
+    -- This synthetic fixture contains no preservation cases.
+    create function safebus_private.retention_trip_held(uuid) returns boolean
+      language sql stable as $$ select false $$;
+    alter table public.driver_trips add column if not exists created_at timestamptz default now();
+    create trigger retention_source_guard before insert or update or delete on public.driver_trips
+      for each row execute function safebus_private.retention_source_guard();
+  `);
+
+  const unrelatedTrip = rehearsalId(72);
+  const rehearsalTrip = rehearsalId(73);
+  const tenant = rehearsalId(1);
+  await startTrip(db, 72);
+  const readQueue = async () =>
+    (
+      await db.query(`
+      select driver_trip_id, event_type
+      from safebus_private.notification_audience_queue
+      order by driver_trip_id, event_type
+    `)
+    ).rows;
+  const originalQueue = await readQueue();
+  assert.deepEqual(originalQueue, [{ driver_trip_id: unrelatedTrip, event_type: 'trip_started' }]);
+
+  async function containEvent(eventType) {
+    const { rows } = await db.query(
+      `delete from safebus_private.notification_audience_queue
+       where tenant_id=$1 and driver_trip_id=$2 and source_id=$2
+         and source_type='driver_trip' and event_type=$3
+       returning event_type`,
+      [tenant, rehearsalTrip, eventType],
+    );
+    assert.deepEqual(rows, [{ event_type: eventType }]);
+    assert.deepEqual(await readQueue(), originalQueue);
+  }
+
+  for (const terminalStatus of ['completed', 'cancelled']) {
+    await db.exec('begin');
+    try {
+      await startTrip(db, 73);
+      await containEvent('trip_started');
+      const { affectedRows } = await db.query(
+        'update public.driver_trips set status=$3, ended_at=now() where tenant_id=$1 and id=$2',
+        [tenant, rehearsalTrip, terminalStatus],
+      );
+      assert.equal(affectedRows, 1);
+      await containEvent(`trip_${terminalStatus}`);
+      await db.exec('savepoint verify_retention');
+      await assert.rejects(
+        db.query('delete from public.driver_trips where tenant_id=$1 and id=$2', [
+          tenant,
+          rehearsalTrip,
+        ]),
+        (error) => error.code === '55006' && /Operational retention/.test(error.message),
+      );
+      await db.exec('rollback to savepoint verify_retention');
+    } finally {
+      await db.exec('rollback');
+    }
+
+    const { rows } = await db.query(
+      'select id from public.driver_trips where id in ($1,$2) order by id',
+      [unrelatedTrip, rehearsalTrip],
+    );
+    assert.deepEqual(rows, [{ id: unrelatedTrip }]);
+    assert.deepEqual(await readQueue(), originalQueue);
+  }
+});
+
 test('trip fan-out deduplicates siblings while rechecking exact service and each delivery channel', async (t) => {
   const db = new PGlite();
   t.after(() => db.close());
