@@ -5,7 +5,10 @@ import java.util.ArrayDeque;
 import static org.junit.Assert.*;
 
 public final class TrackingQueueRecoveryTest {
-    private static final String ENDPOINT = "https://ckrkfylsyihwouvesypm.supabase.co";
+    private static final boolean RECEIVER = com.safebusalberta.app.BuildConfig.USE_BATCH_GPS_RECEIVER;
+    private static final String PRODUCTION = "https://ckrkfylsyihwouvesypm.supabase.co";
+    private static final String RECOVERY = "https://deladookciebwvqojhkv.supabase.co";
+    private static final String ENDPOINT = RECEIVER ? RECOVERY : PRODUCTION;
 
     @Test public void rotationAndRescanRequireCoordinateFreeOwnershipProof() {
         TrackingQueueRecovery cache = new TrackingQueueRecovery();
@@ -82,6 +85,7 @@ public final class TrackingQueueRecoveryTest {
     }
 
     @Test public void aDifferentServerCannotAuthorizeExportOfTheEncryptedQueue() {
+        assertFalse(TrackingQueueRecovery.approvedEndpoint(RECEIVER ? PRODUCTION : RECOVERY));
         assertTrue(TrackingQueueRecovery.approvedEndpoint(ENDPOINT));
         assertTrue(TrackingQueueRecovery.approvedEndpoint(ENDPOINT + ":443/"));
         for (String url : new String[]{null, "http://ckrkfylsyihwouvesypm.supabase.co", "https://other.supabase.co",
