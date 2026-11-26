@@ -821,11 +821,16 @@ test('sustained native GPS queues a cooldown-blocked fix, keeps its collection t
     assert.equal(result.maxQueueDelayMs, 450 + extraPause);
     assert.equal(result.late, bucket ? 1 : 0);
     assert.deepEqual(result.lateByRound, [0, bucket ? 1 : 0]);
-    assert.deepEqual(result.lateTiming, {
+    const expectedTiming = {
       alreadyLateAtSend: Number(bucket === 'alreadyLateAtSend'),
       uploadOverPeriod: Number(bucket === 'uploadOverPeriod'),
       combinedDelay: Number(bucket === 'combinedDelay'),
-    });
+    };
+    assert.deepEqual(result.lateTiming, expectedTiming);
+    assert.deepEqual(result.lateTimingByRound, [
+      { alreadyLateAtSend: 0, uploadOverPeriod: 0, combinedDelay: 0 },
+      expectedTiming,
+    ]);
     assert.equal(result.passed, !bucket);
   }
 });
@@ -868,6 +873,11 @@ test('sustained native GPS queues behind an in-flight request without overlap', 
   assert.equal(result.accepted, 3);
   assert.equal(result.late, 1);
   assert.deepEqual(result.lateByRound, [1, 0, 0]);
+  assert.deepEqual(result.lateTimingByRound, [
+    { alreadyLateAtSend: 0, uploadOverPeriod: 1, combinedDelay: 0 },
+    { alreadyLateAtSend: 0, uploadOverPeriod: 0, combinedDelay: 0 },
+    { alreadyLateAtSend: 0, uploadOverPeriod: 0, combinedDelay: 0 },
+  ]);
   assert.equal(result.passed, false);
 });
 

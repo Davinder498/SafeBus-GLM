@@ -434,6 +434,7 @@ export async function runRecoveryDirectGpsComparison({db,scope,drivers,evidence,
       if(result.late){
         console.log('Direct GPS late acknowledgements by scheduled round: '+JSON.stringify(result.lateByRound));
         console.log('Direct GPS late acknowledgement timing: '+JSON.stringify(result.lateTiming));
+        console.log('Direct GPS late acknowledgement timing by scheduled round: '+JSON.stringify(result.lateTimingByRound));
       }
       if(result.timings)console.log('Direct GPS timing (ms): phase='+(window.phase??'comparison')+'; db_connections='+dbConnections+'; pattern='+window.pattern+'; stages='+JSON.stringify(result.timings));
       if(after.failure||sampleErrors||samples.length<2)throw Error('DIRECT_GPS_DATABASE_STATS');
