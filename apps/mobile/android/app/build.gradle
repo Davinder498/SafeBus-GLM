@@ -9,6 +9,13 @@ def hasReleaseSigning = [
 def requireReleaseSigning = System.getenv('SAFEBUS_REQUIRE_RELEASE_SIGNING') == 'true'
 def safeBusVersionCode = (System.getenv('SAFEBUS_ANDROID_VERSION_CODE') ?: '1').toInteger()
 def safeBusVersionName = System.getenv('SAFEBUS_ANDROID_VERSION_NAME') ?: '1.0.0-dev'
+def releaseGpsRoute = providers.gradleProperty('safeBusReleaseGpsRoute').getOrElse('rpc')
+if (!(releaseGpsRoute in ['rpc', 'recovery-batch', 'bussafe-batch'])) {
+    throw new GradleException('Unknown SafeBus release GPS route.')
+}
+if (requireReleaseSigning && releaseGpsRoute == 'recovery-batch') {
+    throw new GradleException('Recovery GPS cannot be selected for a published release.')
+}
 
 if (requireReleaseSigning && !hasReleaseSigning) {
     throw new GradleException('Android release signing is required, but one or more signing variables are missing.')
@@ -19,7 +26,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     buildFeatures { buildConfig true }
     defaultConfig {
-        buildConfigField "boolean", "USE_BATCH_GPS_RECEIVER", "false"
+        buildConfigField "String", "GPS_ROUTE", '"rpc"'
         applicationId "com.safebusalberta.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -44,17 +51,45 @@ android {
     }
     buildTypes {
         debug {
-            buildConfigField "boolean", "USE_BATCH_GPS_RECEIVER",
-                (project.findProperty("safeBusBatchGpsReceiver") == "true").toString()
+            buildConfigField "String", "GPS_ROUTE",
+                project.findProperty('safeBusBatchGpsReceiver') == 'true' ? '"recovery-batch"' : '"rpc"'
         }
         release {
+            buildConfigField "String", "GPS_ROUTE", '"' + releaseGpsRoute + '"'
+            if (releaseGpsRoute == 'recovery-batch') {
+                applicationIdSuffix '.qualification'
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (hasReleaseSigning) {
+            if (hasReleaseSigning && releaseGpsRoute != 'recovery-batch') {
                 signingConfig signingConfigs.release
             }
         }
     }
+}
+
+if (releaseGpsRoute == 'recovery-batch') {
+    def verifyRecoveryBundle = tasks.register('verifyRecoveryGpsBundle') {
+        doLast {
+            def scripts = fileTree('src/main/assets/public/assets') { include '**/*.js' }
+            def hasRecovery = false
+            scripts.each { script ->
+                def content = script.getText('UTF-8')
+                if (content.contains('https://ckrkfylsyihwouvesypm.supabase.co')) {
+                    throw new GradleException('Recovery qualification includes a production web bundle.')
+                }
+                if (content.contains('https://deladookciebwvqojhkv.supabase.co')) hasRecovery = true
+            }
+            def firebaseFiles = fileTree(projectDir) {
+                include 'google-services.json', 'src/**/google-services.json'
+            }
+            if (!hasRecovery || !firebaseFiles.isEmpty()) {
+                throw new GradleException('Qualification requires synced Recovery assets and a checkout without Firebase configuration.')
+            }
+        }
+    }
+    tasks.matching { it.name == 'preReleaseBuild' }.configureEach { dependsOn verifyRecoveryBundle }
 }
 
 repositories {

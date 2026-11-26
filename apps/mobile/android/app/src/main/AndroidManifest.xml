@@ -71,7 +71,7 @@
                 <data
                     android:host="auth"
                     android:pathPrefix="/update-password"
-                    android:scheme="@string/custom_url_scheme"
+                    android:scheme="${applicationId}"
                 />
             </intent-filter>
         </activity>

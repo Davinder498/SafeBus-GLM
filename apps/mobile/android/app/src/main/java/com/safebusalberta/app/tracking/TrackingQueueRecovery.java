@@ -1,8 +1,5 @@
 package com.safebusalberta.app.tracking;
 
-import com.safebusalberta.app.BuildConfig;
-
-import java.net.URI;
 import java.util.Arrays;
 
 /** Coordinate-free ownership proof, scoped to one current authorization. */
@@ -26,15 +23,7 @@ final class TrackingQueueRecovery {
     }
 
     static boolean approvedEndpoint(String url) {
-        try {
-            URI uri = new URI(url);
-            return "https".equalsIgnoreCase(uri.getScheme())
-                && (BuildConfig.USE_BATCH_GPS_RECEIVER ? "deladookciebwvqojhkv.supabase.co"
-                    : "ckrkfylsyihwouvesypm.supabase.co").equalsIgnoreCase(uri.getHost())
-                && (uri.getPort() == -1 || uri.getPort() == 443)
-                && (uri.getPath().isEmpty() || "/".equals(uri.getPath()))
-                && uri.getUserInfo() == null && uri.getQuery() == null && uri.getFragment() == null;
-        } catch (Exception ignored) { return false; }
+        return TrackingUploadRoute.CURRENT.accepts(url);
     }
 
     boolean hasProof(String endpoint, String owner, String activeSession, String credential, String eventSession) {

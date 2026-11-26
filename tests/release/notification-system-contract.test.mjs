@@ -471,7 +471,7 @@ test('unconfigured Firebase builds cannot invoke token registration or terminate
 });
 
 test('Android password recovery uses an app-owned deep link and removes auth tokens from navigation', () => {
-  assert.match(androidManifest, /android:scheme="@string\/custom_url_scheme"/);
+  assert.ok(androidManifest.includes('android:scheme="${applicationId}"'));
   assert.match(androidManifest, /android:host="auth"/);
   assert.match(androidManifest, /android:pathPrefix="\/update-password"/);
   assert.match(nativeAuthLinks, /appUrlOpen/);

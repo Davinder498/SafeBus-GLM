@@ -5,10 +5,23 @@ import java.util.ArrayDeque;
 import static org.junit.Assert.*;
 
 public final class TrackingQueueRecoveryTest {
-    private static final boolean RECEIVER = com.safebusalberta.app.BuildConfig.USE_BATCH_GPS_RECEIVER;
+    private static final boolean RECEIVER = TrackingUploadRoute.CURRENT == TrackingUploadRoute.RECOVERY_BATCH;
     private static final String PRODUCTION = "https://ckrkfylsyihwouvesypm.supabase.co";
     private static final String RECOVERY = "https://deladookciebwvqojhkv.supabase.co";
     private static final String ENDPOINT = RECEIVER ? RECOVERY : PRODUCTION;
+
+    @Test public void eachBuildRouteBindsLocationToItsOwnAuthProject() {
+        assertEquals(PRODUCTION + "/rest/v1/rpc/ingest_driver_location_event",
+            TrackingUploadRoute.select("rpc").locationUrl(PRODUCTION));
+        assertEquals("https://localhost:8443/tracking/v2/location",
+            TrackingUploadRoute.select("recovery-batch").locationUrl(RECOVERY));
+        assertEquals("https://safebus.kids/tracking/v2/location",
+            TrackingUploadRoute.select("bussafe-batch").locationUrl(PRODUCTION));
+        assertThrows(IllegalArgumentException.class, () -> TrackingUploadRoute.RPC.locationUrl(RECOVERY));
+        assertThrows(IllegalArgumentException.class, () -> TrackingUploadRoute.BUSSAFE_BATCH.locationUrl(RECOVERY));
+        assertThrows(IllegalArgumentException.class, () -> TrackingUploadRoute.RECOVERY_BATCH.locationUrl(PRODUCTION));
+        assertThrows(IllegalArgumentException.class, () -> TrackingUploadRoute.select("https://other.invalid"));
+    }
 
     @Test public void rotationAndRescanRequireCoordinateFreeOwnershipProof() {
         TrackingQueueRecovery cache = new TrackingQueueRecovery();
