@@ -815,6 +815,7 @@ test('sustained native GPS queues a cooldown-blocked fix, keeps its collection t
     assert.equal(result.busyCooldown, 1);
     assert.equal(result.maxQueueDelayMs, 450);
     assert.equal(result.late, delayedSecond ? 1 : 0);
+    assert.deepEqual(result.lateByRound, [0, delayedSecond ? 1 : 0]);
     assert.equal(result.passed, !delayedSecond);
   }
 });
@@ -856,6 +857,7 @@ test('sustained native GPS queues behind an in-flight request without overlap', 
   assert.equal(result.maxDeviceQueueDepth, 2);
   assert.equal(result.accepted, 3);
   assert.equal(result.late, 1);
+  assert.deepEqual(result.lateByRound, [1, 0, 0]);
   assert.equal(result.passed, false);
 });
 
