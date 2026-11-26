@@ -1,0 +1,33 @@
+name: BusSafe capacity preflight
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_sha:
+        description: Reviewed current main commit
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: bussafe-capacity
+  cancel-in-progress: false
+jobs:
+  preflight:
+    if: github.ref == 'refs/heads/main' && inputs.reviewed_sha == github.sha
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Verify test family and bus assignment in a read-only transaction
+        env:
+          SAFEBUS_DATABASE_URL: ${{ secrets.SAFEBUS_DATABASE_URL }}
+          SAFEBUS_DATABASE_CA_CERT: ${{ vars.SAFEBUS_DATABASE_CA_CERT }}
+          SYNTHETIC_GUARDIAN_ID: ${{ secrets.SAFEBUS_CAPACITY_GUARDIAN_ID }}
+        run: node scripts/bussafe-capacity-preflight.mjs
