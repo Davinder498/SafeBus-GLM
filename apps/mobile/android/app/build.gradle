@@ -17,7 +17,9 @@ if (requireReleaseSigning && !hasReleaseSigning) {
 android {
     namespace "com.safebusalberta.app"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures { buildConfig true }
     defaultConfig {
+        buildConfigField "boolean", "USE_BATCH_GPS_RECEIVER", "false"
         applicationId "com.safebusalberta.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -41,6 +43,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            buildConfigField "boolean", "USE_BATCH_GPS_RECEIVER",
+                (project.findProperty("safeBusBatchGpsReceiver") == "true").toString()
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

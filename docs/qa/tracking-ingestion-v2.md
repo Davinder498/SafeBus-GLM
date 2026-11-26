@@ -286,3 +286,13 @@ The socket and admission counts help interpret shortfalls alongside committed
 batches, SQL error codes and request timeouts. A local regression with database
 writers held before commit admitted 1,000 of 10,000 simultaneous synthetic
 submissions and returned 503 to the remaining 9,000 at the existing limit.
+
+### Receiver application and Android qualification build
+
+The GLM receiver workspace starts with `pnpm --filter @safebus/tracking-receiver start`. It binds to loopback and uses the existing verified driver batch transaction. The capacity harness used two receiver processes with four writers apiece. Each application instance has four database connections, 5,000 admission slots and a maximum of 100 fixes per batch. Each instance requires its own port and its four connections must fit the database connection budget.
+
+Use SAFEBUS_RECEIVER_PORT, SAFEBUS_RECEIVER_SUPABASE_URL, SAFEBUS_RECEIVER_PUBLISHABLE_KEY, SAFEBUS_RECEIVER_DATABASE_URL and SAFEBUS_RECEIVER_DATABASE_CA (CA file path). The database login safebus_gps_receiver requires schema usage and execution of the private wrapper. Review all inherited and direct grants during provisioning. Keep the credential server-side. The process checks the role at startup and validates database TLS. Auth network calls have a three-second timeout.
+
+Only an explicitly built Android debug APK (`-PsafeBusBatchGpsReceiver=true`) selects https://localhost:8443/tracking/v2/location and restricts the native tracker to the isolated Recovery auth project. The release build and default debug build retain the existing RPC. Only location submissions use the new route; queue authorization and token refresh stay on the approved Supabase project. Client retries retain the original event identity until an authoritative outcome. For device qualification, forward device port 8443 to a trusted test TLS proxy in front of the loopback receiver. Android certificate validation remains enabled. Public rollout requires a separately reviewed edge route, TLS, request and connection limits across instances, no credential/body logging, and the matching auth project and database. A public route has not been installed. Do not use the debug switch against the live site for capacity testing.
+
+Commercial qualification requires an isolated equivalent of the intended edge routing, actual credentials from the isolated project, synchronized sustained GPS with multiple receiver instances, private guardian and dispatcher updates, notifications, restart/retry correctness, resource/cost measurements and cleanup. Local acceptance does not qualify the commercial service.

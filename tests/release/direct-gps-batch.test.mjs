@@ -7,6 +7,8 @@ import {installed,setup,id,time} from './fixtures/live-tracking-only-db.mjs';
 import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatcher,createDirectGpsServer,BATCH_TRANSACTION_SETUP}
   from '../../services/tracking-ingestion/direct-batch.mjs';
 
+import {createReceiver} from '../../apps/tracking-receiver/receiver.mjs';
+
 const sql=await fs.readFile('services/tracking-ingestion/direct-batch.sql','utf8');
 const issuer='https://synthetic.supabase.co/auth/v1';
 const claims=(sub=id(3),session_id=id(70))=>({iss:issuer,aud:'authenticated',role:'authenticated',sub,session_id,aal:'aal1',exp:Math.floor(Date.now()/1000)+600});
@@ -20,17 +22,16 @@ test('HTTP to embedded PostgreSQL: commit, duplicate, denial, MFA and session re
     "create or replace function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claim',true),''),nullif(current_setting('request.jwt.claims',true),''))::jsonb$$;");
   await db.exec(sql);
   const c=claims(),bad=claims(id(999),id(998));
-  const verify=createSupabaseClaimsVerifier({issuer,auth:{getClaims:async token=>
-    ({data:{claims:token==='good'?c:token==='other'?bad:null},error:null})}});
+  const auth={getClaims:async token=>
+    ({data:{claims:token==='good'?c:token==='other'?bad:null},error:null})};
   let transactions=0;
   const pool={connect:async()=>({query:async(s,args)=>{
     if(s===BATCH_TRANSACTION_SETUP){transactions++;return db.exec(s);}
     return db.query(s,args);
   },release:()=>{}})};
-  const writer=createDirectBatchWriter({pool});
-  const batcher=createDirectGpsBatcher({verify,write:writer,maxWaitMs:10,maxInFlight:1});
-  const server=createDirectGpsServer({batcher});server.listen(0,'127.0.0.1');await once(server,'listening');
-  t.after(async()=>{batcher.close();await new Promise(resolve=>server.close(resolve));});
+  const {server,close}=createReceiver({pool,auth,issuer});
+  server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(close);
   const post=async(token,fix)=>{
     const response=await fetch('http://127.0.0.1:'+server.address().port+'/tracking/v2/location',{
       method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(fix)});

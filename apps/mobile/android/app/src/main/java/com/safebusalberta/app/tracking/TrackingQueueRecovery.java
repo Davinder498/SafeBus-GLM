@@ -1,5 +1,7 @@
 package com.safebusalberta.app.tracking;
 
+import com.safebusalberta.app.BuildConfig;
+
 import java.net.URI;
 import java.util.Arrays;
 
@@ -27,7 +29,8 @@ final class TrackingQueueRecovery {
         try {
             URI uri = new URI(url);
             return "https".equalsIgnoreCase(uri.getScheme())
-                && "ckrkfylsyihwouvesypm.supabase.co".equalsIgnoreCase(uri.getHost())
+                && (BuildConfig.USE_BATCH_GPS_RECEIVER ? "deladookciebwvqojhkv.supabase.co"
+                    : "ckrkfylsyihwouvesypm.supabase.co").equalsIgnoreCase(uri.getHost())
                 && (uri.getPort() == -1 || uri.getPort() == 443)
                 && (uri.getPath().isEmpty() || "/".equals(uri.getPath()))
                 && uri.getUserInfo() == null && uri.getQuery() == null && uri.getFragment() == null;

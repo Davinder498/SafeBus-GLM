@@ -1,0 +1,10 @@
+{
+  "name": "@safebus/tracking-receiver",
+  "private": true,
+  "type": "module",
+  "scripts": {"start": "node server.mjs"},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "pg": "^8.23.1"
+  }
+}

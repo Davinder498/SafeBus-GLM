@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.safebusalberta.app.BuildConfig;
 import com.safebusalberta.app.MainActivity;
 import com.safebusalberta.app.R;
 
@@ -381,7 +382,9 @@ public final class DriverTrackingService extends Service implements LocationList
 
     private TrackingHttpClient.Result postEvent(TrackingConfig config, JSONObject payload) throws Exception {
         return request(
-            config.supabaseUrl + "/rest/v1/rpc/ingest_driver_location_event",
+            BuildConfig.USE_BATCH_GPS_RECEIVER
+                ? "https://localhost:8443/tracking/v2/location"
+                : config.supabaseUrl + "/rest/v1/rpc/ingest_driver_location_event",
             config.anonKey, config.accessToken, payload.toString()
         );
     }
