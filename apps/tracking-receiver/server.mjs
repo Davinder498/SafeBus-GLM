@@ -4,6 +4,7 @@ import {createClient} from '@supabase/supabase-js';
 import pg from 'pg';
 import {createReceiver} from './receiver.mjs';
 import {receiverConfig} from './config.mjs';
+import {receiverDatabaseRoleAllowed} from './database-role.mjs';
 
 async function start() {
   const {url, key, port, connectionString} = receiverConfig(process.env);
@@ -15,11 +16,10 @@ async function start() {
     global:{fetch:(input,init) => fetch(input,{...init,signal:AbortSignal.any(
       [AbortSignal.timeout(3000),init?.signal].filter(Boolean))})}});
   try {
-    const {rows:[role]} = await pool.query(`select current_user = 'safebus_gps_receiver'
-      and not (rolsuper or rolbypassrls or rolcreaterole)
-      and has_function_privilege(current_user,'safebus_private.ingest_verified_driver_location_batch(jsonb)','execute')
-      as allowed from pg_roles where rolname=current_user`);
-    if (!role?.allowed) throw new Error('Unexpected database role');
+    if (!await receiverDatabaseRoleAllowed(pool)) {
+      console.error('Receiver database role failed the startup privilege check');
+      throw new Error('Unexpected database role');
+    }
     const receiver = createReceiver({pool,auth,issuer:url+'/auth/v1'});
     const listening = once(receiver.server,'listening');
     receiver.server.listen(port,'127.0.0.1');
