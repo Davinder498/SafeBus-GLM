@@ -3,12 +3,59 @@ import {createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import test from 'node:test';
 import {once} from 'node:events';
+import {PGlite} from '@electric-sql/pglite';
 import {installed,setup,id,time} from './fixtures/live-tracking-only-db.mjs';
 import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatcher,createDirectGpsServer,BATCH_TRANSACTION_SETUP}
   from '../../services/tracking-ingestion/direct-batch.mjs';
 
 import {createReceiver} from '../../apps/tracking-receiver/receiver.mjs';
 import {receiverConfig} from '../../apps/tracking-receiver/config.mjs';
+import {receiverDatabaseRoleAllowed} from '../../apps/tracking-receiver/database-role.mjs';
+
+test('receiver startup checks effective database access, including grants to PUBLIC', async t => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`
+    create role safebus_gps_receiver login noinherit;
+    create role other_role;
+    create schema safebus_private;
+    create schema net;
+    create table safebus_private.fixture (id int);
+    create sequence safebus_private.fixture_seq;
+    create function safebus_private.ingest_verified_driver_location_batch(jsonb) returns jsonb
+      language sql security definer set search_path = '' as $$select '[]'::jsonb$$;
+    revoke all on function safebus_private.ingest_verified_driver_location_batch(jsonb) from public;
+    grant usage on schema safebus_private to safebus_gps_receiver;
+    grant execute on function safebus_private.ingest_verified_driver_location_batch(jsonb) to safebus_gps_receiver;
+    create function net.fixture_http() returns integer language sql as $$select 1$$;
+  `);
+  const checkAsReceiver = async () => {
+    const receiverDb = new PGlite({loadDataDir: await db.dumpDataDir('none')});
+    try {
+      await receiverDb.exec('set session authorization safebus_gps_receiver');
+      return await receiverDatabaseRoleAllowed(receiverDb);
+    } finally {
+      await receiverDb.close();
+    }
+  };
+  assert.equal(await receiverDatabaseRoleAllowed(db), false);
+  assert.equal(await checkAsReceiver(), true);
+  for (const [grant, revoke] of [
+    ['grant usage on schema net to public', 'revoke usage on schema net from public'],
+    ['grant create on schema net to safebus_gps_receiver', 'revoke create on schema net from safebus_gps_receiver'],
+    ['grant select (id) on safebus_private.fixture to safebus_gps_receiver',
+      'revoke select (id) on safebus_private.fixture from safebus_gps_receiver'],
+    ['grant usage on sequence safebus_private.fixture_seq to safebus_gps_receiver',
+      'revoke usage on sequence safebus_private.fixture_seq from safebus_gps_receiver'],
+    ['grant other_role to safebus_gps_receiver', 'revoke other_role from safebus_gps_receiver'],
+    ['grant execute on function safebus_private.ingest_verified_driver_location_batch(jsonb) to public',
+      'revoke execute on function safebus_private.ingest_verified_driver_location_batch(jsonb) from public'],
+  ]) {
+    await db.exec(grant);
+    assert.equal(await checkAsReceiver(), false, grant);
+    await db.exec(revoke);
+  }
+});
 
 test('receiver credentials, auth issuer and database must belong to the selected target', () => {
   const recovery = 'deladookciebwvqojhkv';
