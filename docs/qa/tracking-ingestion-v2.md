@@ -296,3 +296,18 @@ Use SAFEBUS_RECEIVER_PORT, SAFEBUS_RECEIVER_SUPABASE_URL, SAFEBUS_RECEIVER_PUBLI
 Only an explicitly built Android debug APK (`-PsafeBusBatchGpsReceiver=true`) selects https://localhost:8443/tracking/v2/location and restricts the native tracker to the isolated Recovery auth project. The release build and default debug build retain the existing RPC. Only location submissions use the new route; queue authorization and token refresh stay on the approved Supabase project. Client retries retain the original event identity until an authoritative outcome. For device qualification, forward device port 8443 to a trusted test TLS proxy in front of the loopback receiver. Android certificate validation remains enabled. Public rollout requires a separately reviewed edge route, TLS, request and connection limits across instances, no credential/body logging, and the matching auth project and database. A public route has not been installed. Do not use the debug switch against the live site for capacity testing.
 
 Commercial qualification requires an isolated equivalent of the intended edge routing, actual credentials from the isolated project, synchronized sustained GPS with multiple receiver instances, private guardian and dispatcher updates, notifications, restart/retry correctness, resource/cost measurements and cleanup. Local acceptance does not qualify the commercial service.
+
+### Android release routing and receiver target binding
+
+Only driver GPS location submissions use the selected upload route. A driver needs an active authorized tracking session and device. A guardian, school authority admin, school-scoped admin, transportation admin or platform admin receives no GPS write permission through this route. Account and MFA checks, tracking authorization, queue recovery and refresh continue against the build's matching Supabase project.
+
+| Gradle selection | Auth project | Location request |
+| --- | --- | --- |
+| Default release or debug | BusSafe | Existing per-location RPC |
+| Debug with `-PsafeBusBatchGpsReceiver=true` | Recovery | HTTPS loopback receiver |
+| Release with `-PsafeBusReleaseGpsRoute=recovery-batch` | Recovery | HTTPS loopback receiver |
+| Release with `-PsafeBusReleaseGpsRoute=bussafe-batch` | BusSafe | `https://safebus.kids/tracking/v2/location` |
+
+For Recovery use a dedicated checkout without Firebase configuration. Build the mobile web assets with the Recovery URL and its publishable key, sync Android, then run `./gradlew -PsafeBusReleaseGpsRoute=recovery-batch :app:testReleaseUnitTest :app:assembleRelease`. The qualification APK uses the local debug signing key and a separate application ID, private storage and deep-link scheme. Use a trusted TLS proxy and device port forwarding as described above. Never publish the qualification APK.
+
+The receiver defaults to Recovery. An operator must explicitly set `SAFEBUS_RECEIVER_TARGET=production` to bind the matching BusSafe auth issuer and database role. The process listens on loopback behind the TLS proxy. Production use requires the reviewed database wrapper and least-privilege grant, an exact edge route ahead of the SPA fallback, connection and request limits, and verified redaction of credentials and GPS payloads. The protected Play build continues to select the RPC. Qualify the route and its operational rollback before distributing a receiver-enabled production build. Devices must retain unacknowledged fixes across a route transition.

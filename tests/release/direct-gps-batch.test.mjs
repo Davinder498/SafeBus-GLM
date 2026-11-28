@@ -8,6 +8,30 @@ import {createSupabaseClaimsVerifier,createDirectBatchWriter,createDirectGpsBatc
   from '../../services/tracking-ingestion/direct-batch.mjs';
 
 import {createReceiver} from '../../apps/tracking-receiver/receiver.mjs';
+import {receiverConfig} from '../../apps/tracking-receiver/config.mjs';
+
+test('receiver credentials, auth issuer and database must belong to the selected target', () => {
+  const recovery = 'deladookciebwvqojhkv';
+  const production = 'ckrkfylsyihwouvesypm';
+  const config = project => ({
+    SAFEBUS_RECEIVER_SUPABASE_URL: `https://${project}.supabase.co`,
+    SAFEBUS_RECEIVER_DATABASE_URL: `postgres://safebus_gps_receiver:fixture@db.${project}.supabase.co/postgres`,
+    SAFEBUS_RECEIVER_PUBLISHABLE_KEY: 'sb_publishable_fixture',
+  });
+  assert.equal(receiverConfig(config(recovery)).port, 8080);
+  assert.throws(() => receiverConfig(config(production)));
+  const live = {...config(production), SAFEBUS_RECEIVER_TARGET: 'production'};
+  assert.equal(receiverConfig(live).url, live.SAFEBUS_RECEIVER_SUPABASE_URL);
+  const pooled = project => `postgres://safebus_gps_receiver.${project}:fixture@aws-0-ca-central-1.pooler.supabase.com/postgres`;
+  assert.equal(receiverConfig({...live, SAFEBUS_RECEIVER_DATABASE_URL: pooled(production)}).connectionString, pooled(production));
+  for (const override of [
+    {SAFEBUS_RECEIVER_TARGET: 'unknown'},
+    {SAFEBUS_RECEIVER_SUPABASE_URL: config(recovery).SAFEBUS_RECEIVER_SUPABASE_URL},
+    {SAFEBUS_RECEIVER_DATABASE_URL: config(recovery).SAFEBUS_RECEIVER_DATABASE_URL},
+    {SAFEBUS_RECEIVER_DATABASE_URL: pooled(recovery)},
+    {SAFEBUS_RECEIVER_DATABASE_URL: pooled(production) + '?sslmode=disable'},
+  ]) assert.throws(() => receiverConfig({...live, ...override}));
+});
 
 const sql=await fs.readFile('services/tracking-ingestion/direct-batch.sql','utf8');
 const issuer='https://synthetic.supabase.co/auth/v1';

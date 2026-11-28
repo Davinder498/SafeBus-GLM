@@ -165,6 +165,7 @@ test('retired tracking functions stay disabled while the reviewed push function 
     validation,
     webTracking,
     androidTracking,
+    androidRoutes,
     pushHandler,
   ] = await Promise.all([
     read('supabase/config.toml'),
@@ -176,6 +177,7 @@ test('retired tracking functions stay disabled while the reviewed push function 
     read(
       'apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/DriverTrackingService.java',
     ),
+    read('apps/mobile/android/app/src/main/java/com/safebusalberta/app/tracking/TrackingUploadRoute.java'),
     read('supabase/functions/push-notification-dispatcher/index.ts'),
   ]);
 
@@ -196,7 +198,8 @@ test('retired tracking functions stay disabled while the reviewed push function 
     /LocationPing(?:Request|Response|RejectionReason|Input)|locationPingSchema/,
   );
   assert.match(webTracking, /client\.rpc\('update_driver_trip_location'/);
-  assert.match(androidTracking, /\/rest\/v1\/rpc\/ingest_driver_location_event/);
+  assert.match(androidTracking, /TrackingUploadRoute\.CURRENT\.locationUrl\(config\.supabaseUrl\)/);
+  assert.match(androidRoutes, /\/rest\/v1\/rpc\/ingest_driver_location_event/);
   assert.match(config, /\[functions\.push-notification-dispatcher\][\s\S]*enabled\s*=\s*true/);
   assert.doesNotMatch(pushHandler, /location|latitude|longitude|ingest_driver_location_event/i);
 });
